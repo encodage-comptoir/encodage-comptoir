@@ -104,6 +104,7 @@ pre.txt{white-space:pre-wrap;font-family:var(--body);font-size:16px;background:v
 <div class="toast" id="toast" hidden></div>
 <script>
 "use strict";
+const VERSION="4 (envoi en une page)";
 // ---------- Données de référence ----------
 // Préfixes et catégories : les noms doivent être identiques aux catégories du back-office Impulsion (vérifiés le 14/10/2026).
 const CATS=[
@@ -208,7 +209,8 @@ function render(){
   a.innerHTML=`<div class="top"><span class="brand">Comptoir des Matériaux</span><button class="chip" id="set">Réglages</button></div>
    <h1>Matériaux reçus</h1><p class="hint">Un matériau arrive au comptoir ? Appuyez sur le bouton jaune et laissez-vous guider.</p>
    <p class="sec">À envoyer au bureau (${todo.length})</p><div class="list">${todo.map(row).join("")||'<p class="hint">Rien en attente.</p>'}</div>
-   ${done.length?`<p class="sec">Déjà envoyés (${done.length})</p><div class="list">${done.map(row).join("")}</div>`:""}`;
+   ${done.length?`<p class="sec">Déjà envoyés (${done.length})</p><div class="list">${done.map(row).join("")}</div>`:""}
+   <p class="hint" style="text-align:center;font-size:14px;margin-top:28px">Version ${VERSION}</p>`;
   bar((todo.length?`<button class="big ghost" id="exp" style="flex:0 0 42%">Envoyer (${todo.length})</button>`:"")+`<button class="big" id="new">+ Nouveau</button>`);
   if($("#exp"))$("#exp").onclick=()=>{screen="export";render()};
   $("#set").onclick=()=>{screen="reglages";render()};
