@@ -105,24 +105,24 @@ pre.txt{white-space:pre-wrap;font-family:var(--body);font-size:16px;background:v
 <script>
 "use strict";
 // ---------- Données de référence ----------
-// Préfixes et catégories : les noms doivent être identiques aux catégories du site (étape 3 de l'import).
+// Préfixes et catégories : les noms doivent être identiques aux catégories du back-office Impulsion (vérifiés le 14/10/2026).
 const CATS=[
  ["SA","Sanitaire"],["PA","Sanitaire","Paroi de douche"],["CH","Chassis","Châssis"],["PO","Portes"],["CAR","Carrelage"],["GRO","Gros œuvre"],
- ["RA","Chauffage"],["ELEC","Electricité","Électricité"],["LUM","Electricité","Luminaires"],["BOI","Bois"],["PAR","Parquet & bardage","Parquet & lambris"],["TOI","Toiture"],
- ["ISO","Isolant"],["Q","Quincaillerie"],["OUT","Outillage"],["DIV","Divers"]];
+ ["RA","Chauffage"],["ELEC","Electricité","Électricité"],["LUM","Electricité","Luminaires"],["BOI","Bois"],["PAR","Parquet & bardage"],["LAM","LAMBRIS/ Plafond","Lambris / Plafond"],["TOI","Toiture"],
+ ["ISO","Isolant"],["Q","Quincaillerie"],["OUT","Outillage"],["ELECTRO","Électro","Électroménager"],["DIV","Divers"]];
 // [préfixe, catégorie du site, libellé affiché sur le bouton (si différent)]
 const label=c=>{const x=CATS.find(x=>x[0]===c);return x?(x[2]||x[1]):""};
 const siteCat=c=>{const x=CATS.find(x=>x[0]===c);return x?x[1]:""};
 // Derniers numéros relevés dans l'export Impulsion du 14/10/2026 (modifiables dans Réglages).
-const LAST0={SA:138,PA:30,CH:110,PO:59,CAR:68,GRO:40,RA:49,ELEC:12,LUM:23,BOI:10,PAR:19,TOI:8,ISO:6,Q:14,OUT:11,DIV:34};
+const LAST0={SA:138,PA:30,CH:110,PO:59,CAR:68,GRO:40,RA:49,ELEC:12,LUM:23,BOI:10,PAR:19,LAM:1,ELECTRO:1,TOI:8,ISO:6,Q:14,OUT:11,DIV:34};
 const SUGG={SA:["Évier","Lavabo","Vasque","WC","Baignoire","Bac de douche","Robinet","Meuble lavabo"],PA:["Paroi de douche","Porte de douche"],
  CH:["Châssis PVC","Châssis bois","Châssis alu","Porte-fenêtre","Velux"],PO:["Porte intérieure","Porte chêne","Porte extérieure","Porte vitrée","Bloc-porte"],
  CAR:["Carrelage sol","Faïence murale","Plinthes","Dalles"],GRO:["Briques","Blocs béton","Pavés","Poutrains","Linteau"],
  RA:["Radiateur","Radiateur électrique","Thermostat","Vannes"],ELEC:["Prises","Interrupteurs","Variateur","Disjoncteurs","Câble"],
  LUM:["Spot LED","Plafonnier","Applique","Réglette"],BOI:["Planches","Poutre","Panneau OSB","Panneau multiplex","Trespa"],
- PAR:["Parquet","Lambris","Bardage","Lames de terrasse"],TOI:["Tuiles","Ardoises","Gouttière","Tôles"],
+ PAR:["Parquet","Bardage","Lames de terrasse"],LAM:["Lambris bois","Lambris PVC","Dalles de plafond"],ELECTRO:["Frigo","Four","Taque de cuisson","Hotte","Lave-vaisselle"],TOI:["Tuiles","Ardoises","Gouttière","Tôles"],
  ISO:["Laine de verre","Laine de roche","Panneau PIR","Polystyrène"],Q:["Poignées","Charnières","Serrures","Vis"],
- OUT:["Scie","Compresseur","Établi","Outil à main","Échelle"],DIV:["Hotte","Mobilier","Verre","Lot divers"]};
+ OUT:["Scie","Compresseur","Établi","Outil à main","Échelle"],DIV:["Mobilier","Verre","Lot divers"]};
 const ETATS=["Neuf","Très bon état","Bon état","À rafraîchir"];
 const UNITS=["pièce","m²","m courant","lot"];
 
