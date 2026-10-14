@@ -104,7 +104,7 @@ pre.txt{white-space:pre-wrap;font-family:var(--body);font-size:16px;background:v
 <div class="toast" id="toast" hidden></div>
 <script>
 "use strict";
-const VERSION="4 (envoi en une page)";
+const VERSION="5 (photos en un clic)";
 // ---------- Données de référence ----------
 // Préfixes et catégories : les noms doivent être identiques aux catégories du back-office Impulsion (vérifiés le 14/10/2026).
 const CATS=[
@@ -186,12 +186,15 @@ ol{padding-left:20px}</style></head><body>
 <div class="top"><ol><li>Téléchargez le fichier d'import, puis importez-le dans Impulsion (Gestion des produits › Importation).</li>
 <li>Pour chaque produit, téléchargez ses photos, puis dans Impulsion : crayon › onglet Images › + Ajouter.</li>
 <li>Vérifiez le prix, puis mettez en ligne.</li></ol>
-<button id="csv">Télécharger le fichier d'import (${list.length} produit${list.length>1?"s":""})</button></div>
+<button id="csv">1. Télécharger le fichier d'import (${list.length} produit${list.length>1?"s":""})</button><br>
+<button id="all">2. Télécharger toutes les photos (${list.reduce((n,f)=>n+f.photos.length,0)})</button>
+<p class="d">Si le navigateur demande d'autoriser plusieurs téléchargements, répondez Autoriser.</p></div>
 ${cards}
 <script>
 const P=${photos};
 function dl(name,url){const a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove()}
 document.getElementById("csv").onclick=()=>dl(${JSON.stringify(csvName)},"data:text/csv;base64,${csv64}");
+document.getElementById("all").onclick=()=>Object.values(P).flat().forEach(([n,u],i)=>setTimeout(()=>dl(n,u),i*400));
 document.querySelectorAll("[data-ref]").forEach(b=>b.onclick=()=>P[b.dataset.ref].forEach(([n,u],i)=>setTimeout(()=>dl(n,u),i*400)));
 <\/script></body></html>`}
 function exportFile(list){return new File([reportHtml(list)],`comptoir-${today()}.html`,{type:"text/html"})}
