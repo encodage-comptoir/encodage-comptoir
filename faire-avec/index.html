@@ -284,6 +284,7 @@ function prepare(){
     it.L = num(fv("Largeur (cm)", "Largeur")); it.H = num(fv("Hauteur (cm)", "Hauteur")); it.P = num(fv("Profondeur (cm)", "Profondeur"));
     it.forme = fv("Forme");
     it.arrivee = fv("Arrivée");
+    it.emplacement = fv("Emplacement");
     it.photos = fv("Photos").split(/\s+/).filter(Boolean);
     const famF = f.fonctions.filter(x => !x.mots.length || x.mots.some(m => hasWord(t, m))).map(x => x.nom);
     it.fonctions = [...new Set([...famF, ...parseFonctions(fv("Fonctions")).map(x => x.nom)])];
@@ -675,7 +676,7 @@ function openItem(id){
     <table>${row("Référence", esc(it.ref || "sans référence"))}${row("Famille", esc(it.famille.Famille))}${row("Prix", euro(it.prix))}${row("En stock", it.stock)}
     ${row("Dimensions", dims(it) && dims(it) + ex)}${row("Matière", it.matiere ? esc(it.matiere) + ex : (it.matiereFam ? esc(it.matiereFam) + " (selon la famille)" : ""))}
     ${row("Couleur", esc(it.couleur))}${row("État", it.etat && esc(it.etat) + ex)}${row("Intérieur / extérieur", esc(it.inout))}${row("Forme", esc(it.forme))}
-    ${row("Transport", esc(it.transport))}${row("Bricolage", esc(it.bricolage))}</table>
+    ${row("Emplacement au Comptoir", it.emplacement && (/^r$/i.test(it.emplacement) ? "Pas encore rangé (réception)" : esc(it.emplacement)))}${row("Transport", esc(it.transport))}${row("Bricolage", esc(it.bricolage))}</table>
     ${it.fonctions.length ? `<strong>Peut servir à</strong><div class="chips">${it.fonctions.map(f => `<a class="chip" href="#fonction/${encodeURIComponent(f)}">${esc(f)}</a>`).join("")}</div>` : ""}
     ${it.usages.length ? `<strong>Idées de réemploi détourné</strong>${ideas(it.usages)}` : ""}
     ${!it.detail ? `<p class="hint">Cette fiche n'est pas encore détaillée (dimensions, matière, état). Demandez au Comptoir.</p>` : ""}
