@@ -226,5 +226,605 @@
   "q": "ceramic floor tiles stack",
   "file": "tests/photos/CAR/ceramic_floor_tiles_stack-1.jpg",
   "title": "File:The Man of Kent, Margate.jpg"
+ },
+ {
+  "cat": "GRO",
+  "q": "pile of bricks",
+  "file": "tests/photos/GRO/pile_of_bricks-0.jpg",
+  "title": "File:Pile of light gray LEGO bricks at a LEGO store.jpg"
+ },
+ {
+  "cat": "GRO",
+  "q": "pile of bricks",
+  "file": "tests/photos/GRO/pile_of_bricks-1.jpg",
+  "title": "File:Mature pile of bricks - geograph.org.uk - 1037188.jpg"
+ },
+ {
+  "cat": "GRO",
+  "q": "pile of bricks",
+  "file": "tests/photos/GRO/pile_of_bricks-2.jpg",
+  "title": "File:Pile of bricks by the path - geograph.org.uk - 2956937.jpg"
+ },
+ {
+  "cat": "GRO",
+  "q": "pile of bricks",
+  "file": "tests/photos/GRO/pile_of_bricks-3.jpg",
+  "title": "File:Stapel bakstenen - Pile of bricks 2005 Fruggo.jpg"
+ },
+ {
+  "cat": "GRO",
+  "q": "concrete blocks",
+  "file": "tests/photos/GRO/concrete_blocks-0.jpg",
+  "title": "File:Concrete-block,japan.JPG"
+ },
+ {
+  "cat": "GRO",
+  "q": "concrete blocks",
+  "file": "tests/photos/GRO/concrete_blocks-1.jpg",
+  "title": "File:Concrete block symbol.png"
+ },
+ {
+  "cat": "GRO",
+  "q": "concrete blocks",
+  "file": "tests/photos/GRO/concrete_blocks-2.jpg",
+  "title": "File:Machu Picchu, Per\u00fa, 2015-07-30, DD 47.JPG"
+ },
+ {
+  "cat": "GRO",
+  "q": "concrete blocks",
+  "file": "tests/photos/GRO/concrete_blocks-3.jpg",
+  "title": "File:Concrete blocks in Potries.jpg"
+ },
+ {
+  "cat": "RA",
+  "q": "radiator heating",
+  "file": "tests/photos/RA/radiator_heating-0.jpg",
+  "title": "File:Heat radiator.jpg"
+ },
+ {
+  "cat": "RA",
+  "q": "radiator heating",
+  "file": "tests/photos/RA/radiator_heating-1.jpg",
+  "title": "File:Radiator op blauw-wit-gestreepte tegels.JPG"
+ },
+ {
+  "cat": "RA",
+  "q": "radiator heating",
+  "file": "tests/photos/RA/radiator_heating-2.jpg",
+  "title": "File:Radiator-250558 1280.jpg"
+ },
+ {
+  "cat": "RA",
+  "q": "radiator heating",
+  "file": "tests/photos/RA/radiator_heating-3.jpg",
+  "title": "File:Pipe radiator 1.jpg"
+ },
+ {
+  "cat": "RA",
+  "q": "cast iron radiator",
+  "file": "tests/photos/RA/cast_iron_radiator-0.jpg",
+  "title": "File:Cast Iron Pedestal Radiator No 164 Plate 16 Pascal Iron Works (1861).jpg"
+ },
+ {
+  "cat": "RA",
+  "q": "cast iron radiator",
+  "file": "tests/photos/RA/cast_iron_radiator-1.jpg",
+  "title": "File:Cast Iron Radiator Refurbishment.jpg"
+ },
+ {
+  "cat": "RA",
+  "q": "cast iron radiator",
+  "file": "tests/photos/RA/cast_iron_radiator-2.jpg",
+  "title": "File:Ornate Cast Iron Radiator - Brian Eno Speaker Flowers Sound Installation at Marlborough House.jpg"
+ },
+ {
+  "cat": "RA",
+  "q": "cast iron radiator",
+  "file": "tests/photos/RA/cast_iron_radiator-3.jpg",
+  "title": "File:Radiator - Arlington, MA.jpg"
+ },
+ {
+  "cat": "ELEC",
+  "q": "electrical socket outlet",
+  "file": "tests/photos/ELEC/electrical_socket_outlet-0.jpg",
+  "title": "File:Argentinian Electrical Mains.jpg"
+ },
+ {
+  "cat": "ELEC",
+  "q": "electrical socket outlet",
+  "file": "tests/photos/ELEC/electrical_socket_outlet-1.jpg",
+  "title": "File:Electrical Outlet.jpg"
+ },
+ {
+  "cat": "ELEC",
+  "q": "electrical socket outlet",
+  "file": "tests/photos/ELEC/electrical_socket_outlet-2.jpg",
+  "title": "File:US Pop-up Electrical Outlet 3.jpg"
+ },
+ {
+  "cat": "ELEC",
+  "q": "electrical socket outlet",
+  "file": "tests/photos/ELEC/electrical_socket_outlet-3.jpg",
+  "title": "File:US Pop-up Electrical Outlet 4.jpg"
+ },
+ {
+  "cat": "ELEC",
+  "q": "circuit breaker panel",
+  "file": "tests/photos/ELEC/circuit_breaker_panel-0.jpg",
+  "title": "File:Eaton circuit breaker panel open.JPG"
+ },
+ {
+  "cat": "ELEC",
+  "q": "circuit breaker panel",
+  "file": "tests/photos/ELEC/circuit_breaker_panel-1.jpg",
+  "title": "File:Stab-Lok circuit breaker panel interior .jpg"
+ },
+ {
+  "cat": "ELEC",
+  "q": "circuit breaker panel",
+  "file": "tests/photos/ELEC/circuit_breaker_panel-2.jpg",
+  "title": "File:Coloured Circuit Breaker Panel (1245142933).jpg"
+ },
+ {
+  "cat": "ELEC",
+  "q": "circuit breaker panel",
+  "file": "tests/photos/ELEC/circuit_breaker_panel-3.jpg",
+  "title": "File:Eaton circuit breaker panel closed.JPG"
+ },
+ {
+  "cat": "LUM",
+  "q": "ceiling lamp",
+  "file": "tests/photos/LUM/ceiling_lamp-0.jpg",
+  "title": "File:Industrial ceiling lamp 1.jpg"
+ },
+ {
+  "cat": "LUM",
+  "q": "ceiling lamp",
+  "file": "tests/photos/LUM/ceiling_lamp-1.jpg",
+  "title": "File:Industrial ceiling lamp 2.jpg"
+ },
+ {
+  "cat": "LUM",
+  "q": "ceiling lamp",
+  "file": "tests/photos/LUM/ceiling_lamp-2.jpg",
+  "title": "File:Baltimore Penn Station Ceiling and Lamp - Sarah Stierch.jpg"
+ },
+ {
+  "cat": "LUM",
+  "q": "ceiling lamp",
+  "file": "tests/photos/LUM/ceiling_lamp-3.jpg",
+  "title": "File:A Ceiling lamp.jpg"
+ },
+ {
+  "cat": "LUM",
+  "q": "wall light fixture",
+  "file": "tests/photos/LUM/wall_light_fixture-0.jpg",
+  "title": "File:2026-06-30 Wall Light Fixture by Robert Mitchell & Co. (George Stephen House).jpg"
+ },
+ {
+  "cat": "LUM",
+  "q": "wall light fixture",
+  "file": "tests/photos/LUM/wall_light_fixture-1.jpg",
+  "title": "File:2026-06-30 Wall light fixture by Robert Mitchell & Co. (George Stephen House) 02.jpg"
+ },
+ {
+  "cat": "LUM",
+  "q": "wall light fixture",
+  "file": "tests/photos/LUM/wall_light_fixture-2.jpg",
+  "title": "File:Wall mounted HID metal halide light fixture.jpg"
+ },
+ {
+  "cat": "LUM",
+  "q": "wall light fixture",
+  "file": "tests/photos/LUM/wall_light_fixture-3.jpg",
+  "title": "File:Wall light fixture at the museum extension, Swiss National Museum, Zurich, Switzerland julesvernex2.jpg"
+ },
+ {
+  "cat": "BOI",
+  "q": "stack of wooden planks",
+  "file": "tests/photos/BOI/stack_of_wooden_planks-0.jpg",
+  "title": "File:Weatherworn planks on top of wooden table.jpg"
+ },
+ {
+  "cat": "BOI",
+  "q": "stack of wooden planks",
+  "file": "tests/photos/BOI/stack_of_wooden_planks-1.jpg",
+  "title": "File:Stack of wooden planks - close-up 02.jpg"
+ },
+ {
+  "cat": "BOI",
+  "q": "stack of wooden planks",
+  "file": "tests/photos/BOI/stack_of_wooden_planks-2.jpg",
+  "title": "File:Stack of wooden planks - close-up 01.jpg"
+ },
+ {
+  "cat": "BOI",
+  "q": "stack of wooden planks",
+  "file": "tests/photos/BOI/stack_of_wooden_planks-3.jpg",
+  "title": "File:Stacked wooden planks in an indoor workshop closeup.jpg"
+ },
+ {
+  "cat": "BOI",
+  "q": "lumber timber",
+  "file": "tests/photos/BOI/lumber_timber-0.jpg",
+  "title": "File:005 Logging industry in New Zealand - tree trunk piles, timber logs stockpile.jpg"
+ },
+ {
+  "cat": "BOI",
+  "q": "lumber timber",
+  "file": "tests/photos/BOI/lumber_timber-1.jpg",
+  "title": "File:Pine plank fence 2019 G1.jpg"
+ },
+ {
+  "cat": "BOI",
+  "q": "lumber timber",
+  "file": "tests/photos/BOI/lumber_timber-2.jpg",
+  "title": "File:Red Gum Lumber wood.jpg"
+ },
+ {
+  "cat": "BOI",
+  "q": "lumber timber",
+  "file": "tests/photos/BOI/lumber_timber-3.jpg",
+  "title": "File:Millwood Drying Yard.jpg"
+ },
+ {
+  "cat": "PAR",
+  "q": "parquet flooring",
+  "file": "tests/photos/PAR/parquet_flooring-0.jpg",
+  "title": "File:2026.02.27 Old Parquet Flooring in Rajca Manor Museum Belarus.jpg"
+ },
+ {
+  "cat": "PAR",
+  "q": "parquet flooring",
+  "file": "tests/photos/PAR/parquet_flooring-1.jpg",
+  "title": "File:2026.02.27 Old Parquet Flooring Rajca Manor Museum Belarus.jpg"
+ },
+ {
+  "cat": "PAR",
+  "q": "parquet flooring",
+  "file": "tests/photos/PAR/parquet_flooring-2.jpg",
+  "title": "File:Distressed parquet floor.jpg"
+ },
+ {
+  "cat": "PAR",
+  "q": "parquet flooring",
+  "file": "tests/photos/PAR/parquet_flooring-3.jpg",
+  "title": "File:Artificially distressed parquet flooring, Denkmal-Messe 2024, Leipzig.jpg"
+ },
+ {
+  "cat": "PAR",
+  "q": "wood cladding",
+  "file": "tests/photos/PAR/wood_cladding-0.jpg",
+  "title": "File:Ivy clad trees - Clare Wood - geograph.org.uk - 2370088.jpg"
+ },
+ {
+  "cat": "PAR",
+  "q": "wood cladding",
+  "file": "tests/photos/PAR/wood_cladding-1.jpg",
+  "title": "File:Ivy-clad trees in Danby Wood - geograph.org.uk - 6332872.jpg"
+ },
+ {
+  "cat": "PAR",
+  "q": "wood cladding",
+  "file": "tests/photos/PAR/wood_cladding-2.jpg",
+  "title": "File:Bike and cladding Tr\u00e6 Sydhavnen Tr\u00e6 office block Southern Harbour Aarhus Denmark.jpg"
+ },
+ {
+  "cat": "PAR",
+  "q": "wood cladding",
+  "file": "tests/photos/PAR/wood_cladding-3.jpg",
+  "title": "File:Path past ivy-clad trees in Danby Wood - geograph.org.uk - 6332871.jpg"
+ },
+ {
+  "cat": "TOI",
+  "q": "roof tiles stack",
+  "file": "tests/photos/TOI/roof_tiles_stack-0.jpg",
+  "title": "File:Broken red and black roof tiles 2.jpg"
+ },
+ {
+  "cat": "TOI",
+  "q": "roof tiles stack",
+  "file": "tests/photos/TOI/roof_tiles_stack-1.jpg",
+  "title": "File:Stack of old roof tiles, Fairfield House - geograph.org.uk - 5409473.jpg"
+ },
+ {
+  "cat": "TOI",
+  "q": "roof tiles stack",
+  "file": "tests/photos/TOI/roof_tiles_stack-2.jpg",
+  "title": "File:Stacked roof tiles - geograph.org.uk - 4398306.jpg"
+ },
+ {
+  "cat": "TOI",
+  "q": "roof tiles stack",
+  "file": "tests/photos/TOI/roof_tiles_stack-3.jpg",
+  "title": "File:Stacked Roof Tiles.JPG"
+ },
+ {
+  "cat": "TOI",
+  "q": "slate roof tiles",
+  "file": "tests/photos/TOI/slate_roof_tiles-0.jpg",
+  "title": "File:East Slovak Museum in Ko\u0161ice - The Ko\u0161ice Centuries exhibit, Pri Miklu\u0161ovej v\u00e4znici 10 - Upper floor, 1st room - Slate roof tiles from the historical roof of Miklu\u0161's Prison.jpg"
+ },
+ {
+  "cat": "TOI",
+  "q": "slate roof tiles",
+  "file": "tests/photos/TOI/slate_roof_tiles-1.jpg",
+  "title": "File:Slate Roof Tiles (35781855071).jpg"
+ },
+ {
+  "cat": "TOI",
+  "q": "slate roof tiles",
+  "file": "tests/photos/TOI/slate_roof_tiles-2.jpg",
+  "title": "File:Stone roof tiles - geograph.org.uk - 1472812.jpg"
+ },
+ {
+  "cat": "TOI",
+  "q": "slate roof tiles",
+  "file": "tests/photos/TOI/slate_roof_tiles-3.jpg",
+  "title": "File:Slate roof Switzerland.jpg"
+ },
+ {
+  "cat": "ISO",
+  "q": "glass wool insulation",
+  "file": "tests/photos/ISO/glass_wool_insulation-0.jpg",
+  "title": "File:Glass wool insulation.jpg"
+ },
+ {
+  "cat": "ISO",
+  "q": "glass wool insulation",
+  "file": "tests/photos/ISO/glass_wool_insulation-1.jpg",
+  "title": "File:Knauf Insulation's glass mineral wool plant, Cwmbran - geograph.org.uk - 3668981.jpg"
+ },
+ {
+  "cat": "ISO",
+  "q": "glass wool insulation",
+  "file": "tests/photos/ISO/glass_wool_insulation-2.jpg",
+  "title": "File:Knauf Insulation, Cwmbran - geograph.org.uk - 1577012.jpg"
+ },
+ {
+  "cat": "ISO",
+  "q": "glass wool insulation",
+  "file": "tests/photos/ISO/glass_wool_insulation-3.jpg",
+  "title": "File:CSIRO ScienceImage 2175 Installing Insulation Batts.jpg"
+ },
+ {
+  "cat": "ISO",
+  "q": "polystyrene insulation board",
+  "file": "tests/photos/ISO/polystyrene_insulation_board-0.jpg",
+  "title": "File:EPS Insulation board - Specification - Sto Poly RT+.jpg"
+ },
+ {
+  "cat": "ISO",
+  "q": "polystyrene insulation board",
+  "file": "tests/photos/ISO/polystyrene_insulation_board-1.jpg",
+  "title": "File:EPS insulation board.jpg"
+ },
+ {
+  "cat": "ISO",
+  "q": "polystyrene insulation board",
+  "file": "tests/photos/ISO/polystyrene_insulation_board-2.jpg",
+  "title": "File:Sto - Insulation boards 5.jpg"
+ },
+ {
+  "cat": "ISO",
+  "q": "polystyrene insulation board",
+  "file": "tests/photos/ISO/polystyrene_insulation_board-3.jpg",
+  "title": "File:Sto - Insulation boards 4.jpg"
+ },
+ {
+  "cat": "Q",
+  "q": "door handle",
+  "file": "tests/photos/Q/door_handle-0.jpg",
+  "title": "File:Kopenhagen (DK), Christiansborg -- 2017 -- 1485.jpg"
+ },
+ {
+  "cat": "Q",
+  "q": "door handle",
+  "file": "tests/photos/Q/door_handle-1.jpg",
+  "title": "File:Door handle of a Mazda car 01.jpg"
+ },
+ {
+  "cat": "Q",
+  "q": "door handle",
+  "file": "tests/photos/Q/door_handle-2.jpg",
+  "title": "File:Door handle, Bareldonkkapel, Berlare, 2026.jpg"
+ },
+ {
+  "cat": "Q",
+  "q": "door handle",
+  "file": "tests/photos/Q/door_handle-3.jpg",
+  "title": "File:20230213 Door Handle Steige Mariahilf Passau.jpg"
+ },
+ {
+  "cat": "Q",
+  "q": "door hinges",
+  "file": "tests/photos/Q/door_hinges-0.jpg",
+  "title": "File:Hinge on blue dumpster.jpg"
+ },
+ {
+  "cat": "Q",
+  "q": "door hinges",
+  "file": "tests/photos/Q/door_hinges-1.jpg",
+  "title": "File:Wooden house (window shutters), Riga.jpg"
+ },
+ {
+  "cat": "Q",
+  "q": "door hinges",
+  "file": "tests/photos/Q/door_hinges-2.jpg",
+  "title": "File:Wooden gate with open double door leading to the garden of Isshinin Buddhist temple in the compounds of Chion-in Kyoto Japan.jpg"
+ },
+ {
+  "cat": "Q",
+  "q": "door hinges",
+  "file": "tests/photos/Q/door_hinges-3.jpg",
+  "title": "File:VW Golf VII - Back door hinge 01.jpg"
+ },
+ {
+  "cat": "OUT",
+  "q": "hand saw",
+  "file": "tests/photos/OUT/hand_saw-0.jpg",
+  "title": "File:Hand Saws.jpg"
+ },
+ {
+  "cat": "OUT",
+  "q": "hand saw",
+  "file": "tests/photos/OUT/hand_saw-1.jpg",
+  "title": "File:Pily rozne 01.jpg"
+ },
+ {
+  "cat": "OUT",
+  "q": "hand saw",
+  "file": "tests/photos/OUT/hand_saw-2.jpg",
+  "title": "File:Tenon saw \u2022 p786 \u2022 Scammell's Cyclopedia of Valuable Receipts (1897).tif"
+ },
+ {
+  "cat": "OUT",
+  "q": "hand saw",
+  "file": "tests/photos/OUT/hand_saw-3.jpg",
+  "title": "File:Turning saw \u2022 p784 \u2022 Scammell's Cyclopedia of Valuable Receipts (1897).tif"
+ },
+ {
+  "cat": "OUT",
+  "q": "power drill",
+  "file": "tests/photos/OUT/power_drill-0.jpg",
+  "title": "File:PalmercarpenterA.jpg"
+ },
+ {
+  "cat": "OUT",
+  "q": "power drill",
+  "file": "tests/photos/OUT/power_drill-1.jpg",
+  "title": "File:Drilling rig and a digger at a construction site in Tuntorp.jpg"
+ },
+ {
+  "cat": "OUT",
+  "q": "power drill",
+  "file": "tests/photos/OUT/power_drill-2.jpg",
+  "title": "File:Drilling rig at a construction site in Tuntorp.jpg"
+ },
+ {
+  "cat": "OUT",
+  "q": "power drill",
+  "file": "tests/photos/OUT/power_drill-3.jpg",
+  "title": "File:Drill inside.jpg"
+ },
+ {
+  "cat": "OUT",
+  "q": "ladder",
+  "file": "tests/photos/OUT/ladder-0.jpg",
+  "title": "File:Leiter in Baugrube Eppenreuther Stra\u00dfe 20241215 HOF8666 RAW-Export Ausschnitt bearbeitet.jpg"
+ },
+ {
+  "cat": "OUT",
+  "q": "ladder",
+  "file": "tests/photos/OUT/ladder-1.jpg",
+  "title": "File:Carls stoll Bergslagssafari.jpg"
+ },
+ {
+  "cat": "OUT",
+  "q": "ladder",
+  "file": "tests/photos/OUT/ladder-2.jpg",
+  "title": "File:Ladder in Gyumri.jpg"
+ },
+ {
+  "cat": "OUT",
+  "q": "ladder",
+  "file": "tests/photos/OUT/ladder-3.jpg",
+  "title": "File:Siemianowice G\u00f3rna 5 drabina 2025.jpg"
+ },
+ {
+  "cat": "ELECTRO",
+  "q": "refrigerator",
+  "file": "tests/photos/ELECTRO/refrigerator-0.jpg",
+  "title": "File:Open refrigerator with food at night.jpg"
+ },
+ {
+  "cat": "ELECTRO",
+  "q": "refrigerator",
+  "file": "tests/photos/ELECTRO/refrigerator-1.jpg",
+  "title": "File:LG refrigerator interior.jpg"
+ },
+ {
+  "cat": "ELECTRO",
+  "q": "refrigerator",
+  "file": "tests/photos/ELECTRO/refrigerator-2.jpg",
+  "title": "File:Panasonic HOME REFRIGERATOR NR-C320WP-N.jpg"
+ },
+ {
+  "cat": "ELECTRO",
+  "q": "refrigerator",
+  "file": "tests/photos/ELECTRO/refrigerator-3.jpg",
+  "title": "File:US Domestic Refrigerator - Frigidaire.jpg"
+ },
+ {
+  "cat": "ELECTRO",
+  "q": "kitchen oven",
+  "file": "tests/photos/ELECTRO/kitchen_oven-0.jpg",
+  "title": "File:Castle de Haar (1892-1913) 09 - Kitchen - Oven heated on coal.jpg"
+ },
+ {
+  "cat": "ELECTRO",
+  "q": "kitchen oven",
+  "file": "tests/photos/ELECTRO/kitchen_oven-1.jpg",
+  "title": "File:California Kitchen Oven Installation 2.jpg"
+ },
+ {
+  "cat": "ELECTRO",
+  "q": "kitchen oven",
+  "file": "tests/photos/ELECTRO/kitchen_oven-2.jpg",
+  "title": "File:Castle de Haar (1892-1913) 12 Kitchen - Oven heated on coal.jpg"
+ },
+ {
+  "cat": "ELECTRO",
+  "q": "kitchen oven",
+  "file": "tests/photos/ELECTRO/kitchen_oven-3.jpg",
+  "title": "File:Tandoor (Oven) and Maktu (Siddu Maker) in Himachal Pradesh.jpg"
+ },
+ {
+  "cat": "DIV",
+  "q": "wooden chair",
+  "file": "tests/photos/DIV/wooden_chair-0.jpg",
+  "title": "File:Santorin (GR), Fira -- 2017 -- 2598.jpg"
+ },
+ {
+  "cat": "DIV",
+  "q": "wooden chair",
+  "file": "tests/photos/DIV/wooden_chair-1.jpg",
+  "title": "File:Wooden table and chairs over the Mekong at sunrise in Don Det Si Phan Don Laos.jpg"
+ },
+ {
+  "cat": "DIV",
+  "q": "wooden chair",
+  "file": "tests/photos/DIV/wooden_chair-2.jpg",
+  "title": "File:Wooden table and chairs on a balcony over the Mekong at sunrise in Don Det Si Phan Don Laos.jpg"
+ },
+ {
+  "cat": "DIV",
+  "q": "wooden chair",
+  "file": "tests/photos/DIV/wooden_chair-3.jpg",
+  "title": "File:Heiligengrabe, Kloster Stift zum Heiligengrabe, Abtei, Appartement im Dormitorium -- 2017 -- 7254-60.jpg"
+ },
+ {
+  "cat": "DIV",
+  "q": "pallet",
+  "file": "tests/photos/DIV/pallet-0.jpg",
+  "title": "File:Wooden-pallets stacked 8.jpg"
+ },
+ {
+  "cat": "DIV",
+  "q": "pallet",
+  "file": "tests/photos/DIV/pallet-1.jpg",
+  "title": "File:Wooden pallet with glove.jpg"
+ },
+ {
+  "cat": "DIV",
+  "q": "pallet",
+  "file": "tests/photos/DIV/pallet-2.jpg",
+  "title": "File:Bright blue plastic pallet overturned on the ground.jpg"
+ },
+ {
+  "cat": "DIV",
+  "q": "pallet",
+  "file": "tests/photos/DIV/pallet-3.jpg",
+  "title": "File:Donjon du Pallet - plaque comm\u00e9morative des 900 ans de la naissance d'Ab\u00e9lard au Pallet.jpg"
  }
 ]
