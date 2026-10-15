@@ -208,6 +208,8 @@ function prepare(){
     if(!nom || stock <= 0 || /^vendu\b/i.test(nom)) return;
     const ref = r["Référence"].trim();
     const fiche = ref ? fichesBy[refKey(ref)] : null;
+    // Noms de colonnes de l'export « caractéristiques » de l'app d'encodage, avec les anciens noms en secours
+    const fv = (...names) => { if(!fiche) return ""; for(const n of names) if(fiche[n]) return fiche[n]; return ""; };
     const it = { id: i, ref, nom, stock, prix: num(r["PV particulier TVAc"]) || 0, fiche };
     it.famille = (fiche && fiche.Famille && D.famBy[fiche.Famille]) || guessFamily(it);
     const f = it.famille;
@@ -215,12 +217,13 @@ function prepare(){
     it.matiereFam = f["Matière"] || "";
     it.couleur = fiche ? fiche.Couleur : "";
     it.etat = fiche ? fiche["État"] : "";
-    it.inout = (fiche && fiche["Intérieur/extérieur"]) || f["Intérieur/extérieur"] || "";
-    it.L = fiche ? num(fiche.Largeur) : null; it.H = fiche ? num(fiche.Hauteur) : null; it.P = fiche ? num(fiche.Profondeur) : null;
+    it.inout = fv("Intérieur / extérieur", "Intérieur/extérieur") || f["Intérieur/extérieur"] || "";
+    it.L = num(fv("Largeur (cm)", "Largeur")); it.H = num(fv("Hauteur (cm)", "Hauteur")); it.P = num(fv("Profondeur (cm)", "Profondeur"));
+    it.forme = fv("Forme");
     it.fonctions = [...new Set([...f.fonctions, ...list(fiche && fiche.Fonctions)])];
     it.usages = [...new Set([...list(fiche && fiche["Usages détournés"]), ...f.usages])];
     it.transport = fiche ? fiche.Transport : ""; it.bricolage = fiche ? fiche.Bricolage : "";
-    it.exemple = fiche && norm(fiche["Mesuré"]) !== "oui";
+    it.exemple = !!fiche && norm(fiche["Mesuré"]) === "non";
     it.detail = !!(fiche && (it.L || it.matiere));
     it.search = norm([ref, nom, f.Famille, it.matiere, it.couleur].join(" "));
     D.items.push(it);
@@ -475,7 +478,7 @@ function openItem(id){
   dlg.innerHTML = `<div class="dlg">${tile(it, true)}<h2>${esc(it.nom)}</h2>
     <table>${row("Référence", esc(it.ref || "sans référence"))}${row("Famille", esc(it.famille.Famille))}${row("Prix", euro(it.prix))}${row("En stock", it.stock)}
     ${row("Dimensions", dims(it) && dims(it) + ex)}${row("Matière", it.matiere ? esc(it.matiere) + ex : (it.matiereFam ? esc(it.matiereFam) + " (selon la famille)" : ""))}
-    ${row("Couleur", esc(it.couleur))}${row("État", it.etat && esc(it.etat) + ex)}${row("Intérieur / extérieur", esc(it.inout))}
+    ${row("Couleur", esc(it.couleur))}${row("État", it.etat && esc(it.etat) + ex)}${row("Intérieur / extérieur", esc(it.inout))}${row("Forme", esc(it.forme))}
     ${row("Transport", esc(it.transport))}${row("Bricolage", esc(it.bricolage))}</table>
     ${it.fonctions.length ? `<strong>Peut servir à</strong><div class="chips">${it.fonctions.map(f => `<a class="chip" href="#fonction/${encodeURIComponent(f)}">${esc(f)}</a>`).join("")}</div>` : ""}
     ${it.usages.length ? `<strong>Idées de réemploi détourné</strong><ul>${it.usages.map(u => `<li>${esc(u)}</li>`).join("")}</ul>` : ""}
