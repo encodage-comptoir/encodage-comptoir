@@ -36,15 +36,17 @@ jobs:
           UA = {"User-Agent": "encodage-comptoir-test/1.0 (github.com/encodage-comptoir)"}
           def get(url):
               return urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=30).read()
-          meta = []
+          meta = json.load(open("tests/photos/index.json")) if os.path.exists("tests/photos/index.json") else []
+          have = {m["cat"] for m in meta}
           for cat, qs in Q.items():
+              if cat in have: continue
               os.makedirs(f"tests/photos/{cat}", exist_ok=True)
               for q in qs:
                   api = "https://commons.wikimedia.org/w/api.php?" + urllib.parse.urlencode({
                       "action": "query", "format": "json", "generator": "search", "gsrsearch": f"filetype:bitmap {q}",
                       "gsrnamespace": 6, "gsrlimit": 4, "prop": "imageinfo", "iiprop": "url", "iiurlwidth": 480})
                   try:
-                      pages = json.loads(get(api)).get("query", {}).get("pages", {})
+                      time.sleep(3); pages = json.loads(get(api)).get("query", {}).get("pages", {})
                   except Exception as e:
                       print("ERR", q, e); continue
                   for i, p in enumerate(sorted(pages.values(), key=lambda p: p.get("index", 0))[:4]):
@@ -54,7 +56,7 @@ jobs:
                           open(name, "wb").write(get(u)); meta.append({"cat": cat, "q": q, "file": name, "title": p["title"]})
                       except Exception as e:
                           print("ERR", u, e)
-                      time.sleep(0.3)
+                      time.sleep(2)
           json.dump(meta, open("tests/photos/index.json", "w"), indent=1)
           print(len(meta), "photos")
           PY
