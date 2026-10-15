@@ -1,0 +1,35 @@
+name: Télécharger le modèle de reconnaissance photo
+on:
+  push:
+    branches: [modeles]
+    paths: [.github/workflows/modeles.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  telecharger:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Télécharger MobileCLIP S0 (Xenova/mobileclip_s0)
+        run: |
+          set -e
+          R=Xenova/mobileclip_s0
+          mkdir -p modeles/mobileclip_s0/onnx
+          curl -sfL https://huggingface.co/api/models/$R/tree/main | tee modeles/mobileclip_s0/liste.json
+          curl -sfL https://huggingface.co/api/models/$R/tree/main/onnx | tee modeles/mobileclip_s0/liste-onnx.json
+          for f in $(python3 -c "import json;print(' '.join(x['path'] for x in json.load(open('modeles/mobileclip_s0/liste.json')) if x['type']=='file' and x['path'].endswith(('.json','.txt','.md'))))"); do
+            curl -sfL -o modeles/mobileclip_s0/$f https://huggingface.co/$R/resolve/main/$f
+          done
+          for f in vision_model_quantized.onnx vision_model.onnx text_model_quantized.onnx; do
+            curl -sfL -o modeles/mobileclip_s0/onnx/$f https://huggingface.co/$R/resolve/main/onnx/$f || echo "absent: $f"
+          done
+          ls -laR modeles
+      - name: Enregistrer
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          find modeles -size +95M -print -delete
+          git add modeles
+          git commit -m "Modèle MobileCLIP S0 téléchargé depuis Hugging Face"
+          git push
