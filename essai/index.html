@@ -124,7 +124,7 @@ pre.txt{white-space:pre-wrap;font-family:var(--body);font-size:16px;background:v
 <div class="toast" id="toast" hidden></div>
 <script>
 "use strict";
-const VERSION="6 (photos guidées et caractéristiques)";
+const VERSION="6.1 (essai : compléter les annonces)";
 // ---------- Données de référence ----------
 // Préfixes et catégories : les noms doivent être identiques aux catégories du back-office Impulsion (vérifiés le 14/10/2026).
 const CATS=[
@@ -214,6 +214,13 @@ const HEAD_FICHES=["Référence","Nom","Catégorie","Largeur (cm)","Profondeur (
 function fichesCsv(list){const q=v=>{v=String(v??"");return /[;"\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
  return "﻿"+[HEAD_FICHES].concat(list.map(f=>[f.code,f.nom,siteCat(f.cat),f.L,f.l,f.h,f.matiere,f.couleur,f.lieu,f.etat,formeNom(f.cat,f.nom),transport(f),f.qte,f.unite,
   new Date(f.cree).toISOString().slice(0,10),f.photos.map((_,i)=>photoName(f,i)).join(" ")])).map(r=>r.map(q).join(";")).join("\r\n")+"\r\n"}
+// Tableau des annonces existantes vérifiées au comptoir (rien n'est importé automatiquement).
+const HEAD_MAJ=["Référence","Statut","Titre actuel","Titre proposé","Catégorie","Stock compté","Description proposée","Photos"];
+// Titre pour le site : le titre nettoyé (ou le nom), avec les mesures si le titre n'en a pas.
+function titrePropose(f){const d=[f.L,f.l,f.h].filter(Boolean),t=f.titreBase||f.nom;return t+(d.length&&!/\d/.test(t)?" – "+d.join(" × ")+" cm":"")}
+function majCsv(list){const q=v=>{v=String(v??"");return /[;"\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+ return [HEAD_MAJ].concat(list.map(f=>f.statut==="introuvable"?[f.code,"Introuvable ou vendu",f.titreActuel,"","","0","",""]:
+  [f.code,f.codeNouveau?"Nouvelle référence (écrite sur l'objet)":"Vérifiée",f.titreActuel,titrePropose(f),siteCat(f.cat),f.qte,descr(f),f.photos.map((_,i)=>photoName(f,i)).join(" ")])).map(r=>r.map(q).join(";")).join("\r\n")+"\r\n"}
 const CP={0x20AC:0x80,0x201A:0x82,0x192:0x83,0x201E:0x84,0x2026:0x85,0x2020:0x86,0x2021:0x87,0x2C6:0x88,0x2030:0x89,0x160:0x8A,0x2039:0x8B,0x152:0x8C,0x17D:0x8E,
  0x2018:0x91,0x2019:0x92,0x201C:0x93,0x201D:0x94,0x2022:0x95,0x2013:0x96,0x2014:0x97,0x2DC:0x98,0x2122:0x99,0x161:0x9A,0x203A:0x9B,0x153:0x9C,0x17E:0x9E,0x178:0x9F};
 function cp1252(s){const out=new Uint8Array(s.length);let n=0;for(const ch of s){const c=ch.codePointAt(0);
@@ -223,9 +230,11 @@ function dataUrlToBlob(u){const [h,b]=u.split(",");const bin=atob(b),a=new Uint8
 // qui contient le fichier d'import et les photos, avec des boutons qui les téléchargent sous leur vrai nom.
 function b64(bytes){let s="";for(let i=0;i<bytes.length;i+=0x8000)s+=String.fromCharCode.apply(null,bytes.subarray(i,i+0x8000));return btoa(s)}
 function reportHtml(list){
- const csvName=`import-${today()}.csv`, csv64=b64(cp1252(csvText(list)));
+ const neufs=list.filter(f=>f.type!=="maj"), maj=list.filter(f=>f.type==="maj"), list0=list;list=neufs.concat(maj.filter(f=>f.statut!=="introuvable"));
+ const csvName=`import-${today()}.csv`, csv64=b64(cp1252(csvText(neufs)));
+ const mName=`mises-a-jour-${today()}.csv`, m64=b64(cp1252(majCsv(maj)));
  const fName=`caracteristiques-${today()}.csv`, f64=b64(new TextEncoder().encode(fichesCsv(list)));
- const cards=list.map(f=>`<section><h2><span class="ref">${esc(f.code)}</span> ${esc(f.nom)}</h2>
+ const cards=list0.map(f=>`<section><h2><span class="ref">${esc(f.code)}</span> ${esc(f.type==="maj"?titrePropose(f):f.nom)}${f.type==="maj"?` <small>(${f.statut==="introuvable"?"introuvable au comptoir":"annonce existante"})</small>`:""}</h2>
   <p>${esc(siteCat(f.cat))} · stock ${esc(f.qte)} ${esc(f.unite)}${f.prix?" · "+esc(f.prix)+" €":" · prix à fixer"}</p><p class="d">${esc(descr(f))}</p>
   <div class="ph">${f.photos.map((p,i)=>`<figure><img src="${p}" alt=""><figcaption>${photoName(f,i)}</figcaption></figure>`).join("")}</div>
   ${f.photos.length?`<button data-ref="${esc(f.code)}">Télécharger les ${f.photos.length} photo${f.photos.length>1?"s":""} de ${esc(f.code)}</button>`:""}</section>`).join("");
@@ -239,10 +248,12 @@ section,.top{background:#fff;border:1px solid #d9d7d0;border-radius:12px;padding
 button{font:inherit;font-weight:700;background:#f2b705;border:0;border-radius:10px;padding:12px 18px;margin-top:10px;cursor:pointer}
 ol{padding-left:20px}</style></head><body>
 <h1>Envoi du comptoir – ${new Date().toLocaleDateString("fr-BE")}</h1>
-<div class="top"><ol><li>Téléchargez le fichier d'import, puis importez-le dans Impulsion (Gestion des produits › Importation).</li>
+<div class="top">${neufs.length?`<p><b>Nouveaux produits (${neufs.length})</b></p><ol><li>Téléchargez le fichier d'import, puis importez-le dans Impulsion (Gestion des produits › Importation).</li>
 <li>Pour chaque produit, téléchargez ses photos, puis dans Impulsion : crayon › onglet Images › + Ajouter.</li>
 <li>Vérifiez le prix, puis mettez en ligne.</li></ol>
-<button id="csv">1. Télécharger le fichier d'import (${list.length} produit${list.length>1?"s":""})</button><br>
+<button id="csv">1. Télécharger le fichier d'import (${neufs.length} produit${neufs.length>1?"s":""})</button><br>`:""}
+${maj.length?`<p><b>Annonces existantes vérifiées (${maj.length})</b> : le tableau des mises à jour donne, par référence, le titre et la description proposés, le stock compté et les articles introuvables. Rien n'est changé dans Impulsion : à reporter à la main quand vous le décidez.</p>
+<button id="maj">Télécharger le tableau des mises à jour (${maj.length})</button><br>`:""}
 <button id="all">2. Télécharger toutes les photos (${list.reduce((n,f)=>n+f.photos.length,0)})</button><br>
 <button id="fiches" style="background:#fff;border:2px solid #d9d7d0">3. Caractéristiques pour l'outil « Faire avec » (facultatif)</button>
 <p class="d">Si le navigateur demande d'autoriser plusieurs téléchargements, répondez Autoriser.</p></div>
@@ -250,7 +261,8 @@ ${cards}
 <script>
 const P=${photos};
 function dl(name,url){const a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove()}
-document.getElementById("csv").onclick=()=>dl(${JSON.stringify(csvName)},"data:text/csv;base64,${csv64}");
+if(document.getElementById("csv"))document.getElementById("csv").onclick=()=>dl(${JSON.stringify(csvName)},"data:text/csv;base64,${csv64}");
+if(document.getElementById("maj"))document.getElementById("maj").onclick=()=>dl(${JSON.stringify(mName)},"data:text/csv;base64,${m64}");
 document.getElementById("fiches").onclick=()=>dl(${JSON.stringify(fName)},"data:text/csv;charset=utf-8;base64,${f64}");
 document.getElementById("all").onclick=()=>Object.values(P).flat().forEach(([n,u],i)=>setTimeout(()=>dl(n,u),i*400));
 document.querySelectorAll("[data-ref]").forEach(b=>b.onclick=()=>P[b.dataset.ref].forEach(([n,u],i)=>setTimeout(()=>dl(n,u),i*400)));
@@ -264,17 +276,19 @@ function render(){
  if(screen==="home"){
   const todo=fiches.filter(f=>!f.envoye), done=fiches.filter(f=>f.envoye);
   const row=f=>`<button class="item" data-open="${f.id}"><div class="thumb">${f.photos[0]?`<img src="${f.photos[0]}" alt="">`:esc(f.cat)}</div>
-   <div><div class="n">${esc(f.nom)}</div>
+   <div><div class="n">${esc(f.type==="maj"?(f.statut==="introuvable"?f.titreActuel:titrePropose(f)):f.nom)}</div>
    <div class="d"><span class="code">${esc(f.code)}</span> ${esc(f.qte)} ${esc(f.unite)}</div>
-   <span class="pill ${f.envoye?"ok":""}">${f.envoye?"envoyé le "+f.envoye:"à envoyer"}</span></div></button>`;
+   <span class="pill ${f.envoye?"ok":""}">${f.envoye?"envoyé le "+f.envoye:"à envoyer"}</span>${f.type==="maj"?` <span class="pill">${f.statut==="introuvable"?"introuvable":"annonce complétée"}</span>`:""}</div></button>`;
   a.innerHTML=`<div class="top"><span class="brand">Comptoir des Matériaux</span><button class="chip" id="set">Réglages</button></div>
    <h1>Matériaux reçus</h1><p class="hint">Un matériau arrive au comptoir ? Appuyez sur le bouton jaune et laissez-vous guider.</p>
+   <button class="big ghost" id="ann" style="margin-top:4px">Compléter les annonces existantes</button>
    <p class="sec">À envoyer au bureau (${todo.length})</p><div class="list">${todo.map(row).join("")||'<p class="hint">Rien en attente.</p>'}</div>
    ${done.length?`<p class="sec">Déjà envoyés (${done.length})</p><div class="list">${done.map(row).join("")}</div>`:""}
    <p class="hint" style="text-align:center;font-size:14px;margin-top:28px">Version ${VERSION}</p>`;
   bar((todo.length?`<button class="big ghost" id="exp" style="flex:0 0 42%">Envoyer (${todo.length})</button>`:"")+`<button class="big" id="new">+ Nouveau</button>`);
   if($("#exp"))$("#exp").onclick=()=>{screen="export";render()};
   $("#set").onclick=()=>{screen="reglages";render()};
+  $("#ann").onclick=()=>{screen="annonces";render()};
   $("#new").onclick=()=>{cur={id:Date.now()+"-"+Math.random().toString(36).slice(2,7),cree:Date.now(),code:"",cat:"",nom:"",etat:"",L:"",l:"",h:"",qte:1,unite:"pièce",prix:"",note:"",photos:[],envoye:"",matiere:"",couleur:"",lieu:"",propose:{},qual:[]};step=0;screen="wiz";render()};
   a.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{openId=b.dataset.open;screen="detail";render()});
  }
@@ -301,7 +315,7 @@ function render(){
   a.innerHTML=`<div class="top"><span class="brand">Envoi au bureau</span></div>
    <h1>${todo.length} matériau${todo.length>1?"x":""}, ${nPh} photo${nPh>1?"s":""}</h1>
    <p class="hint">Appuyez sur le bouton jaune, puis choisissez <b>Drive</b> et le dossier <b>À encoder</b>.</p>
-   <div class="card"><pre class="txt" style="overflow-x:auto;white-space:pre">${esc(csvText(todo))}</pre></div>
+   <div class="card"><pre class="txt">${todo.map(f=>f.code+"  "+(f.type==="maj"?(f.statut==="introuvable"?"introuvable":"annonce complétée"):"nouveau : "+f.nom)).map(esc).join("\n")}</pre></div>
    <p class="hint">Un seul fichier part au bureau. Sur l'ordinateur, la gestionnaire l'ouvre : il contient le fichier d'import pour Impulsion et les photos de chaque produit, nommées avec leur référence.</p>
    <button class="big ghost" id="sent">C'est bien envoyé</button>`;
   bar(`<button class="big ghost back" id="bk">Retour</button><button class="big" id="go">${canShare?"Envoyer":"Télécharger"}</button>`);
@@ -313,6 +327,8 @@ function render(){
    const l={...LAST};todo.forEach(f=>{const m=+f.code.slice(f.cat.length);if(m>(l[f.cat]||0))l[f.cat]=m});LAST=l;await putSet("last",l);
    toast("Marqué comme envoyé");screen="home";render()};
  }
+ else if(screen==="annonces")ecranAnnonces(a);
+ else if(screen==="annonce")ecranAnnonce(a);
  else if(screen==="reglages"){
   a.innerHTML=`<div class="top"><span class="brand">Réglages</span></div><h1>Derniers numéros utilisés</h1>
    <p class="hint">Pour la gestionnaire. L'app continue la numérotation à partir de ces numéros. À corriger si une référence a été créée directement sur le site.</p>
@@ -390,14 +406,67 @@ async function analyser(f){
 function proposerNom(){if(cur.nom||!cur.reco||!cur.cat)return;let best="",p=0;
  for(const k in cur.reco.noms){const [c,v]=k.split("|");if(c===cur.cat&&cur.reco.noms[k]>p){p=cur.reco.noms[k];best=v}}
  if(best){cur.nom=best;cur.propose.nom=1}}
-function proposerDetails(){const r=cur.reco,P=cur.propose;
- if(!cur.matiere||P.matiere){const c=MAT_NOM[cur.nom];let v="";
+function proposerDetails(){const r=cur.reco,P=cur.propose;if(cur.type==="maj"&&cur.matiere&&cur.couleur&&cur.lieu)return;
+ if(!cur.matiere||(P.matiere&&cur.type!=="maj")){const c=MAT_NOM[cur.nom];let v="";
   if(c&&c.length===1)v=c[0];else if(c)v=r?c.slice().sort((a,b)=>(r.mat[b]||0)-(r.mat[a]||0))[0]:c[0];
   else if(r){const [m,p]=Object.entries(r.mat).sort((a,b)=>b[1]-a[1])[0];if(p>=.6)v=m}
   cur.matiere=v;P.matiere=v?1:0}
- if(r&&(!cur.couleur||P.couleur)){const [c,p]=Object.entries(r.coul).sort((a,b)=>b[1]-a[1])[0];cur.couleur=p>=.45?c:"";P.couleur=cur.couleur?1:0}
- if(!cur.lieu||P.lieu){cur.lieu=lieuNom(cur.cat,cur.nom);P.lieu=cur.lieu?1:0}}
-const ia=k=>cur.propose[k]?'<span class="ia">proposé</span>':"";
+ if(r&&(!cur.couleur||(P.couleur&&cur.type!=="maj"))){const [c,p]=Object.entries(r.coul).sort((a,b)=>b[1]-a[1])[0];cur.couleur=p>=.45?c:"";P.couleur=cur.couleur?1:0}
+ if(!cur.lieu||(P.lieu&&cur.type!=="maj")){cur.lieu=lieuNom(cur.cat,cur.nom);P.lieu=cur.lieu?1:0}}
+const ia=k=>cur.propose[k]?`<span class="ia">${cur.type==="maj"?"à vérifier":"proposé"}</span>`:"";
+
+// ---------- Compléter les annonces existantes ----------
+// annonces.json : préparé à distance à partir de l'export Impulsion et du catalogue public (lecture seule).
+// Pour chaque champ : « sûr » (écrit dans l'annonce) ou « à vérifier » (déduit du titre ou de la photo).
+let ANN=null, annCat="", annQ="", annMax=40, annId=null;
+async function chargerAnnonces(){if(ANN)return;try{ANN=await (await fetch("annonces.json")).json()}catch(e){ANN=[]}}
+const annFiche=a=>fiches.find(f=>f.annonce===a.id);
+const IMG_SITE="https://www.la-pile.be";
+function ecranAnnonces(a){
+ if(!ANN){a.innerHTML='<p class="hint">Chargement des annonces…</p>';bar('');chargerAnnonces().then(render);return}
+ const cats=[...new Set(ANN.map(x=>x.cat))].sort((x,y)=>label(x).localeCompare(label(y)));
+ const q=annQ.trim().toLowerCase().replace(/\s+/g,"");
+ const list=ANN.filter(x=>(!annCat||x.cat===annCat)&&(!q||(x.code+x.titre).toLowerCase().replace(/\s+/g,"").includes(q)));
+ const reste=list.filter(x=>!annFiche(x)),faites=list.length-reste.length;
+ const row=x=>{const f=annFiche(x);return `<button class="item" data-ann="${esc(x.id)}"><div class="thumb">${x.photos[0]?`<img src="${IMG_SITE+x.photos[0]}" alt="" loading="lazy">`:esc(x.cat)}</div>
+  <div><div class="n">${esc(x.titre||"(sans titre)")}</div><div class="d"><span class="code">${esc(x.code||"sans réf.")}</span> stock ${esc(x.stock||"?")}</div>
+  ${f?`<span class="pill ok">${f.statut==="introuvable"?"introuvable":"fait"}</span>`:x.todo.map(t=>`<span class="pill">${esc(t)}</span>`).join(" ")}</div></button>`};
+ a.innerHTML=`<div class="top"><span class="brand">Annonces existantes</span><button class="chip" id="home">Accueil</button></div>
+  <h1>Compléter les annonces</h1><p class="hint">Choisissez une catégorie, faites le tour du rayon, et touchez l'article que vous avez devant vous.</p>
+  <input class="t" id="annQ" placeholder="Chercher une référence ou un mot" value="${esc(annQ)}">
+  <div class="chips"><button class="chip ${annCat?"":"sel"}" data-acat="">Toutes</button>${cats.map(c=>`<button class="chip ${annCat===c?"sel":""}" data-acat="${c}">${esc(label(c))}</button>`).join("")}</div>
+  <p class="sec">À faire (${reste.length}) · faites (${faites})</p>
+  <div class="list">${reste.slice(0,annMax).map(row).join("")||'<p class="hint">Tout est fait ici.</p>'}</div>
+  ${reste.length>annMax?`<button class="big ghost" id="plus" style="margin-top:10px">Afficher plus</button>`:""}`;
+ bar(`<button class="big" id="bk">Retour à l'accueil</button>`);
+ $("#bk").onclick=$("#home").onclick=()=>{screen="home";render()};
+ $("#annQ").oninput=e=>{annQ=e.target.value;annMax=40;const pos=e.target.selectionStart;render();const i=$("#annQ");i.focus();i.setSelectionRange(pos,pos)};
+ a.querySelectorAll("[data-acat]").forEach(b=>b.onclick=()=>{annCat=b.dataset.acat;annMax=40;render()});
+ if($("#plus"))$("#plus").onclick=()=>{annMax+=40;render();};
+ a.querySelectorAll("[data-ann]").forEach(b=>b.onclick=()=>{annId=b.dataset.ann;screen="annonce";render()});
+}
+function ecranAnnonce(a){
+ const x=ANN.find(y=>y.id===annId),champ=(k,t,v)=>v?`<dt>${t}</dt><dd>${esc(v)} ${x.sur.includes(k)?'<span class="ia" style="background:var(--ok-bg)">sûr</span>':'<span class="ia" style="background:var(--warn-bg);color:var(--ink)">à vérifier</span>'}</dd>`:"";
+ const dims=[x.L,x.l,x.h].some(Boolean)?[x.L||"?",x.l||"?",x.h||"?"].join(" × ")+" cm":"";
+ a.innerHTML=`<div class="top"><span class="brand">Annonce existante</span><span class="code">${esc(x.code||"sans réf.")}</span></div>
+  <h1>${esc(x.titre||"(sans titre)")}</h1>
+  ${x.photos.length?`<div class="photos" style="margin-top:14px">${x.photos.slice(0,3).map(p=>`<div class="ph"><img src="${IMG_SITE+p}" alt=""></div>`).join("")}</div>`:'<p class="hint">Pas de photo sur le site.</p>'}
+  ${x.desc?`<p class="hint">${esc(x.desc)}</p>`:""}
+  <div class="card recap"><dl><dt>Stock annoncé</dt><dd>${esc(x.stock||"?")}</dd>${champ("cat","Catégorie",label(x.cat))}${champ("nom","Nom",x.nom)}${champ("dims","Mesures",dims)}
+  ${champ("matiere","Matière",x.matiere)}${champ("couleur","Couleur",x.couleur)}${champ("lieu","Usage",x.lieu)}${champ("etat","État",x.etat)}</dl></div>
+  ${x.note?`<div class="warn">${esc(x.note)}</div>`:""}
+  <p class="hint" style="margin-top:14px">L'article est devant vous ? Vérifiez que la référence <b>${esc(x.code||"(à créer)")}</b> est écrite dessus, puis complétez.</p>
+  <button class="big ghost" id="introuvable">Introuvable ou déjà vendu</button>`;
+ bar(`<button class="big ghost back" id="bk">Retour</button><button class="big" id="go">Je l'ai trouvé</button>`);
+ $("#bk").onclick=()=>{screen="annonces";render()};
+ const base=()=>({id:Date.now()+"-"+Math.random().toString(36).slice(2,7),cree:Date.now(),type:"maj",annonce:x.id,titreActuel:x.titre,envoye:"",photos:[],qual:[],propose:{}});
+ $("#introuvable").onclick=async()=>{const b=$("#introuvable");if(!b.dataset.c){b.dataset.c=1;b.textContent="Appuyez encore pour confirmer";return}
+  await dbPut({...base(),statut:"introuvable",code:x.code||"",cat:x.cat,nom:x.nom,qte:0,unite:x.unite||"pièce"});await load();toast("Noté comme introuvable");screen="annonces";render()};
+ $("#go").onclick=()=>{const P={};["cat","nom","matiere","couleur","lieu","etat"].forEach(k=>{if(x[k]&&!x.sur.includes(k))P[k]=1});
+  cur={...base(),statut:"trouvee",titreBase:x.titre,code:x.code||"",codeNouveau:!x.code,cat:x.cat,nom:x.nom||"",etat:x.etat||"",L:x.L||"",l:x.l||"",h:x.h||"",qte:parseInt(x.stock)>0?parseInt(x.stock):1,
+   unite:x.unite||"pièce",prix:"",note:"",matiere:x.matiere||"",couleur:x.couleur||"",lieu:x.lieu||"",propose:P};
+  step=0;screen="wiz";render()};
+}
 
 // ---------- Assistant ----------
 const STEPS=["Photos","Catégorie","Quoi ?","Détails","Mesures","Vérifier"];
@@ -451,7 +520,7 @@ function wiz(a){
    <div class="qty"><button id="minus" aria-label="Moins">−</button><input class="t" id="qte" inputmode="numeric" value="${esc(cur.qte)}"><button id="plus" aria-label="Plus">+</button></div>
    <div class="chips">${UNITS.map(u=>`<button class="chip ${cur.unite===u?"sel":""}" data-unit="${u}">${u}</button>`).join("")}</div>`;
  } else {
-  if(!cur.code||!cur.code.startsWith(cur.cat)||!/^\d+$/.test(cur.code.slice(cur.cat.length)))cur.code=nextCode(cur.cat);
+  if(!(cur.type==="maj"&&cur.code)&&(!cur.code||!cur.code.startsWith(cur.cat)||!/^\d+$/.test(cur.code.slice(cur.cat.length))))cur.code=nextCode(cur.cat);
   const nPh=cur.slots.filter(Boolean).length;
   body=`<h2>Tout est juste ?</h2><p class="hint">Touchez « Retour » pour corriger.</p>
    <div class="card recap"><dl><dt>Référence</dt><dd><span class="code">${esc(cur.code)}</span></dd><dt>Nom</dt><dd>${esc(cur.nom)}</dd>
@@ -459,16 +528,17 @@ function wiz(a){
    <dt>Matière</dt><dd>${esc(cur.matiere||"-")}</dd><dt>Couleur</dt><dd>${esc(cur.couleur||"-")}</dd><dt>Usage</dt><dd>${esc(cur.lieu||"-")}</dd>
    <dt>Mesures</dt><dd>${dimTxt(cur)||"-"}</dd>${transport(cur)?`<dt>Transport</dt><dd>${transport(cur)}</dd>`:""}
    <dt>Stock</dt><dd>${esc(cur.qte)} ${esc(cur.unite)}</dd><dt>Photos</dt><dd>${nPh}</dd></dl></div>
-   <p class="hint" style="margin-top:12px">Écrivez <b>${esc(cur.code)}</b> sur le matériau (craie, scotch ou étiquette).</p>
+   ${cur.type==="maj"?`<p class="hint" style="margin-top:12px">Titre proposé pour le site : <b>${esc(titrePropose(cur))}</b></p>`:""}
+   <p class="hint" style="margin-top:12px">${cur.type==="maj"&&!cur.codeNouveau?"Vérifiez que":"Écrivez"} <b>${esc(cur.code)}</b> ${cur.type==="maj"&&!cur.codeNouveau?"est bien écrit":""} sur le matériau (craie, scotch ou étiquette).</p>
    <label class="f" for="note">Remarque (facultatif)</label><input class="t" id="note" value="${esc(cur.note)}" placeholder="marque, défaut…">
    <label class="f" for="prix">Prix en € (facultatif, la gestionnaire peut le mettre après)</label><input class="t" id="prix" inputmode="decimal" value="${esc(cur.prix)}">`;
  }
  a.innerHTML=head+body;
  bar((step>0?`<button class="big ghost back" id="prev">Retour</button>`:"")+`<button class="big" id="next" ${ok?"":"disabled"}>${step===last?"Enregistrer":"Suivant"}</button>`);
- $("#cancel").onclick=()=>{screen="home";render()};
+ $("#cancel").onclick=()=>{screen=cur.type==="maj"?"annonce":"home";render()};
  if($("#prev"))$("#prev").onclick=()=>{step--;render()};
  $("#next").onclick=async()=>{if(step<last){step++;render()}else{cur.qte=Math.max(1,parseInt(cur.qte)||1);
-  cur.photos=cur.slots.filter(Boolean);const f={...cur};delete f.slots;delete f.qual;await dbPut(f);await load();toast("Matériau enregistré : "+cur.code);screen="home";render()}};
+  cur.photos=cur.slots.filter(Boolean);const f={...cur};delete f.slots;delete f.qual;await dbPut(f);await load();toast("Matériau enregistré : "+cur.code);screen=cur.type==="maj"?"annonces":"home";render()}};
  const bind=k=>{const el=$("#"+k);if(el)el.oninput=()=>{cur[k]=el.value;if(k==="nom"){delete cur.propose.nom;$("#next").disabled=!el.value.trim();a.querySelectorAll("[data-nom]").forEach(c=>c.classList.toggle("sel",c.dataset.nom===el.value))}}};
  ["nom","L","l","h","qte","note","prix"].forEach(bind);
  a.querySelectorAll("[data-shot]").forEach(b=>b.onclick=()=>{slotCible=+b.dataset.shot;$("#cam").click()});
