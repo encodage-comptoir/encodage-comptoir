@@ -66,6 +66,7 @@ button:focus-visible,input:focus-visible,.tile:focus-visible{outline:3px solid v
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 18px}
 .chip{min-height:48px;padding:8px 16px;border-radius:24px;border:2px solid var(--line);background:var(--surface);font-weight:700;font-size:17px}
 .chip.sel{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip.zone{border-left:10px solid var(--zc)}.chip.zone.sel{background:var(--zc);border-color:var(--zc);color:#fff}
 label.f{display:block;font-weight:700;margin:14px 0 6px}
 input.t{width:100%;box-sizing:border-box;min-height:58px;border-radius:12px;border:2px solid var(--line);background:var(--surface);
   color:var(--ink);font:inherit;font-size:20px;padding:10px 14px}
@@ -124,7 +125,7 @@ pre.txt{white-space:pre-wrap;font-family:var(--body);font-size:16px;background:v
 <div class="toast" id="toast" hidden></div>
 <script>
 "use strict";
-const VERSION="6.1 (essai : compléter les annonces)";
+const VERSION="6.2 (essai : annonces + emplacement)";
 // ---------- Données de référence ----------
 // Préfixes et catégories : les noms doivent être identiques aux catégories du back-office Impulsion (vérifiés le 14/10/2026).
 const CATS=[
@@ -150,6 +151,12 @@ const UNITS=["pièce","m²","m courant","lot"];
 const MATIERES=["Bois massif","Panneau (multiplex, OSB, MDF)","Métal","Verre","Céramique","Pierre / béton","PVC / plastique","Textile"];
 const COULEURS=["Blanc","Noir","Gris / métal","Naturel","Brun","Beige","Couleur"];
 const LIEUX=["Intérieur","Extérieur","Les deux"];
+// Emplacement dans l'entrepôt : zone + travée + niveau (B3-1), « R » = réception, pas encore rangé.
+// Nombre de travées par zone d'après le plan provisoire, à ajuster avec les vraies mesures.
+const ZONES={A:["Gros œuvre, bois",4],B:["Sanitaire, isolant, toiture",4],C:["Vitrine",2],D:["Portes",12],E:["Châssis, radiateurs",12],F:["Petit matériel",3]};
+const ZONE_COUL={R:"#7b8480",A:"#a8642c",B:"#2c68a8",C:"#23857c",D:"#b83c33",E:"#7552a3",F:"#3f8a35"};
+const ZONE_CAT={GRO:"A",CAR:"A",BOI:"A",PAR:"A",LAM:"A",SA:"B",ISO:"B",TOI:"B",ELECTRO:"C",DIV:"C",PO:"D",CH:"E",PA:"E",RA:"E",Q:"F",ELEC:"F",LUM:"F",OUT:"F"};
+const emplParts=e=>{const m=/^([A-F])(\d+)?(?:-(\d))?$/.exec(e||"");return m?{z:m[1],t:m[2]||"",n:m[3]??""}:{z:e==="R"?"R":"",t:"",n:""}};
 // Ce que le nom dit déjà de la matière (la photo départage), du lieu et de la forme.
 const MAT_NOM={"Lavabo":["Céramique"],"Vasque":["Céramique","Verre","Pierre / béton"],"WC":["Céramique"],"Baignoire":["Céramique","PVC / plastique","Métal"],
  "Bac de douche":["Céramique","PVC / plastique"],"Évier":["Métal","Céramique","Pierre / béton"],"Robinet":["Métal"],"Meuble lavabo":["Panneau (multiplex, OSB, MDF)","Bois massif"],
@@ -210,17 +217,17 @@ const HEAD=["Référence","Nom","Catégories","Stock","Prix de vente TTC","Descr
 function csvText(list){const q=v=>{v=String(v??"");return /[;"\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
  return [HEAD].concat(list.map(f=>[f.code,f.nom,siteCat(f.cat),f.qte,String(f.prix||"").replace(".",","),descr(f)])).map(r=>r.map(q).join(";")).join("\r\n")+"\r\n"}
 // Fichier des caractéristiques pour l'outil « Faire avec » (onglet Fiches) : UTF-8, séparateur « ; ».
-const HEAD_FICHES=["Référence","Nom","Catégorie","Largeur (cm)","Profondeur (cm)","Hauteur (cm)","Matière","Couleur","Intérieur / extérieur","État","Forme","Transport","Quantité","Unité","Arrivée","Photos"];
+const HEAD_FICHES=["Référence","Nom","Catégorie","Largeur (cm)","Profondeur (cm)","Hauteur (cm)","Matière","Couleur","Intérieur / extérieur","État","Forme","Transport","Quantité","Unité","Arrivée","Photos","Emplacement"];
 function fichesCsv(list){const q=v=>{v=String(v??"");return /[;"\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
  return "﻿"+[HEAD_FICHES].concat(list.map(f=>[f.code,f.nom,siteCat(f.cat),f.L,f.l,f.h,f.matiere,f.couleur,f.lieu,f.etat,formeNom(f.cat,f.nom),transport(f),f.qte,f.unite,
-  new Date(f.cree).toISOString().slice(0,10),f.photos.map((_,i)=>photoName(f,i)).join(" ")])).map(r=>r.map(q).join(";")).join("\r\n")+"\r\n"}
+  new Date(f.cree).toISOString().slice(0,10),f.photos.map((_,i)=>photoName(f,i)).join(" "),f.empl||""])).map(r=>r.map(q).join(";")).join("\r\n")+"\r\n"}
 // Tableau des annonces existantes vérifiées au comptoir (rien n'est importé automatiquement).
-const HEAD_MAJ=["Référence","Statut","Titre actuel","Titre proposé","Catégorie","Stock compté","Description proposée","Photos"];
+const HEAD_MAJ=["Référence","Statut","Titre actuel","Titre proposé","Catégorie","Stock compté","Description proposée","Photos","Emplacement"];
 // Titre pour le site : le titre nettoyé (ou le nom), avec les mesures si le titre n'en a pas.
 function titrePropose(f){const d=[f.L,f.l,f.h].filter(Boolean),t=f.titreBase||f.nom;return t+(d.length&&!/\d/.test(t)?" – "+d.join(" × ")+" cm":"")}
 function majCsv(list){const q=v=>{v=String(v??"");return /[;"\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
- return [HEAD_MAJ].concat(list.map(f=>f.statut==="introuvable"?[f.code,"Introuvable ou vendu",f.titreActuel,"","","0","",""]:
-  [f.code,f.codeNouveau?"Nouvelle référence (écrite sur l'objet)":"Vérifiée",f.titreActuel,titrePropose(f),siteCat(f.cat),f.qte,descr(f),f.photos.map((_,i)=>photoName(f,i)).join(" ")])).map(r=>r.map(q).join(";")).join("\r\n")+"\r\n"}
+ return [HEAD_MAJ].concat(list.map(f=>f.statut==="introuvable"?[f.code,"Introuvable ou vendu",f.titreActuel,"","","0","","",""]:
+  [f.code,f.codeNouveau?"Nouvelle référence (écrite sur l'objet)":"Vérifiée",f.titreActuel,titrePropose(f),siteCat(f.cat),f.qte,descr(f),f.photos.map((_,i)=>photoName(f,i)).join(" "),f.empl||""])).map(r=>r.map(q).join(";")).join("\r\n")+"\r\n"}
 const CP={0x20AC:0x80,0x201A:0x82,0x192:0x83,0x201E:0x84,0x2026:0x85,0x2020:0x86,0x2021:0x87,0x2C6:0x88,0x2030:0x89,0x160:0x8A,0x2039:0x8B,0x152:0x8C,0x17D:0x8E,
  0x2018:0x91,0x2019:0x92,0x201C:0x93,0x201D:0x94,0x2022:0x95,0x2013:0x96,0x2014:0x97,0x2DC:0x98,0x2122:0x99,0x161:0x9A,0x203A:0x9B,0x153:0x9C,0x17E:0x9E,0x178:0x9F};
 function cp1252(s){const out=new Uint8Array(s.length);let n=0;for(const ch of s){const c=ch.codePointAt(0);
@@ -235,7 +242,7 @@ function reportHtml(list){
  const mName=`mises-a-jour-${today()}.csv`, m64=b64(cp1252(majCsv(maj)));
  const fName=`caracteristiques-${today()}.csv`, f64=b64(new TextEncoder().encode(fichesCsv(list)));
  const cards=list0.map(f=>`<section><h2><span class="ref">${esc(f.code)}</span> ${esc(f.type==="maj"?titrePropose(f):f.nom)}${f.type==="maj"?` <small>(${f.statut==="introuvable"?"introuvable au comptoir":"annonce existante"})</small>`:""}</h2>
-  <p>${esc(siteCat(f.cat))} · stock ${esc(f.qte)} ${esc(f.unite)}${f.prix?" · "+esc(f.prix)+" €":" · prix à fixer"}</p><p class="d">${esc(descr(f))}</p>
+  <p>${esc(siteCat(f.cat))} · stock ${esc(f.qte)} ${esc(f.unite)}${f.prix?" · "+esc(f.prix)+" €":" · prix à fixer"}${f.empl?" · rangé en "+esc(f.empl):""}</p><p class="d">${esc(descr(f))}</p>
   <div class="ph">${f.photos.map((p,i)=>`<figure><img src="${p}" alt=""><figcaption>${photoName(f,i)}</figcaption></figure>`).join("")}</div>
   ${f.photos.length?`<button data-ref="${esc(f.code)}">Télécharger les ${f.photos.length} photo${f.photos.length>1?"s":""} de ${esc(f.code)}</button>`:""}</section>`).join("");
  const photos=JSON.stringify(Object.fromEntries(list.map(f=>[f.code,f.photos.map((p,i)=>[photoName(f,i),p])]))).replace(/</g,"\\u003c");
@@ -289,7 +296,7 @@ function render(){
   if($("#exp"))$("#exp").onclick=()=>{screen="export";render()};
   $("#set").onclick=()=>{screen="reglages";render()};
   $("#ann").onclick=()=>{screen="annonces";render()};
-  $("#new").onclick=()=>{cur={id:Date.now()+"-"+Math.random().toString(36).slice(2,7),cree:Date.now(),code:"",cat:"",nom:"",etat:"",L:"",l:"",h:"",qte:1,unite:"pièce",prix:"",note:"",photos:[],envoye:"",matiere:"",couleur:"",lieu:"",propose:{},qual:[]};step=0;screen="wiz";render()};
+  $("#new").onclick=()=>{cur={id:Date.now()+"-"+Math.random().toString(36).slice(2,7),cree:Date.now(),code:"",cat:"",nom:"",etat:"",L:"",l:"",h:"",qte:1,unite:"pièce",prix:"",note:"",photos:[],envoye:"",matiere:"",couleur:"",lieu:"",empl:"R",propose:{},qual:[]};step=0;screen="wiz";render()};
   a.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{openId=b.dataset.open;screen="detail";render()});
  }
  else if(screen==="detail"){
@@ -518,7 +525,7 @@ function wiz(a){
    <div><input class="t" id="h" inputmode="decimal" value="${esc(cur.h)}" aria-label="Hauteur"><small>Hauteur</small></div></div>
    <label class="f" for="qte">Combien ?</label>
    <div class="qty"><button id="minus" aria-label="Moins">−</button><input class="t" id="qte" inputmode="numeric" value="${esc(cur.qte)}"><button id="plus" aria-label="Plus">+</button></div>
-   <div class="chips">${UNITS.map(u=>`<button class="chip ${cur.unite===u?"sel":""}" data-unit="${u}">${u}</button>`).join("")}</div>`;
+   <div class="chips">${UNITS.map(u=>`<button class="chip ${cur.unite===u?"sel":""}" data-unit="${u}">${u}</button>`).join("")}</div>${emplHtml()}`;
  } else {
   if(!(cur.type==="maj"&&cur.code)&&(!cur.code||!cur.code.startsWith(cur.cat)||!/^\d+$/.test(cur.code.slice(cur.cat.length))))cur.code=nextCode(cur.cat);
   const nPh=cur.slots.filter(Boolean).length;
@@ -527,7 +534,7 @@ function wiz(a){
    <dt>Catégorie</dt><dd>${esc(label(cur.cat))}</dd><dt>État</dt><dd>${esc(cur.etat||"-")}</dd>
    <dt>Matière</dt><dd>${esc(cur.matiere||"-")}</dd><dt>Couleur</dt><dd>${esc(cur.couleur||"-")}</dd><dt>Usage</dt><dd>${esc(cur.lieu||"-")}</dd>
    <dt>Mesures</dt><dd>${dimTxt(cur)||"-"}</dd>${transport(cur)?`<dt>Transport</dt><dd>${transport(cur)}</dd>`:""}
-   <dt>Stock</dt><dd>${esc(cur.qte)} ${esc(cur.unite)}</dd><dt>Photos</dt><dd>${nPh}</dd></dl></div>
+   <dt>Stock</dt><dd>${esc(cur.qte)} ${esc(cur.unite)}</dd><dt>Rangé en</dt><dd>${esc(cur.empl==="R"?"R (pas encore rangé)":cur.empl||"-")}</dd><dt>Photos</dt><dd>${nPh}</dd></dl></div>
    ${cur.type==="maj"?`<p class="hint" style="margin-top:12px">Titre proposé pour le site : <b>${esc(titrePropose(cur))}</b></p>`:""}
    <p class="hint" style="margin-top:12px">${cur.type==="maj"&&!cur.codeNouveau?"Vérifiez que":"Écrivez"} <b>${esc(cur.code)}</b> ${cur.type==="maj"&&!cur.codeNouveau?"est bien écrit":""} sur le matériau (craie, scotch ou étiquette).</p>
    <label class="f" for="note">Remarque (facultatif)</label><input class="t" id="note" value="${esc(cur.note)}" placeholder="marque, défaut…">
@@ -548,8 +555,21 @@ function wiz(a){
  a.querySelectorAll("[data-etat]").forEach(b=>b.onclick=()=>{cur.etat=cur.etat===b.dataset.etat?"":b.dataset.etat;render()});
  a.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{const k=b.dataset.k;cur[k]=cur[k]===b.dataset.v?"":b.dataset.v;cur.propose[k]=0;render()});
  a.querySelectorAll("[data-unit]").forEach(b=>b.onclick=()=>{cur.unite=b.dataset.unit;render()});
+ emplClic(a);
  if($("#plus")){$("#plus").onclick=()=>{cur.qte=(+cur.qte||0)+1;render()};$("#minus").onclick=()=>{cur.qte=Math.max(1,(+cur.qte||1)-1);render()}}
 }
+
+function emplHtml(){const e=emplParts(cur.empl),conseil=ZONE_CAT[cur.cat];
+ const c=(z,t)=>`<button class="chip zone ${e.z===z?"sel":""}" data-ez="${z}" style="--zc:${ZONE_COUL[z]}">${t}</button>`;
+ let h=`<label class="f">Où est-il rangé ? <small class="ia">${esc(cur.empl||"pas encore choisi")}</small></label>
+  <div class="chips">${c("R","Pas encore rangé")}${Object.keys(ZONES).map(z=>c(z,z)).join("")}</div>
+  ${conseil?`<p class="hint">Zone conseillée pour cette catégorie : <b>${conseil}</b> (${esc(ZONES[conseil][0])}).</p>`:""}`;
+ if(ZONES[e.z]){h+=`<label class="f">Numéro (travée, peigne ou gondole)</label><div class="chips">${Array.from({length:ZONES[e.z][1]},(_,i)=>`<button class="chip ${e.t==String(i+1)?"sel":""}" data-et="${i+1}">${e.z}${i+1}</button>`).join("")}</div>`;
+  if(e.t&&!"DE".includes(e.z))h+=`<label class="f">Niveau (0 = au sol)</label><div class="chips">${[0,1,2,3,4,5].map(n=>`<button class="chip ${e.n===String(n)?"sel":""}" data-en="${n}">${n}</button>`).join("")}</div>`}
+ return h}
+function emplClic(a){a.querySelectorAll("[data-ez]").forEach(b=>b.onclick=()=>{const z=b.dataset.ez;cur.empl=z===emplParts(cur.empl).z&&z!=="R"?"":z;render()});
+ a.querySelectorAll("[data-et]").forEach(b=>b.onclick=()=>{const e=emplParts(cur.empl);cur.empl=e.z+b.dataset.et+("DE".includes(e.z)?"-0":"");render()});
+ a.querySelectorAll("[data-en]").forEach(b=>b.onclick=()=>{const e=emplParts(cur.empl);cur.empl=e.z+e.t+"-"+b.dataset.en;render()})}
 
 // Photos réduites à 1600 px pour le site et pour garder le téléphone léger.
 let slotCible=0;
