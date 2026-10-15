@@ -1,0 +1,17 @@
+name: Lire le catalogue public
+on:
+  push:
+    branches: [site]
+    paths: [outils/catalogue.py, .github/workflows/catalogue.yml]
+permissions:
+  contents: write
+jobs:
+  lire:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 outils/catalogue.py
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add site && git commit -m "Catalogue public : catégories et vignettes" && git push
