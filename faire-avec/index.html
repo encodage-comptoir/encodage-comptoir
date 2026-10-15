@@ -1,0 +1,497 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Faire avec</title>
+<meta name="description" content="Trouver des idées et des matériaux de réemploi dans le stock du Comptoir des Matériaux de La Pile.">
+<meta name="theme-color" content="#f2b705">
+<link rel="icon" href="../icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+:root{
+  --bg:#f3f2ee; --surface:#ffffff; --ink:#1d2328; --muted:#5d656c; --line:#d9d7d0;
+  --accent:#f2b705; --accent-ink:#1d2328; --ok:#2f7d4a; --ok-bg:#e3f1e7; --warn-bg:#fff4cc; --no:#9a3b2e;
+  --display:"Archivo", "Arial Black", system-ui, sans-serif;
+  --body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#15191c; --surface:#1f2428; --ink:#eef0f1; --muted:#a3abb2; --line:#343b41;
+  --accent:#f5c22b; --accent-ink:#15191c; --ok:#6fcf8e; --ok-bg:#1d3326; --warn-bg:#3a3214; --no:#e6907f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#15191c; --surface:#1f2428; --ink:#eef0f1; --muted:#a3abb2; --line:#343b41;
+  --accent:#f5c22b; --accent-ink:#15191c; --ok:#6fcf8e; --ok-bg:#1d3326; --warn-bg:#3a3214; --no:#e6907f; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 var(--body)}
+a{color:inherit}
+button,input,select{font:inherit;color:inherit}
+h1,h2,h3{font-family:var(--display);line-height:1.15;margin:0}
+.wrap{max-width:1040px;margin:0 auto;padding:0 16px}
+header.top{background:var(--accent);color:var(--accent-ink)}
+header.top .wrap{display:flex;align-items:center;gap:12px;padding-top:12px;padding-bottom:12px}
+header.top a.brand{font-family:var(--display);font-weight:800;font-size:20px;text-decoration:none}
+header.top .sub{font-size:13px;opacity:.8}
+header.top .spacer{flex:1}
+.listbtn{background:var(--accent-ink);color:var(--accent);border:0;border-radius:999px;padding:8px 14px;font-weight:700;cursor:pointer;white-space:nowrap}
+.proto{background:var(--warn-bg);font-size:14px;border-bottom:1px solid var(--line)}
+.proto .wrap{padding-top:8px;padding-bottom:8px}
+main{padding:20px 0 60px}
+.crumbs{margin:0 0 12px;font-size:14px}
+.crumbs a{color:var(--muted)}
+.hero h1{font-size:clamp(28px,6vw,44px);font-weight:800}
+.hero p{color:var(--muted);max-width:640px}
+.ask{display:flex;gap:8px;margin:16px 0 24px}
+.ask input{flex:1;min-width:0;padding:14px 16px;border:2px solid var(--ink);border-radius:12px;background:var(--surface)}
+.btn{border:2px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn.small{padding:6px 10px;border-radius:9px;font-size:14px}
+.doors{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.door{display:block;text-decoration:none;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;transition:transform .1s}
+.door:hover{transform:translateY(-2px);border-color:var(--ink)}
+.door .n{font-family:var(--display);font-size:13px;color:var(--muted)}
+.door h2{font-size:20px;margin:4px 0 6px}
+.door p{margin:0;color:var(--muted);font-size:15px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.chip{text-decoration:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 12px;cursor:pointer;font-size:15px}
+.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+.filters label{display:flex;flex-direction:column;font-size:13px;color:var(--muted);gap:4px}
+.filters input,.filters select{padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font-size:15px;min-width:0}
+.filters .pair{display:flex;gap:6px}
+.filters .pair input{width:50%}
+.filters .check{flex-direction:row;align-items:center;gap:8px;color:var(--ink);font-size:15px}
+.count{color:var(--muted);font-size:14px;margin:6px 0 12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.row{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(190px,220px);gap:12px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x mandatory}
+.row .card{scroll-snap-align:start}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;cursor:pointer;text-align:left;padding:0}
+.card:hover{border-color:var(--ink)}
+.tile{height:84px;display:flex;align-items:center;justify-content:center;font-size:38px;position:relative}
+.tile .ref{position:absolute;left:8px;bottom:6px;font-size:12px;font-family:var(--body);background:rgba(255,255,255,.75);color:#1d2328;border-radius:6px;padding:1px 6px}
+.card .body{padding:10px 12px 12px;display:flex;flex-direction:column;gap:4px;flex:1}
+.card .name{font-weight:700}
+.card .meta{font-size:13px;color:var(--muted)}
+.card .price{font-weight:700;margin-top:auto}
+.badge{display:inline-block;font-size:12px;border-radius:6px;padding:1px 6px;background:var(--ok-bg);color:var(--ok)}
+.badge.ex{background:var(--warn-bg);color:var(--ink)}
+.more{margin:16px auto 0;display:block}
+.section{margin:22px 0}
+.section h2{font-size:22px;margin-bottom:4px}
+.section h3{font-size:18px}
+.hint{color:var(--muted);font-size:15px;margin:2px 0 10px}
+.poste{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}
+.poste .head{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
+.poste .qty{font-size:14px;color:var(--muted)}
+.empty{border:1px dashed var(--line);border-radius:12px;padding:14px;color:var(--muted)}
+.score{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0 4px}
+.bar{flex:1;min-width:160px;max-width:320px;height:10px;background:var(--line);border-radius:5px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ok)}
+.amb{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.ambrow{display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0}
+.ambrow .pic{font-size:28px;width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:none}
+.ambrow .txt{flex:1;min-width:0}
+.ambrow .role{font-size:13px;color:var(--muted)}
+.st{font-size:13px;font-weight:700}
+.st.ok{color:var(--ok)} .st.no{color:var(--no)}
+dialog{border:0;border-radius:16px;padding:0;max-width:560px;width:calc(100% - 32px);background:var(--surface);color:var(--ink)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+.dlg{padding:18px}
+.dlg .tile{border-radius:12px;height:120px;font-size:56px;margin-bottom:12px}
+.dlg h2{font-size:22px}
+.dlg table{width:100%;border-collapse:collapse;margin:10px 0;font-size:15px}
+.dlg td{padding:5px 0;border-bottom:1px solid var(--line);vertical-align:top}
+.dlg td:first-child{color:var(--muted);width:40%}
+.dlg ul{margin:4px 0 10px;padding-left:20px}
+.dlg .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
+.listitem{display:flex;gap:10px;align-items:center;border-bottom:1px solid var(--line);padding:10px 0}
+.listitem .txt{flex:1;min-width:0}
+.listitem input{width:64px;padding:6px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.total{font-weight:700;font-size:18px;margin:12px 0}
+.err{background:var(--warn-bg);padding:14px;border-radius:12px}
+footer{color:var(--muted);font-size:13px;padding:24px 0 40px;border-top:1px solid var(--line)}
+@media print{header.top,.proto,.no-print,footer,.crumbs{display:none!important}body{background:#fff;color:#000}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <div><a class="brand" href="#">Faire avec</a><div class="sub">Comptoir des Matériaux · La Pile</div></div>
+  <div class="spacer"></div>
+  <button class="listbtn" id="listBtn" type="button">Ma liste (0)</button>
+</div></header>
+<div class="proto"><div class="wrap"><strong>Prototype de test.</strong> Le stock vient de l'export Impulsion du 14/10/2026. Les dimensions, matières et états marqués « exemple » sont des valeurs de démonstration, pas des mesures.</div></div>
+<main><div class="wrap" id="app"><p>Chargement du stock…</p></div></main>
+<footer><div class="wrap">Les données sont lues depuis le dossier <code>donnees/</code> (export de stock + bibliothèque d'idées). Aucun compte ni serveur : tout se passe dans votre navigateur.</div></footer>
+<dialog id="dlg"></dialog>
+
+<script>
+// Sources de données. Pour passer à Google Sheets plus tard, remplacer ces chemins
+// par les liens « Publier sur le web > CSV » de chaque onglet.
+const SOURCES = {
+  stock: "donnees/stock.csv",
+  familles: "donnees/familles.csv",
+  fiches: "donnees/fiches.csv",
+  fonctions: "donnees/fonctions.csv",
+  projets: "donnees/projets.csv",
+  ambiances: "donnees/ambiances.csv",
+};
+const COLORS = ["#f6d98b","#b9d7c3","#c7d3e8","#f0c1b4","#d9c8e6","#c9e3e6","#e8d4b8","#d6e2b3","#f2c9d8","#cfd8dc"];
+
+// ---------- Lecture des CSV ----------
+async function load(url){
+  const r = await fetch(url, {cache:"no-store"});
+  if(!r.ok) throw new Error(url + " : " + r.status);
+  const buf = await r.arrayBuffer();
+  let txt;
+  try { txt = new TextDecoder("utf-8", {fatal:true}).decode(buf); }
+  catch(e){ txt = new TextDecoder("windows-1252").decode(buf); }   // export Impulsion
+  return parseCSV(txt.replace(/^﻿/, ""));
+}
+function parseCSV(txt){
+  const first = txt.split(/\r?\n/)[0];
+  const sep = (first.split(";").length >= first.split(",").length) ? ";" : ",";
+  const rows = []; let row = [], cell = "", q = false;
+  for(let i=0;i<txt.length;i++){
+    const c = txt[i];
+    if(q){ if(c === '"'){ if(txt[i+1] === '"'){ cell += '"'; i++; } else q = false; } else cell += c; }
+    else if(c === '"') q = true;
+    else if(c === sep){ row.push(cell); cell = ""; }
+    else if(c === "\n" || c === "\r"){ if(c === "\r" && txt[i+1] === "\n") i++; row.push(cell); rows.push(row); row = []; cell = ""; }
+    else cell += c;
+  }
+  if(cell !== "" || row.length){ row.push(cell); rows.push(row); }
+  const head = rows.shift().map(h => h.trim());
+  return rows.filter(r => r.some(x => x.trim() !== "")).map(r => Object.fromEntries(head.map((h,i) => [h, (r[i] || "").trim()])));
+}
+
+// ---------- Outils ----------
+const norm = s => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/œ/g, "oe").replace(/[’']/g, "'");
+const list = s => (s || "").split(",").map(x => x.trim()).filter(Boolean);
+const refKey = s => (s || "").trim().replace(/\s+/g, " ").toUpperCase();
+const num = s => { const n = parseFloat(String(s || "").replace(",", ".")); return isNaN(n) ? null : n; };
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const decodeEnt = s => (s || "").replace(/&#(\d+);?/g, (m, n) => String.fromCharCode(+n)).replace(/&amp;/g, "&");
+const euro = n => n ? n.toLocaleString("fr-BE", {style:"currency", currency:"EUR"}) : "Prix au comptoir";
+// Un mot-clé correspond s'il commence un mot du texte (« porte » trouve « Porte brune », pas « supporte »).
+const hasWord = (text, word) => { const t = " " + norm(text).replace(/[^a-z0-9'+-]+/g, " ") + " "; const w = norm(word).replace(/[^a-z0-9'+-]+/g, " ").trim(); return w && t.includes(" " + w); };
+const anyWord = (text, words) => words.some(w => hasWord(text, w));
+
+let D = {};  // toutes les données
+
+async function init(){
+  const app = document.getElementById("app");
+  try {
+    const keys = Object.keys(SOURCES);
+    const res = await Promise.all(keys.map(k => load(SOURCES[k])));
+    keys.forEach((k,i) => D[k] = res[i]);
+  } catch(e){
+    app.innerHTML = `<div class="err"><strong>Impossible de charger les données.</strong><br>${esc(e.message)}<br>Ouvrez le site depuis son adresse web (pas en double-cliquant sur le fichier).</div>`;
+    return;
+  }
+  prepare();
+  window.addEventListener("hashchange", route);
+  route();
+}
+
+function prepare(){
+  D.familles.forEach((f,i) => { f.color = COLORS[i % COLORS.length]; f.mots = list(f["Mots du nom"]); f.prefixes = list(f["Préfixes"]).map(p => p.toUpperCase()); f.fonctions = list(f.Fonctions); f.usages = list(f["Usages détournés"]); });
+  D.famBy = Object.fromEntries(D.familles.map(f => [f.Famille, f]));
+  D.fiches.forEach(f => f.key = refKey(f["Référence"]));
+  const fichesBy = Object.fromEntries(D.fiches.map(f => [f.key, f]));
+  D.fonctions.forEach(f => f.syn = [f.Fonction, ...list(f.Synonymes)]);
+
+  // Articles en vente : nommés, stock > 0, pas marqués « VENDU »
+  D.items = [];
+  D.stock.forEach((r, i) => {
+    const nom = decodeEnt(r["Nom"]).trim();
+    const stock = num(r["Stock"]) || 0;
+    if(!nom || stock <= 0 || /^vendu\b/i.test(nom)) return;
+    const ref = r["Référence"].trim();
+    const fiche = ref ? fichesBy[refKey(ref)] : null;
+    const it = { id: i, ref, nom, stock, prix: num(r["PV particulier TVAc"]) || 0, fiche };
+    it.famille = (fiche && fiche.Famille && D.famBy[fiche.Famille]) || guessFamily(it);
+    const f = it.famille;
+    it.matiere = (fiche && fiche["Matière"]) || "";
+    it.matiereFam = f["Matière"] || "";
+    it.couleur = fiche ? fiche.Couleur : "";
+    it.etat = fiche ? fiche["État"] : "";
+    it.inout = (fiche && fiche["Intérieur/extérieur"]) || f["Intérieur/extérieur"] || "";
+    it.L = fiche ? num(fiche.Largeur) : null; it.H = fiche ? num(fiche.Hauteur) : null; it.P = fiche ? num(fiche.Profondeur) : null;
+    it.fonctions = [...new Set([...f.fonctions, ...list(fiche && fiche.Fonctions)])];
+    it.usages = [...new Set([...list(fiche && fiche["Usages détournés"]), ...f.usages])];
+    it.transport = fiche ? fiche.Transport : ""; it.bricolage = fiche ? fiche.Bricolage : "";
+    it.exemple = fiche && norm(fiche["Mesuré"]) !== "oui";
+    it.detail = !!(fiche && (it.L || it.matiere));
+    it.search = norm([ref, nom, f.Famille, it.matiere, it.couleur].join(" "));
+    D.items.push(it);
+  });
+  D.byRef = {};
+  D.items.forEach(it => { if(it.ref) (D.byRef[refKey(it.ref)] ||= []).push(it); });
+
+  // Projets : une ligne par poste, regroupées par nom de projet
+  D.proj = [];
+  D.projets.forEach(r => {
+    let p = D.proj.find(x => x.nom === r.Projet);
+    if(!p){ p = { nom: r.Projet, mots: [], desc: "", postes: [] }; D.proj.push(p); }
+    p.mots.push(...list(r["Mots-clés"])); if(r.Description) p.desc = r.Description;
+    p.postes.push({ nom: r.Poste, familles: list(r.Familles), fonction: r.Fonction, mots: list(r["Mots du nom"]), qte: r["Quantité"], conseil: r.Conseil });
+  });
+  D.amb = [];
+  D.ambiances.forEach(r => {
+    let a = D.amb.find(x => x.nom === r.Ambiance);
+    if(!a){ a = { nom: r.Ambiance, desc: "", lignes: [] }; D.amb.push(a); }
+    if(r.Description) a.desc = r.Description;
+    a.lignes.push({ role: r["Rôle"], ref: r["Référence"], note: r.Note });
+  });
+  updateListBtn();
+}
+
+function guessFamily(it){
+  for(const f of D.familles) if(f.mots.length && anyWord(it.nom, f.mots)) return f;
+  const pre = (it.ref.match(/^[A-Za-zÀ-ÿ]+/) || [""])[0].toUpperCase();
+  for(const f of D.familles) if(pre && f.prefixes.includes(pre)) return f;
+  return D.famBy["Divers"] || D.familles[D.familles.length - 1];
+}
+
+// Articles avec fiche détaillée d'abord, puis ceux qui ont un prix
+const rank = it => (it.detail ? 0 : 2) + (it.prix ? 0 : 1);
+const sortItems = arr => arr.slice().sort((a,b) => rank(a) - rank(b) || a.nom.localeCompare(b.nom, "fr"));
+
+// ---------- Rendu commun ----------
+function dims(it){ if(!it.L && !it.H) return ""; return [it.L, it.H, it.P].filter(x => x != null).map(x => String(x).replace(".", ",")).join(" × ") + " cm"; }
+function tile(it, big){
+  return `<div class="tile" style="background:${it.famille.color}">${it.famille.Pictogramme || "📦"}${big ? "" : `<span class="ref">${esc(it.ref || "sans réf.")}</span>`}</div>`;
+}
+function card(it){
+  const d = dims(it);
+  return `<button class="card" type="button" data-item="${it.id}">${tile(it)}<div class="body">
+    <div class="name">${esc(it.nom)}</div>
+    <div class="meta">${esc(it.famille.Famille)}${it.stock > 1 ? " · " + it.stock + " en stock" : ""}</div>
+    ${d ? `<div class="meta">${d} ${it.exemple ? '<span class="badge ex">exemple</span>' : ""}</div>` : ""}
+    <div class="price">${euro(it.prix)}</div></div></button>`;
+}
+const cards = arr => arr.map(card).join("");
+function crumbs(...parts){ return `<p class="crumbs"><a href="#">Accueil</a>${parts.map(p => " › " + p).join("")}</p>`; }
+
+// ---------- Pages ----------
+function route(){
+  const h = decodeURIComponent(location.hash.slice(1));
+  const [page, arg] = [h.split("/")[0], h.split("/").slice(1).join("/")];
+  const app = document.getElementById("app");
+  window.scrollTo(0, 0);
+  if(page === "chercher") return pageChercher(app, arg);
+  if(page === "fonction") return pageFonction(app, arg);
+  if(page === "projet") return pageProjet(app, arg);
+  if(page === "inspiration") return pageInspiration(app, arg);
+  if(page === "liste") return pageListe(app);
+  if(page === "q") return pageQuestion(app, arg);
+  return pageAccueil(app);
+}
+
+function pageAccueil(app){
+  app.innerHTML = `<section class="hero"><h1>Partez de ce qui existe.</h1>
+    <p>Dites-nous votre besoin ou votre projet : nous cherchons dans les ${D.items.length} matériaux en stock au Comptoir ce qui peut y répondre, même si vous n'y aviez pas pensé.</p></section>
+    <form class="ask" id="ask"><input id="askIn" placeholder="Ex. : un coin potager, une cloison, une table…" aria-label="Votre besoin ou projet"><button class="btn">Chercher</button></form>
+    <div class="doors">
+      <a class="door" href="#chercher"><div class="n">1</div><h2>Je cherche un matériau</h2><p>Filtrer par dimensions, matière, état, intérieur ou extérieur.</p></a>
+      <a class="door" href="#fonction"><div class="n">2</div><h2>J'ai besoin d'une fonction</h2><p>Séparer, couvrir, planter… et tout ce qui peut le faire, détourné ou non.</p></a>
+      <a class="door" href="#projet"><div class="n">3</div><h2>J'ai un projet</h2><p>La liste de matériaux pour le monter, avec ce qui est en stock aujourd'hui.</p></a>
+      <a class="door" href="#inspiration"><div class="n">4</div><h2>Je veux m'inspirer</h2><p>Des aménagements complets composés avec le stock actuel.</p></a>
+    </div>`;
+  document.getElementById("ask").onsubmit = e => { e.preventDefault(); const v = document.getElementById("askIn").value.trim(); if(v) location.hash = "q/" + encodeURIComponent(v); };
+}
+
+// Question libre : projet > fonction > recherche texte
+function matchProjet(q){ return D.proj.filter(p => p.mots.some(m => hasWord(q, m)) || hasWord(q, p.nom)); }
+function matchFonction(q){ return D.fonctions.filter(f => f.syn.some(s => hasWord(q, s))); }
+function pageQuestion(app, q){
+  const p = matchProjet(q), f = matchFonction(q);
+  if(p.length === 1) { location.replace("#projet/" + encodeURIComponent(p[0].nom)); return; }
+  if(!p.length && f.length === 1 && !textSearch(q).length) { location.replace("#fonction/" + encodeURIComponent(f[0].Fonction)); return; }
+  const txt = textSearch(q);
+  app.innerHTML = crumbs("« " + esc(q) + " »") + `<h1>Pour « ${esc(q)} »</h1>
+    ${p.length ? `<div class="section"><h2>Projets correspondants</h2><div class="chips">${p.map(x => `<a class="chip" href="#projet/${encodeURIComponent(x.nom)}">${esc(x.nom)}</a>`).join("")}</div></div>` : ""}
+    ${f.length ? `<div class="section"><h2>Fonctions correspondantes</h2><div class="chips">${f.map(x => `<a class="chip" href="#fonction/${encodeURIComponent(x.Fonction)}">${esc(x.Fonction)}</a>`).join("")}</div></div>` : ""}
+    <div class="section"><h2>Articles dont le nom correspond (${txt.length})</h2>
+    ${txt.length ? `<div class="grid">${cards(sortItems(txt).slice(0, 24))}</div>` : `<div class="empty">Aucun article ne porte ce nom.</div>`}</div>
+    ${!p.length ? `<div class="section empty">Votre projet n'est pas encore dans nos idées ? Parlez-en au Comptoir : nous l'ajouterons pour les prochains.</div>` : ""}`;
+}
+function textSearch(q){ const words = norm(q).split(/[^a-z0-9]+/).filter(w => w.length > 2); return words.length ? D.items.filter(it => words.every(w => it.search.includes(w))) : []; }
+
+// Porte 1 : filtres
+const F = { q:"", fam:"", mat:"", inout:"", etat:"", Lmin:"", Lmax:"", Hmin:"", Hmax:"", tol:"5", prix:"", detail:false };
+let shown = 48;
+function pageChercher(app, arg){
+  if(arg) { Object.assign(F, { q:"", fam:"", mat:"", inout:"", etat:"" }); F.fam = arg; }
+  const opts = (vals, cur, all) => `<option value="">${all}</option>` + vals.map(v => `<option${v === cur ? " selected" : ""}>${esc(v)}</option>`).join("");
+  const fams = [...new Set(D.items.map(i => i.famille.Famille))].sort((a,b) => a.localeCompare(b, "fr"));
+  const mats = [...new Set(D.items.map(i => i.matiere).filter(Boolean))].sort((a,b) => a.localeCompare(b, "fr"));
+  const etats = [...new Set(D.items.map(i => i.etat).filter(Boolean))];
+  app.innerHTML = crumbs("Je cherche un matériau") + `<h1>Je cherche un matériau</h1><p class="hint">Les dimensions sont en centimètres. La tolérance montre aussi ce qui est « presque » bon.</p>
+    <form class="filters" id="filt">
+      <label>Mot-clé<input name="q" value="${esc(F.q)}" placeholder="porte, évier, chêne…"></label>
+      <label>Famille<select name="fam">${opts(fams, F.fam, "Toutes")}</select></label>
+      <label>Matière<select name="mat">${opts(mats, F.mat, "Toutes")}</select></label>
+      <label>Intérieur / extérieur<select name="inout">${opts(["Intérieur","Extérieur"], F.inout, "Peu importe")}</select></label>
+      <label>État<select name="etat">${opts(etats, F.etat, "Tous")}</select></label>
+      <label>Largeur (min – max)<span class="pair"><input name="Lmin" inputmode="numeric" value="${esc(F.Lmin)}" placeholder="min"><input name="Lmax" inputmode="numeric" value="${esc(F.Lmax)}" placeholder="max"></span></label>
+      <label>Hauteur (min – max)<span class="pair"><input name="Hmin" inputmode="numeric" value="${esc(F.Hmin)}" placeholder="min"><input name="Hmax" inputmode="numeric" value="${esc(F.Hmax)}" placeholder="max"></span></label>
+      <label>Tolérance (± cm)<input name="tol" inputmode="numeric" value="${esc(F.tol)}"></label>
+      <label>Prix max (€)<input name="prix" inputmode="numeric" value="${esc(F.prix)}"></label>
+      <label class="check"><input type="checkbox" name="detail"${F.detail ? " checked" : ""}> Fiches détaillées seulement</label>
+    </form><div id="res"></div>`;
+  const form = document.getElementById("filt");
+  form.oninput = () => { const fd = new FormData(form); Object.keys(F).forEach(k => F[k] = k === "detail" ? fd.has("detail") : (fd.get(k) || "")); shown = 48; renderRes(); };
+  form.onsubmit = e => e.preventDefault();
+  shown = 48; renderRes();
+}
+function filtered(){
+  const tol = num(F.tol) || 0, words = norm(F.q).split(/[^a-z0-9]+/).filter(w => w.length > 1);
+  const between = (v, mn, mx) => { mn = num(mn); mx = num(mx); if(mn == null && mx == null) return true; if(v == null) return false; return (mn == null || v >= mn - tol) && (mx == null || v <= mx + tol); };
+  return D.items.filter(it =>
+    words.every(w => it.search.includes(w)) &&
+    (!F.fam || it.famille.Famille === F.fam) &&
+    (!F.mat || it.matiere === F.mat) &&
+    (!F.inout || it.inout === F.inout || it.inout === "Les deux") &&
+    (!F.etat || it.etat === F.etat) &&
+    between(it.L, F.Lmin, F.Lmax) && between(it.H, F.Hmin, F.Hmax) &&
+    (!num(F.prix) || (it.prix && it.prix <= num(F.prix))) &&
+    (!F.detail || it.detail));
+}
+function renderRes(){
+  const r = sortItems(filtered()), withDims = r.filter(i => i.L).length;
+  const dimFilter = F.Lmin || F.Lmax || F.Hmin || F.Hmax;
+  document.getElementById("res").innerHTML = `<p class="count">${r.length} article${r.length > 1 ? "s" : ""} · ${withDims} avec dimensions${dimFilter ? " (les articles sans dimensions sont masqués par ce filtre)" : ""}</p>
+    ${r.length ? `<div class="grid">${cards(r.slice(0, shown))}</div>` : `<div class="empty">Rien ne correspond. Élargissez la tolérance ou retirez un filtre.</div>`}
+    ${r.length > shown ? `<button class="btn ghost more" id="moreBtn" type="button">Afficher plus (${r.length - shown} restants)</button>` : ""}`;
+  const m = document.getElementById("moreBtn"); if(m) m.onclick = () => { shown += 48; renderRes(); };
+}
+
+// Porte 2 : fonctions
+function itemsForFonction(fn){ return D.items.filter(it => it.fonctions.includes(fn)); }
+function pageFonction(app, arg){
+  const fn = D.fonctions.find(f => f.Fonction === arg);
+  let html = crumbs(fn ? `<a href="#fonction">J'ai besoin d'une fonction</a> › ${esc(fn.Fonction)}` : "J'ai besoin d'une fonction") +
+    `<h1>${fn ? esc(fn.Fonction) : "J'ai besoin d'une fonction"}</h1><p class="hint">${fn ? esc(fn.Explication) : "Choisissez ce que vous voulez obtenir. Nous montrons tout ce qui peut le faire, y compris des usages détournés."}</p>
+    <div class="chips">${D.fonctions.map(f => `<a class="chip${fn && f === fn ? " on" : ""}" href="#fonction/${encodeURIComponent(f.Fonction)}">${esc(f.Fonction)}</a>`).join("")}</div>`;
+  if(fn){
+    const its = itemsForFonction(fn.Fonction);
+    const groups = {};
+    its.forEach(it => (groups[it.famille.Famille] ||= []).push(it));
+    const names = Object.keys(groups).sort((a,b) => groups[b].length - groups[a].length);
+    html += `<p class="count">${its.length} articles en stock dans ${names.length} familles</p>`;
+    html += names.map(n => { const f = D.famBy[n], g = sortItems(groups[n]);
+      return `<div class="section"><h2>${f.Pictogramme || ""} ${esc(n)} <span class="count">(${g.length})</span></h2>
+        ${f.usages.length ? `<p class="hint">Idées : ${f.usages.map(esc).join(" · ")}</p>` : ""}
+        <div class="row">${cards(g.slice(0, 10))}</div>
+        ${g.length > 10 ? `<p><a href="#chercher/${encodeURIComponent(n)}">Voir les ${g.length} articles « ${esc(n)} »</a></p>` : ""}</div>`; }).join("");
+    if(!its.length) html += `<div class="empty">Rien en stock pour cette fonction aujourd'hui.</div>`;
+  }
+  app.innerHTML = html;
+}
+
+// Porte 3 : projets
+function itemsForPoste(po){
+  return D.items.filter(it => {
+    const inScope = (po.familles.length && po.familles.includes(it.famille.Famille)) || (po.fonction && it.fonctions.includes(po.fonction));
+    const scoped = po.familles.length || po.fonction;
+    if(scoped && !inScope) return false;
+    return !po.mots.length || anyWord(it.nom, po.mots);
+  });
+}
+function pageProjet(app, arg){
+  const p = D.proj.find(x => x.nom === arg);
+  if(!p){
+    app.innerHTML = crumbs("J'ai un projet") + `<h1>J'ai un projet</h1><p class="hint">Décrivez-le en quelques mots, ou choisissez un projet ci-dessous.</p>
+      <form class="ask" id="ask"><input id="askIn" placeholder="Ex. : je veux faire un coin WC au fond du garage" aria-label="Votre projet"><button class="btn">Chercher</button></form>
+      <div class="doors">${D.proj.map(x => { const ok = x.postes.filter(po => itemsForPoste(po).length).length;
+        return `<a class="door" href="#projet/${encodeURIComponent(x.nom)}"><h2>${esc(x.nom)}</h2><p>${esc(x.desc)}</p><p class="count">${ok} postes sur ${x.postes.length} trouvables en stock</p></a>`; }).join("")}</div>`;
+    document.getElementById("ask").onsubmit = e => { e.preventDefault(); const v = document.getElementById("askIn").value.trim(); if(v) location.hash = "q/" + encodeURIComponent(v); };
+    return;
+  }
+  const res = p.postes.map(po => ({ po, its: sortItems(itemsForPoste(po)) }));
+  const ok = res.filter(r => r.its.length).length;
+  app.innerHTML = crumbs(`<a href="#projet">J'ai un projet</a> › ${esc(p.nom)}`) + `<h1>${esc(p.nom)}</h1><p class="hint">${esc(p.desc)}</p>
+    <div class="score"><div class="bar"><i style="width:${Math.round(ok / p.postes.length * 100)}%"></i></div><strong>${ok} postes sur ${p.postes.length}</strong> trouvables dans le stock aujourd'hui</div>
+    ${res.map(({po, its}) => `<div class="poste"><div class="head"><h3>${esc(po.nom)}</h3><span class="qty">${po.qte ? "Quantité indicative : " + esc(po.qte) : ""}</span></div>
+      ${po.conseil ? `<p class="hint">${esc(po.conseil)}</p>` : ""}
+      ${its.length ? `<p class="count">${its.length} possibilité${its.length > 1 ? "s" : ""} en stock</p><div class="row">${cards(its.slice(0, 12))}</div>` : `<div class="empty">Rien en stock aujourd'hui pour ce poste : à trouver ailleurs, ou demandez au Comptoir s'il en arrive bientôt.</div>`}</div>`).join("")}
+    <p class="hint">Pas équipé pour le monter ? Le Comptoir propose des ateliers de montage guidé avec ses outils.</p>`;
+}
+
+// Porte 4 : ambiances
+function ambItem(l){ const its = l.ref ? (D.byRef[refKey(l.ref)] || []) : []; return its[0] || null; }
+function pageInspiration(app, arg){
+  const a = D.amb.find(x => x.nom === arg);
+  if(!a){
+    app.innerHTML = crumbs("Je veux m'inspirer") + `<h1>Je veux m'inspirer</h1><p class="hint">Des aménagements complets composés avec ce qui est au Comptoir.</p>
+      <div class="amb">${D.amb.map(x => { const av = x.lignes.filter(ambItem).length;
+        return `<a class="door" href="#inspiration/${encodeURIComponent(x.nom)}"><h2>${esc(x.nom)}</h2><p>${esc(x.desc)}</p><p class="count">${av} éléments sur ${x.lignes.length} disponibles</p></a>`; }).join("")}</div>`;
+    return;
+  }
+  const rows = a.lignes.map(l => ({ l, it: ambItem(l) }));
+  const av = rows.filter(r => r.it), total = av.reduce((s, r) => s + r.it.prix, 0);
+  const missing = rows.filter(r => r.l.ref && !r.it).length;
+  app.innerHTML = crumbs(`<a href="#inspiration">Je veux m'inspirer</a> › ${esc(a.nom)}`) + `<h1>${esc(a.nom)}</h1><p class="hint">${esc(a.desc)}</p>
+    ${missing ? `<p class="err">Ambiance incomplète : ${missing} élément${missing > 1 ? "s ont été vendus" : " a été vendu"} depuis sa composition.</p>` : ""}
+    ${rows.map(({l, it}) => `<div class="ambrow"${it ? ` data-item="${it.id}" style="cursor:pointer"` : ""}>
+      <div class="pic" style="background:${it ? it.famille.color : "var(--line)"}">${it ? it.famille.Pictogramme : "?"}</div>
+      <div class="txt"><div class="role">${esc(l.role)}</div><div><strong>${esc(it ? it.nom : (l.note || "À trouver"))}</strong>${it && l.note ? ` · ${esc(l.note)}` : ""}</div>
+      ${it ? `<span class="st ok">Disponible · ${euro(it.prix)}${it.ref ? " · " + esc(it.ref) : ""}</span>` : l.ref ? `<span class="st no">Vendu</span>` : `<span class="st">Pas en stock</span>`}</div></div>`).join("")}
+    <p class="total">Total des éléments disponibles : ${euro(total)} <span class="count">(prix à l'unité, quantités à ajuster)</span></p>
+    <button class="btn" id="addAll" type="button">Ajouter les ${av.length} éléments à ma liste</button>`;
+  document.getElementById("addAll").onclick = () => { av.forEach(r => addToList(r.it.id, false)); updateListBtn(); location.hash = "liste"; };
+}
+
+// ---------- Ma liste (gardée dans ce navigateur) ----------
+function getList(){ try { return JSON.parse(localStorage.getItem("faireavec-liste") || "[]"); } catch(e){ return MEM; } }
+let MEM = [];
+function saveList(l){ MEM = l; try { localStorage.setItem("faireavec-liste", JSON.stringify(l)); } catch(e){} updateListBtn(); }
+function addToList(id, refresh = true){ const l = getList(); const it = D.items.find(i => i.id === id); if(!it) return; const e = l.find(x => x.ref === it.ref && x.nom === it.nom); if(e) e.q++; else l.push({ ref: it.ref, nom: it.nom, prix: it.prix, q: 1 }); saveList(l); if(refresh) updateListBtn(); }
+function updateListBtn(){ const n = getList().reduce((s, x) => s + x.q, 0); document.getElementById("listBtn").textContent = `Ma liste (${n})`; }
+function listText(){ const l = getList(); return "Ma liste pour le Comptoir des Matériaux :\n" + l.map(x => `- ${x.q} × ${x.nom}${x.ref ? " (réf. " + x.ref + ")" : ""}`).join("\n") + `\nTotal indicatif : ${euro(l.reduce((s, x) => s + x.q * x.prix, 0))}`; }
+function pageListe(app){
+  const l = getList();
+  app.innerHTML = crumbs("Ma liste") + `<h1>Ma liste</h1><p class="hint">Gardée dans ce navigateur. Envoyez-la au Comptoir ou imprimez-la pour venir voir les matériaux.</p>
+    ${l.length ? l.map((x, i) => `<div class="listitem"><div class="txt"><strong>${esc(x.nom)}</strong><div class="count">${esc(x.ref || "sans référence")} · ${euro(x.prix)}</div></div>
+      <input type="number" min="0" value="${x.q}" data-i="${i}" aria-label="Quantité"></div>`).join("") +
+      `<p class="total">Total indicatif : ${euro(l.reduce((s, x) => s + x.q * x.prix, 0))}</p>
+      <div class="no-print" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="share" type="button">Envoyer</button><button class="btn ghost" id="copy" type="button">Copier</button><button class="btn ghost" id="print" type="button">Imprimer</button><button class="btn ghost" id="clear" type="button">Vider</button></div>`
+    : `<div class="empty">Votre liste est vide. Ajoutez des matériaux depuis leur fiche.</div>`}`;
+  app.querySelectorAll("input[data-i]").forEach(inp => inp.onchange = () => { const l2 = getList(); const q = Math.max(0, parseInt(inp.value) || 0); if(q) l2[+inp.dataset.i].q = q; else l2.splice(+inp.dataset.i, 1); saveList(l2); pageListe(app); });
+  const on = (id, fn) => { const b = document.getElementById(id); if(b) b.onclick = fn; };
+  on("share", async () => { const t = listText(); if(navigator.share){ try { await navigator.share({ text: t }); return; } catch(e){ if(e.name === "AbortError") return; } } window.open("https://wa.me/?text=" + encodeURIComponent(t), "_blank"); });
+  on("copy", async () => { try { await navigator.clipboard.writeText(listText()); document.getElementById("copy").textContent = "Copié ✓"; } catch(e){ prompt("Copiez la liste :", listText()); } });
+  on("print", () => window.print());
+  on("clear", () => { if(confirm("Vider la liste ?")){ saveList([]); pageListe(app); } });
+}
+
+// ---------- Fiche d'un article ----------
+function openItem(id){
+  const it = D.items.find(i => i.id === id); if(!it) return;
+  const dlg = document.getElementById("dlg");
+  const row = (k, v) => v ? `<tr><td>${k}</td><td>${v}</td></tr>` : "";
+  const ex = it.exemple ? ' <span class="badge ex">exemple</span>' : "";
+  dlg.innerHTML = `<div class="dlg">${tile(it, true)}<h2>${esc(it.nom)}</h2>
+    <table>${row("Référence", esc(it.ref || "sans référence"))}${row("Famille", esc(it.famille.Famille))}${row("Prix", euro(it.prix))}${row("En stock", it.stock)}
+    ${row("Dimensions", dims(it) && dims(it) + ex)}${row("Matière", it.matiere ? esc(it.matiere) + ex : (it.matiereFam ? esc(it.matiereFam) + " (selon la famille)" : ""))}
+    ${row("Couleur", esc(it.couleur))}${row("État", it.etat && esc(it.etat) + ex)}${row("Intérieur / extérieur", esc(it.inout))}
+    ${row("Transport", esc(it.transport))}${row("Bricolage", esc(it.bricolage))}</table>
+    ${it.fonctions.length ? `<strong>Peut servir à</strong><div class="chips">${it.fonctions.map(f => `<a class="chip" href="#fonction/${encodeURIComponent(f)}">${esc(f)}</a>`).join("")}</div>` : ""}
+    ${it.usages.length ? `<strong>Idées de réemploi détourné</strong><ul>${it.usages.map(u => `<li>${esc(u)}</li>`).join("")}</ul>` : ""}
+    ${!it.detail ? `<p class="hint">Cette fiche n'est pas encore détaillée (dimensions, matière, état). Demandez au Comptoir.</p>` : ""}
+    <div class="actions"><button class="btn ghost" id="dClose" type="button">Fermer</button><button class="btn" id="dAdd" type="button">Ajouter à ma liste</button></div></div>`;
+  dlg.querySelector("#dClose").onclick = () => dlg.close();
+  dlg.querySelector("#dAdd").onclick = () => { addToList(id); dlg.querySelector("#dAdd").textContent = "Ajouté ✓"; };
+  dlg.querySelectorAll("a.chip").forEach(a => a.onclick = () => dlg.close());
+  dlg.showModal();
+}
+document.addEventListener("click", e => {
+  const c = e.target.closest("[data-item]"); if(c){ openItem(+c.dataset.item); return; }
+  if(e.target.id === "dlg") e.target.close();
+});
+document.getElementById("listBtn").onclick = () => location.hash = "liste";
+init();
+</script>
+</body>
+</html>

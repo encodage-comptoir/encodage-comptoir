@@ -1,0 +1,37 @@
+Référence;Famille;Matière;Couleur;État;Intérieur/extérieur;Largeur;Hauteur;Profondeur;Fonctions;Usages détournés;Transport;Bricolage;Mesuré
+PO 42;;Bois massif (chêne);Naturel;À rafraîchir;Intérieur;78;201;4;;Tête de lit;Camionnette;Outillage simple;non
+PO 41;;Bois massif (sapin);Naturel;À rafraîchir;Intérieur;73;201;4;;Tête de lit, Plateau de bureau;Camionnette;Outillage simple;non
+PO 31;;Bois massif (sapin);Naturel;À rafraîchir;Intérieur;73;201;3;;Paravent avec deux autres portes;Camionnette;Outillage simple;non
+PO 2g;;Bois (chêne semi-massif);Naturel;Neuf;Intérieur;83;201;4;;;Camionnette;Prêt à poser;non
+PO 17;;Verre;Transparent;Neuf;Intérieur;83;201;1;Apporter de la lumière;Cloison vitrée, Plateau de table en verre;Camionnette;Atelier conseillé;non
+PO 32;;Métal;Gris;Très bon;Les deux;88;201;5;;Porte d'abri de jardin ou d'atelier;Camionnette;Outillage simple;non
+PO 2y;;Bois et verre;Brun;Très bon;Intérieur;83;201;4;Apporter de la lumière;Cloison lumineuse, Façade de mini-serre;Camionnette;Outillage simple;non
+PO55;;Bois;Naturel;À rafraîchir;Extérieur;240;200;5;Couvrir / abriter;Bardage ou toit d'abri bois;À plusieurs;Atelier conseillé;non
+CH 15;;Bois et verre;Naturel;À rafraîchir;Extérieur;120;140;7;;Châssis de couche, Mini-serre;Voiture break;Outillage simple;non
+CH 18;;Bois et verre;Naturel;Très bon;Extérieur;100;120;7;;Châssis de couche, Cadre de miroir;Voiture break;Outillage simple;non
+CH 92;;PVC et verre;Blanc;Très bon;Extérieur;100;120;7;;Mini-serre;Voiture break;Atelier conseillé;non
+CH 23;;Bois et verre;Naturel;Très bon;Extérieur;78;118;10;;Verrière d'abri de jardin;Voiture break;Atelier conseillé;non
+CAR 29;;Céramique;;Neuf;Intérieur;30;30;1;;Crédence, Décorations de Noël;Voiture;Outillage simple;non
+CAR 51;;Céramique;;À rafraîchir;Intérieur;20;20;1;;Dessous-de-plat, Dessus de table en mosaïque;Voiture;Outillage simple;non
+CAR68;;Céramique;Blanc veiné;Neuf;Intérieur;60;60;1;;Plateau de table basse;Voiture;Outillage simple;non
+CAR 1;;Céramique;Blanc;Neuf;Intérieur;15;15;1;;Crédence;Voiture;Outillage simple;non
+SA 54;;Céramique;Blanc;Très bon;Intérieur;37;40;65;;;Voiture;Outillage simple;non
+SA 67;;Céramique;Blanc;Neuf;Intérieur;37;40;65;;;Voiture;Outillage simple;non
+SA 43;;Céramique;Blanc;Très bon;Intérieur;36;35;54;;;Voiture;Atelier conseillé;non
+SA 80;;Métal;;Très bon;Intérieur;50;112;15;;;Voiture break;Atelier conseillé;non
+SA 37;;Céramique;Blanc;Très bon;Intérieur;40;15;25;;Jardinière murale;Voiture;Outillage simple;non
+SA108;;Céramique;Blanc;À rafraîchir;Les deux;60;25;45;;Évier extérieur de potager, Bac de rempotage;Voiture break;Outillage simple;non
+SA 70;;Acier émaillé;Blanc;À rafraîchir;Les deux;170;45;70;Planter;Bac potager surélevé, Mare;Camionnette;Outillage simple;non
+GRO 8;;Terre cuite;Gris;Très bon;Extérieur;21;6.5;10;;Bordure de potager, Pied de sapin, Barbecue;Voiture (par lots);Outillage simple;non
+GRO22;;Béton;Gris;Très bon;Extérieur;39;19;14;;Banc avec deux planches, Étagère de garage;Camionnette;Outillage simple;non
+GRO 7;;Béton;Gris;Très bon;Extérieur;100;20;6;;Bordure de potager;Voiture break;Outillage simple;non
+BOI02;;Bois massif (sapin);Brut;Très bon;Les deux;200;2.2;15;;Bac à compost, Sapin de Noël, Nichoir;Voiture break;Outillage simple;non
+BOI03;;Bois massif;Brut;Très bon;Les deux;200;2.2;15;;Bac potager, Sapin de Noël;Voiture break;Outillage simple;non
+BOI10;;Panneau (MDF);Brut;Neuf;Intérieur;244;1.8;122;;Étagère, Sapin de Noël découpé;Camionnette;Outillage simple;non
+BOI04;;Bois (chêne lamellé-collé);Naturel;Très bon;Intérieur;200;2.6;60;;Plateau de bureau, Étagère;Voiture break;Outillage simple;non
+BOI08;;Panneau compact (HPL);Gris;Très bon;Extérieur;300;1;150;;Plan de travail extérieur, Bac potager;À plusieurs;Atelier conseillé;non
+BAR 1;Bois et panneaux;Bois massif (mélèze);Naturel;Neuf;Extérieur;400;2.2;12;Habiller un mur;Bardage d'abri, Bac potager, Poulailler;Camionnette;Outillage simple;non
+TOI04;;Polycarbonate;Transparent;Très bon;Extérieur;200;1;100;;Toit de mini-serre;Voiture break;Outillage simple;non
+DIV29;Jardin et extérieur;Plastique;Noir;Très bon;Extérieur;150;40;100;;Mare de jardin;Voiture break;Outillage simple;non
+DIV7;Divers;;;;;;;;;;;;
+PAR 11;;Bois massif (châtaignier);Naturel;Très bon;Intérieur;200;1.2;10;;Habillage de tête de lit, Jardinière;Voiture break;Outillage simple;non
