@@ -14,7 +14,13 @@ Site statique, sans serveur ni IA : il lit les fichiers du dossier `donnees/`.
 | `fiches.csv` | Détails par référence, mêmes colonnes que l'export « caractéristiques » de l'app d'encodage (+ Famille, Fonctions, Usages détournés, Bricolage, Mesuré). Les valeurs actuelles sont des exemples (`Mesuré` = non) | Coller les lignes de l'export de l'app |
 | `fonctions.csv` | Fonctions et leurs synonymes | Rarement |
 | `projets.csv` | Une ligne par poste de projet : familles, fonction ou mots du nom à chercher | Après chaque atelier |
-| `ambiances.csv` | Aménagements complets : un rôle et une référence par ligne | Quand le stock change |
+| `ambiances.csv` | Pièces complètes : une ligne par rôle (référence, calcul `sol` / `murs` / `plinthes` / `perimetre` ou quantité fixe, couverture par unité de stock), dimensions de pièce par défaut | Quand le stock change |
+| `idees.csv` | Illustrations des usages détournés : Idée (même texte que dans familles ou fiches) ; Image (fichier de `photos/` ou lien) ; Crédit ; Lien | Au fil des photos |
+| `photos/` | Photos des articles, nommées comme dans l'app d'encodage (SA139-1.jpg) et listées dans la colonne Photos de `fiches.csv` | À chaque encodage |
+
+Dans `familles.csv`, une fonction peut être limitée à certains noms : `Revêtir un sol (pave|klinker|dalle)` ne s'applique qu'aux articles dont le nom contient un de ces mots.
+
+Le bouton « Être guidé » utilise le téléphone et l'e-mail de `CONTACT`, en haut de `index.html`.
 
 Les fichiers se modifient dans un tableur (séparateur « ; »). Plus tard, chaque fichier pourra
 être un onglet d'un Google Sheet publié en CSV : il suffira de changer les liens dans `SOURCES`
