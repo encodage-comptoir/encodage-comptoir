@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Caisse Comptoir (essai)</title>
+<meta name="theme-color" content="#2f7d4a">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+[hidden]{display:none!important}
+/* Même allure que l'app d'encodage : une colonne, gros boutons, barre d'action fixe en bas */
+:root{
+  --bg:#f3f2ee; --surface:#ffffff; --ink:#1d2328; --muted:#5d656c; --line:#d9d7d0;
+  --accent:#f2b705; --accent-ink:#1d2328; --ok:#2f7d4a; --ok-bg:#e3f1e7; --warn-bg:#fff4cc; --bad:#b83c33; --bad-bg:#f8e1df;
+  --display:"Archivo", "Arial Black", system-ui, sans-serif;
+  --body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#15191c; --surface:#1f2428; --ink:#eef0f1; --muted:#a3abb2; --line:#343b41;
+  --accent:#f5c22b; --accent-ink:#15191c; --ok:#6fcf8e; --ok-bg:#1d3326; --warn-bg:#3a3214; --bad:#ef8a80; --bad-bg:#3a1f1d; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#15191c; --surface:#1f2428; --ink:#eef0f1; --muted:#a3abb2; --line:#343b41;
+  --accent:#f5c22b; --accent-ink:#15191c; --ok:#6fcf8e; --ok-bg:#1d3326; --warn-bg:#3a3214; --bad:#ef8a80; --bad-bg:#3a1f1d; color-scheme:dark}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);font-size:18px;line-height:1.4}
+.app{max-width:520px;margin:0 auto;min-height:100%;box-sizing:border-box;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 120px}
+h1,h2{font-family:var(--display);font-weight:800;text-wrap:balance;margin:0;line-height:1.1}
+h1{font-size:26px} h2{font-size:24px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.essai{background:var(--warn-bg);border-radius:10px;padding:8px 12px;font-size:15px;font-weight:700;margin-bottom:12px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.tabs button{min-height:52px;border-radius:12px;border:2px solid var(--line);background:var(--surface);font-family:var(--display);font-weight:800;font-size:18px}
+.tabs button.sel{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.big{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:64px;border-radius:14px;
+  border:0;background:var(--accent);color:var(--accent-ink);font-family:var(--display);font-weight:800;font-size:20px;padding:10px 16px;box-sizing:border-box}
+.big.ok{background:var(--ok);color:#fff}
+.big.ghost{background:var(--surface);color:var(--ink);border:2px solid var(--line)}
+.big:disabled{opacity:.4;cursor:default}
+.big small{font-family:var(--body);font-weight:700;font-size:15px}
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--bg);border-top:1px solid var(--line);
+  padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.bar .in{max-width:520px;margin:0 auto;display:flex;gap:10px}
+.bar .back{flex:0 0 96px}
+input.t{width:100%;box-sizing:border-box;min-height:56px;border-radius:12px;border:2px solid var(--line);background:var(--surface);
+  color:var(--ink);font:inherit;font-size:20px;padding:10px 14px}
+.chips{display:flex;gap:8px;overflow-x:auto;margin:10px -16px 6px;padding:0 16px 6px;scrollbar-width:none}
+.chip{flex:0 0 auto;min-height:44px;padding:6px 14px;border-radius:22px;border:2px solid var(--line);background:var(--surface);font-weight:700;font-size:16px}
+.chip.sel{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.list{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.item{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:12px;align-items:center;text-align:left;background:var(--surface);
+  border:1px solid var(--line);border-radius:14px;padding:8px;width:100%;box-sizing:border-box}
+.thumb{width:64px;height:64px;border-radius:10px;background:var(--line);overflow:hidden;display:flex;align-items:center;justify-content:center;
+  font-family:var(--display);font-weight:800;font-size:13px;color:var(--muted)}
+.thumb img{width:100%;height:100%;object-fit:cover}
+.item .n{font-weight:700;font-size:18px;line-height:1.2;overflow-wrap:anywhere} .item .d{color:var(--muted);font-size:14px}
+.item .px{font-family:var(--display);font-weight:800;font-size:18px;text-align:right;white-space:nowrap}
+.item .px small{display:block;font-family:var(--body);font-size:13px;color:var(--muted);font-weight:400}
+.pill{display:inline-block;font-size:13px;font-weight:700;padding:1px 8px;border-radius:10px;background:var(--warn-bg)}
+.pill.bad{background:var(--bad-bg);color:var(--bad)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px}
+.ligne{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;padding:12px 0;border-bottom:1px solid var(--line)}
+.ligne:last-child{border-bottom:0}
+.ligne .n{font-weight:700}
+.ligne .ctl{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center}
+.qty{display:flex;align-items:center;gap:6px}
+.qty button{width:48px;height:48px;border-radius:12px;border:2px solid var(--line);background:var(--surface);font-size:24px;font-weight:700}
+.qty b{min-width:28px;text-align:center;font-size:20px}
+.ligne input.t{min-height:48px;font-size:18px;text-align:right;padding:6px 10px}
+.ligne input.t.need{border-color:var(--accent);background:var(--warn-bg)}
+.ligne .tot{font-family:var(--display);font-weight:800;min-width:80px;text-align:right}
+.total{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--display);font-weight:800;font-size:28px;margin:16px 0 4px}
+.muted{color:var(--muted);font-size:15px}
+.modes{display:grid;grid-template-columns:1fr;gap:10px;margin-top:14px}
+.mode{min-height:72px;border-radius:14px;border:2px solid var(--line);background:var(--surface);font-family:var(--display);font-weight:800;font-size:22px;
+  display:flex;align-items:center;gap:14px;padding:0 18px;text-align:left}
+.mode.sel{border-color:var(--ink);background:var(--accent);color:var(--accent-ink)}
+.mode svg{width:34px;height:34px;flex:0 0 auto}
+.billets{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:10px}
+.billets button{min-height:52px;border-radius:12px;border:2px solid var(--line);background:var(--surface);font-weight:700;font-size:18px}
+.rendu{font-family:var(--display);font-weight:800;font-size:30px;text-align:center;padding:14px;border-radius:14px;background:var(--ok-bg);color:var(--ok);margin-top:12px}
+.rendu.bad{background:var(--bad-bg);color:var(--bad);font-size:20px}
+.ticket{font-variant-numeric:tabular-nums}
+.ticket .l{display:flex;justify-content:space-between;gap:10px;padding:3px 0}
+.ticket hr{border:0;border-top:1px dashed var(--line);margin:8px 0}
+dl.res{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 14px;margin:0;font-variant-numeric:tabular-nums}
+dl.res dt{color:var(--muted)} dl.res dd{margin:0;font-weight:700;text-align:right}
+dl.res .fort{color:var(--ink);font-weight:700;border-top:1px solid var(--line);padding-top:6px}
+.sec{font-family:var(--display);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:24px 0 8px}
+.vente{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;box-sizing:border-box;text-align:left;
+  background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.vente .h{font-weight:700;font-variant-numeric:tabular-nums}
+.vente .a{color:var(--muted);font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vente .m{font-family:var(--display);font-weight:800;text-align:right;white-space:nowrap}
+.vente .m small{display:block;font-family:var(--body);font-weight:400;font-size:13px;color:var(--muted)}
+.vente.annulee{opacity:.55}.vente.annulee .m{text-decoration:line-through}
+.acts{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.toast{position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);
+  padding:12px 20px;border-radius:24px;font-weight:700;max-width:80vw;text-align:center}
+.vide{color:var(--muted);text-align:center;padding:30px 10px}
+.lien{background:none;border:0;padding:8px 0;color:var(--ink);text-decoration:underline;font-weight:700;min-height:44px}
+@media (prefers-reduced-motion:no-preference){.chip,.big,.item,.mode{transition:transform .08s}.chip:active,.big:active,.item:active,.mode:active{transform:scale(.97)}}
+/* Carnet de caisse : mêmes colonnes que le carnet papier */
+.carnet{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:14px;font-variant-numeric:tabular-nums}
+.carnet .r{display:grid;grid-template-columns:40px minmax(0,1fr) 58px 58px 58px;gap:4px;align-items:center;padding:7px 8px;border-top:1px solid var(--line);width:100%;box-sizing:border-box;
+  background:none;border-left:0;border-right:0;border-bottom:0;text-align:left;font-size:14px}
+.carnet .r:first-child{border-top:0}
+.carnet .r.th{font-weight:700;color:var(--muted);font-size:11px;line-height:1.15;background:var(--bg)}
+.carnet .r.tot{font-weight:700;background:var(--bg)}
+.carnet .r.new{border-top:2px solid var(--ink)}
+.carnet .r>span:nth-child(n+3){text-align:right;white-space:nowrap}
+.carnet .lib{overflow-wrap:anywhere}
+.carnet .ref{color:var(--muted)}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.seg button{min-height:52px;border-radius:12px;border:2px solid var(--line);background:var(--surface);font-weight:700}
+.seg button.sel{border-color:var(--ink);background:var(--accent);color:var(--accent-ink)}
+.qin{width:72px!important;text-align:center!important}
+.solde{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--display);font-weight:800;font-size:24px}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<div class="bar" id="bar"><div class="in" id="barIn"></div></div>
+<div class="toast" id="toast" hidden></div>
+<script>
+"use strict";
+const VERSION="0.1 (essai)";
+// Catégories : mêmes préfixes que l'app d'encodage.
+const CATS=[["SA","Sanitaire"],["PA","Parois de douche"],["CH","Châssis"],["PO","Portes"],["CAR","Carrelage"],["GRO","Gros œuvre"],["RA","Chauffage"],
+ ["ELEC","Électricité"],["LUM","Luminaires"],["BOI","Bois"],["PAR","Parquet & bardage"],["LAM","Lambris"],["TOI","Toiture"],["ISO","Isolant"],
+ ["Q","Quincaillerie"],["OUT","Outillage"],["ELECTRO","Électroménager"],["DIV","Divers"]];
+const catLabel=c=>(CATS.find(x=>x[0]===c)||[,""])[1];
+const TVA=0.21;      // tous les articles de l'export Impulsion sont à 21 %
+const PRIX_KM=0.5;   // livraison : 0,50 € / km (procédure, point 10)
+// Comme dans le carnet : « Achat et cash », « Achat et virement » (carte ou virement), « Facture ».
+const MODES={especes:"Espèces",carte:"Carte bancaire",virement:"Virement",facture:"Facture"};
+const ICON={especes:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></svg>',
+ carte:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>',
+ virement:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h14l-4-4M20 16H6l4 4"/></svg>',
+ facture:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l4 4v16H6z"/><path d="M9 11h7M9 15h7M9 7h3"/></svg>'};
+
+const $=s=>document.querySelector(s);
+const $$=s=>document.querySelectorAll(s);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const r2=n=>Math.round(n*100)/100;
+const eur=n=>r2(n).toLocaleString("fr-BE",{minimumFractionDigits:2,maximumFractionDigits:2})+" €";
+const nb=n=>n==null?"":r2(n).toLocaleString("fr-BE",{minimumFractionDigits:2,maximumFractionDigits:2});
+const num=s=>{const v=parseFloat(String(s??"").replace(/\s/g,"").replace(",","."));return isFinite(v)?r2(v):null};
+const virg=n=>n==null?"":String(n).replace(".",",");
+const sans=s=>String(s||"").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
+const jour=d=>{d=d||new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+const moisDe=j=>j.slice(0,7);
+const moisTxt=m=>new Date(m+"-15T12:00").toLocaleDateString("fr-BE",{month:"long",year:"numeric"});
+const jjmm=j=>j.slice(8)+"/"+j.slice(5,7);
+const dateBe=j=>j.split("-").reverse().join("/");
+const dontTva=t=>r2(t-t/(1+TVA));
+function moisAvant(m){let[y,mo]=m.split("-").map(Number);mo--;if(!mo){mo=12;y--}return y+"-"+String(mo).padStart(2,"0")}
+function toast(t){const el=$("#toast");el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2200)}
+function bar(html){$("#barIn").innerHTML=html;$("#bar").hidden=!html}
+
+// ---------- Stockage sur le téléphone ----------
+let idb;
+function openDb(){return new Promise((ok,ko)=>{const r=indexedDB.open("caisse-comptoir",1);
+ r.onupgradeneeded=()=>{const d=r.result;d.createObjectStore("ventes",{keyPath:"id"});d.createObjectStore("sorties",{keyPath:"id"});d.createObjectStore("reglages")};
+ r.onsuccess=()=>{idb=r.result;ok()};r.onerror=()=>ko(r.error)})}
+function tx(store,mode,fn){return new Promise((ok,ko)=>{const t=idb.transaction(store,mode),s=t.objectStore(store);const res=fn(s);
+ t.oncomplete=()=>ok(res&&res.result);t.onerror=()=>ko(t.error)})}
+const all=st=>tx(st,"readonly",s=>s.getAll());
+const put=(st,v)=>tx(st,"readwrite",s=>s.put(v));
+const putSet=(k,v)=>tx("reglages","readwrite",s=>s.put(v,k));
+async function allSet(){const o={};await new Promise((ok,ko)=>{const t=idb.transaction("reglages"),s=t.objectStore("reglages"),c=s.openCursor();
+ c.onsuccess=()=>{const x=c.result;if(x){o[x.key]=x.value;x.continue()}else ok()};c.onerror=()=>ko(c.error)});return o}
+
+let CAT=[], ventes=[], sorties=[], REG={}, vendu={};
+let screen="vendre", q="", cat="", panier=[], pay={}, derniere=null, moisVu=moisDe(jour()), venteVue=null, sortieOuverte=false;
+// l.id = identifiant de l'annonce (pour le stock), l.r = référence affichée (vide pour une annonce sans référence).
+function calcVendu(){vendu={};ventes.forEach(v=>{if(!v.annulee)v.lignes.forEach(l=>{const k=l.id||l.r;if(k)vendu[k]=(vendu[k]||0)+l.q})})}
+const refAff=a=>a.x?"":a.r;
+const reste=a=>a.s==null?null:a.s-(vendu[a.r]||0);
+const totalPanier=()=>r2(panier.reduce((t,l)=>t+(l.p||0)*(l.q||0),0));
+const panierPret=()=>panier.length&&panier.every(l=>l.p!=null&&l.p>=0&&l.q>0&&(l.id||l.n.trim()));
+const entreeCaisse=v=>v.mode==="especes"||(v.mode==="facture"&&v.facture.paye==="especes");
+
+// ---------- Écrans ----------
+function render(){const app=$("#app");
+ let h=`<div class="essai">Essai : continuez à tenir le carnet de caisse papier.</div>`;
+ if(screen==="vendre"||screen==="carnet")h+=`<div class="tabs"><button data-go="vendre" class="${screen==="vendre"?"sel":""}">Vendre</button><button data-go="carnet" class="${screen==="carnet"?"sel":""}">Carnet de caisse</button></div>`;
+ h+=({vendre:ecranVendre,panier:ecranPanier,payer:ecranPayer,ticket:ecranTicket,carnet:ecranCarnet}[screen])();
+ app.innerHTML=h;
+ app.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>aller(b.dataset.go));
+ ({vendre:brancherVendre,panier:brancherPanier,payer:brancherPayer,ticket:brancherTicket,carnet:brancherCarnet}[screen])();
+}
+$("#bar").addEventListener("click",e=>{const b=e.target.closest("[data-go]");if(b)aller(b.dataset.go)});
+function aller(s){$("#toast").hidden=true;screen=s;if(s!=="ticket")venteVue=null;render();scrollTo(0,0)}
+
+// Vendre : chercher un article et l'ajouter au panier
+function resultats(){const mots=sans(q).split(/\s+/).filter(Boolean);
+ return CAT.filter(a=>(!cat||a.c===cat)&&(!mots.length||mots.every(m=>a.k.includes(m))))
+  .sort((a,b)=>((reste(a)??1)>0?0:1)-((reste(b)??1)>0?0:1))}
+function ecranVendre(){const res=resultats(),n=panier.length;
+ const chips=`<button class="chip ${cat?"":"sel"}" data-cat="">Tout</button>`+CATS.filter(c=>CAT.some(a=>a.c===c[0])).map(c=>`<button class="chip ${cat===c[0]?"sel":""}" data-cat="${c[0]}">${c[1]}</button>`).join("");
+ const items=res.slice(0,60).map(a=>{const r=reste(a);
+  return `<button class="item" data-add="${esc(a.r)}"><span class="thumb">${a.f?`<img src="${esc(a.f)}" alt="" loading="lazy" onerror="this.remove()">`:""}${esc(a.c)}</span>
+  <span><span class="n">${esc(a.n)}</span><br><span class="d">${esc(refAff(a))||"sans réf."}${a.e?" · "+esc(a.e):""}${r!=null?` · ${r>0?"stock "+r:'<span class="pill bad">plus en stock</span>'}`:""}</span></span>
+  <span class="px">${a.p?eur(a.p):'<span class="pill">prix ?</span>'}${a.u&&a.u!=="pièce"?`<small>/ ${esc(a.u)}</small>`:""}</span></button>`}).join("");
+ bar(n?`<button class="big ok" data-go="panier">Panier · ${n} ligne${n>1?"s":""} · ${eur(totalPanier())}</button>`:"");
+ return `<input class="t" id="q" type="search" placeholder="Nom, référence ou emplacement" value="${esc(q)}" autocomplete="off" enterkeyhint="search">
+ <div class="chips">${chips}</div>
+ <button class="big ghost" id="libre" style="min-height:52px;font-size:17px">+ Article sans fiche</button>
+ <div class="list">${items||'<div class="vide">Rien trouvé. Essayez un autre mot, ou « Article sans fiche ».</div>'}</div>
+ ${res.length>60?`<p class="muted">Encore ${res.length-60} articles : précisez la recherche.</p>`:""}`}
+function brancherVendre(){const i=$("#q");
+ i.oninput=()=>{q=i.value;const pos=i.selectionStart;render();const j=$("#q");j.focus();j.setSelectionRange(pos,pos)};
+ $$("[data-cat]").forEach(b=>b.onclick=()=>{cat=b.dataset.cat;render()});
+ $("#libre").onclick=()=>{panier.push({r:"",n:"",p:null,q:1});aller("panier")};
+ $$("[data-add]").forEach(b=>b.onclick=()=>{const a=CAT.find(x=>x.r===b.dataset.add);
+  const l=panier.find(x=>x.id===a.r);if(l)l.q++;else panier.push({id:a.r,r:refAff(a),n:a.n,p:a.p||null,q:1,u:a.u});
+  toast(a.n+" ajouté");render()})}
+
+// Panier : quantités, prix modifiables, livraison
+const qSaisie=l=>l.u&&l.u!=="pièce";
+function ecranPanier(){
+ const lignes=panier.map((l,i)=>`<div class="ligne">
+  ${l.id||l.liv?`<div><span class="n">${esc(l.n)}</span> <span class="muted">${esc(l.r)}</span></div>`:`<input class="t" data-nom="${i}" placeholder="Ce qui est vendu (ex. lot de planches)" value="${esc(l.n)}" style="text-align:left">`}
+  <div class="ctl"><span class="qty">${qSaisie(l)
+   ?`<input class="t qin ${l.q>0?"":"need"}" data-q="${i}" inputmode="decimal" value="${virg(l.q)}" aria-label="Quantité"> <span class="muted">${esc(l.u)}</span>`
+   :`<button data-moins="${i}" aria-label="Un de moins">−</button><b>${l.q}</b><button data-plus="${i}" aria-label="Un de plus">+</button>`}</span>
+  <input class="t ${l.p==null?"need":""}" data-prix="${i}" inputmode="decimal" placeholder="Prix €" value="${virg(l.p)}" aria-label="Prix à l'unité" ${l.liv?"readonly":""}>
+  <span class="tot" data-tot="${i}">${l.p==null||!l.q?"":eur(l.p*l.q)}</span></div>
+  ${qSaisie(l)?`<button class="lien" data-suppr="${i}">Retirer</button>`:""}</div>`).join("");
+ bar(`<button class="big ghost back" data-go="vendre">‹</button><button class="big ok" id="encaisser" ${panierPret()?"":"disabled"}>Encaisser</button>`);
+ return `<h2>Panier</h2>
+ <div class="card" style="margin-top:12px">${lignes||'<div class="vide">Le panier est vide.</div>'}</div>
+ <div class="total"><span>Total</span><span id="total">${eur(totalPanier())}</span></div>
+ <p class="muted">Le prix se change à la main (remise, prix négocié). TVA 21 % comprise.</p>
+ ${panier.some(l=>l.liv)?"":`<button class="big ghost" id="livraison" style="min-height:52px;font-size:17px">+ Livraison (${nb(PRIX_KM)} € / km)</button>`}
+ ${panier.length?'<button class="lien" id="vider">Vider le panier</button>':""}`}
+function brancherPanier(){
+ $$("[data-plus]").forEach(b=>b.onclick=()=>{panier[b.dataset.plus].q++;render()});
+ $$("[data-moins]").forEach(b=>b.onclick=()=>{const l=panier[b.dataset.moins];l.q--;if(l.q<=0)panier.splice(b.dataset.moins,1);render()});
+ $$("[data-suppr]").forEach(b=>b.onclick=()=>{panier.splice(b.dataset.suppr,1);render()});
+ const maj=i=>{const l=panier[i];$(`[data-tot="${i}"]`).textContent=l.p==null||!l.q?"":eur(l.p*l.q);$("#total").textContent=eur(totalPanier());$("#encaisser").disabled=!panierPret()};
+ $$("[data-prix]").forEach(i=>i.oninput=()=>{panier[i.dataset.prix].p=num(i.value);i.classList.toggle("need",panier[i.dataset.prix].p==null);maj(i.dataset.prix)});
+ $$("[data-q]").forEach(i=>i.oninput=()=>{panier[i.dataset.q].q=num(i.value);i.classList.toggle("need",!(panier[i.dataset.q].q>0));maj(i.dataset.q)});
+ $$("[data-nom]").forEach(i=>i.oninput=()=>{panier[i.dataset.nom].n=i.value;$("#encaisser").disabled=!panierPret()});
+ const lv=$("#livraison");if(lv)lv.onclick=()=>{panier.push({r:"",n:"Livraison",liv:1,u:"km",p:PRIX_KM,q:null});render();$(`[data-q="${panier.length-1}"]`).focus()};
+ const v=$("#vider");if(v)v.onclick=()=>{if(confirm("Vider le panier ?")){panier=[];aller("vendre")}};
+ $("#encaisser").onclick=()=>{pay={mode:"",recu:"",fnum:"",fpaye:""};aller("payer")}}
+
+// Encaisser : mode de paiement, monnaie à rendre, facture
+function ecranPayer(){const t=totalPanier();let plus="";
+ if(pay.mode==="especes"){const sugg=[...new Set([t,...[5,10,20,50,100].map(b=>Math.ceil(t/b)*b)])].filter(x=>x>=t).slice(0,4);
+  plus=`<p style="margin:16px 0 6px;font-weight:700">Argent reçu du client (facultatif)</p>
+  <input class="t" id="recu" inputmode="decimal" placeholder="Montant reçu" value="${esc(pay.recu)}">
+  <div class="billets">${sugg.map(x=>`<button data-recu="${x}">${x===t?"Juste":eur(x).replace(",00","")}</button>`).join("")}</div>
+  <div id="rendu">${renduHtml(t,num(pay.recu))}</div>`}
+ if(pay.mode==="facture")plus=`<p style="margin:16px 0 6px;font-weight:700">Numéro de la facture</p>
+  <input class="t" id="fnum" placeholder="ex. F29" value="${esc(pay.fnum)}" autocomplete="off">
+  <div class="seg"><button data-fp="banque" class="${pay.fpaye==="banque"?"sel":""}">Payée par banque</button><button data-fp="especes" class="${pay.fpaye==="especes"?"sel":""}">Payée en espèces</button></div>`;
+ bar(`<button class="big ghost back" data-go="panier">‹</button><button class="big ok" id="valider" ${peutValider()?"":"disabled"}>Valider la vente</button>`);
+ return `<h2>Encaisser</h2><div class="total"><span>À payer</span><span>${eur(t)}</span></div>
+ <div class="modes">${Object.keys(MODES).map(m=>`<button class="mode ${pay.mode===m?"sel":""}" data-mode="${m}">${ICON[m]}${MODES[m]}</button>`).join("")}</div>${plus}
+ <p class="muted" style="margin-top:14px">Le comptoir ne fait pas crédit : un article non payé va en zone « arrivages et commandes ».</p>`}
+function renduHtml(t,r){if(r==null)return"";return r<t?`<div class="rendu bad">Il manque ${eur(t-r)}</div>`:`<div class="rendu">À rendre : ${eur(r-t)}</div>`}
+function peutValider(){const m=pay.mode;if(!m)return false;
+ if(m==="especes"){const r=num(pay.recu);return pay.recu===""||(r!=null&&r>=totalPanier())}
+ if(m==="facture")return !!(pay.fnum.trim()&&pay.fpaye);return true}
+function brancherPayer(){const ok=()=>$("#valider").disabled=!peutValider();
+ $$("[data-mode]").forEach(b=>b.onclick=()=>{pay.mode=b.dataset.mode;render();const f=$("#fnum");if(f&&!pay.fnum)f.focus()});
+ $$("[data-recu]").forEach(b=>b.onclick=()=>{pay.recu=virg(b.dataset.recu);render()});
+ $$("[data-fp]").forEach(b=>b.onclick=()=>{pay.fpaye=b.dataset.fp;render()});
+ const i=$("#recu");if(i)i.oninput=()=>{pay.recu=i.value;$("#rendu").innerHTML=renduHtml(totalPanier(),num(pay.recu));ok()};
+ const f=$("#fnum");if(f)f.oninput=()=>{pay.fnum=f.value;ok()};
+ $("#valider").onclick=valider}
+async function valider(){const now=new Date(),d=jour(now),t=totalPanier();
+ const n=ventes.filter(v=>v.date===d).length+1;
+ const v={id:d+"-"+String(n).padStart(3,"0"),num:n,date:d,heure:now.toTimeString().slice(0,5),ts:now.getTime(),
+  lignes:panier.map(l=>({id:l.id||"",r:l.r,n:l.n.trim(),q:l.q,p:l.p,u:l.u||""})),total:t,mode:pay.mode,annulee:false};
+ if(pay.mode==="especes"&&num(pay.recu)!=null){v.recu=num(pay.recu);v.rendu=r2(v.recu-t)}
+ if(pay.mode==="facture")v.facture={num:pay.fnum.trim(),paye:pay.fpaye};
+ try{await put("ventes",v)}catch(e){alert("La vente n'a pas pu être enregistrée sur le téléphone. Notez-la dans le carnet.");return}
+ ventes.push(v);calcVendu();derniere=v;panier=[];q="";aller("ticket")}
+
+// Ticket
+const qTxt=l=>virg(l.q)+(l.u&&l.u!=="pièce"?" "+l.u:" ×");
+const modeTxt=v=>v.mode==="facture"?`Facture ${v.facture.num} (${v.facture.paye==="banque"?"par banque":"en espèces"})`:MODES[v.mode];
+function ticketHtml(v){return `<div class="card ticket"><div style="text-align:center"><b>Comptoir des Matériaux · La Pile</b><br><span class="muted">Ticket n° ${v.num} · ${dateBe(v.date)} ${v.heure}</span></div><hr>
+ ${v.lignes.map(l=>`<div class="l"><span>${esc(qTxt(l))} ${esc(l.n)}${l.r?` <span class="muted">${esc(l.r)}</span>`:""}</span><span>${eur(l.p*l.q)}</span></div>`).join("")}<hr>
+ <div class="l" style="font-size:22px;font-weight:700"><span>Total</span><span>${eur(v.total)}</span></div>
+ <div class="l muted"><span>dont TVA 21 %</span><span>${eur(dontTva(v.total))}</span></div>
+ <div class="l muted"><span>Payé : ${esc(modeTxt(v))}</span><span>${v.recu!=null?"reçu "+eur(v.recu)+" · rendu "+eur(v.rendu):""}</span></div>
+ ${v.annulee?'<div class="rendu bad" style="margin-top:10px">Vente annulée</div>':""}</div>`}
+function ticketTexte(v){return `Comptoir des Matériaux · La Pile\nTicket n° ${v.num} · ${dateBe(v.date)} ${v.heure}\n\n`+
+ v.lignes.map(l=>`${qTxt(l)} ${l.n}${l.r?" ("+l.r+")":""} : ${eur(l.p*l.q)}`).join("\n")+`\n\nTotal : ${eur(v.total)} (dont TVA 21 % : ${eur(dontTva(v.total))})\nPayé : ${modeTxt(v)}\nMerci pour le réemploi !`}
+function ecranTicket(){const v=venteVue||derniere;
+ bar(venteVue?`<button class="big ghost" data-go="carnet">‹ Retour au carnet</button>`:`<button class="big ok" data-go="vendre">Nouvelle vente</button>`);
+ return `<h2>${venteVue?"Ticket":"Vente enregistrée"}</h2>
+ ${!venteVue&&v.rendu?`<div class="rendu">À rendre : ${eur(v.rendu)}</div>`:""}
+ <div style="margin-top:14px">${ticketHtml(v)}</div>
+ <div class="acts"><button class="big ghost" id="partager">Envoyer le ticket au client</button>
+ ${venteVue&&!v.annulee?'<button class="lien" id="annuler" style="color:var(--bad)">Annuler cette vente</button>':""}</div>`}
+function brancherTicket(){const v=venteVue||derniere;
+ $("#partager").onclick=async()=>{const t=ticketTexte(v);
+  try{if(navigator.share){await navigator.share({title:"Ticket Comptoir",text:t});return}}catch(e){return}
+  try{await navigator.clipboard.writeText(t);toast("Ticket copié : collez-le dans un SMS ou un e-mail")}catch(e){toast("Impossible de copier")}};
+ const a=$("#annuler");if(a)a.onclick=async()=>{if(!confirm(`Annuler le ticket n° ${v.num} (${eur(v.total)}) ? Il restera visible, barré.`))return;
+  v.annulee=true;v.annuleeA=Date.now();await put("ventes",v);calcVendu();render()}}
+
+// ---------- Carnet de caisse : une page par mois, une ligne par article ----------
+// Recettes : toutes sauf les ventes facturées (on y note le n° de facture).
+// Entrée caisse : seulement l'argent liquide qui entre. Sortie caisse : l'argent liquide qui sort (dépôt banque…).
+function carnet(m){const lignes=[];
+ const evts=[...ventes.filter(v=>moisDe(v.date)===m&&!v.annulee).map(v=>({ts:v.ts,v})),...sorties.filter(s=>moisDe(s.date)===m&&!s.annulee).map(s=>({ts:s.ts,s}))].sort((a,b)=>a.ts-b.ts);
+ evts.forEach(e=>{
+  if(e.v){const v=e.v,cash=entreeCaisse(v);
+   v.lignes.forEach((l,i)=>{const mt=r2(l.p*l.q);lignes.push({date:i?"":v.date,client:!i,vid:v.id,
+    lib:(l.q!==1||qSaisie(l)?qTxt(l)+" ":"")+(l.n||"article"),ref:l.r,
+    rec:v.mode==="facture"?null:mt,recTxt:v.mode==="facture"?v.facture.num:null,ent:cash?mt:null,sor:null})})}
+  else lignes.push({date:e.s.date,client:true,sid:e.s.id,lib:e.s.lib,ref:"",rec:null,ent:null,sor:e.s.montant})});
+ const t={rec:0,ent:0,sor:0};lignes.forEach(l=>{t.rec+=l.rec||0;t.ent+=l.ent||0;t.sor+=l.sor||0});for(const k in t)t[k]=r2(t[k]);
+ const rep=report(m);t.solde=r2(rep+t.ent-t.sor);
+ t.clients=evts.filter(e=>e.v).length;
+ return {lignes,t,rep}}
+// Report : saisi pour le mois, sinon le solde du mois d'avant (s'il a été tenu dans l'app).
+function report(m,prof=0){const k="report-"+m;if(REG[k]!=null)return REG[k];if(prof>24)return 0;
+ const pm=moisAvant(m);const aDes=ventes.some(v=>moisDe(v.date)===pm)||sorties.some(s=>moisDe(s.date)===pm)||REG["report-"+pm]!=null;
+ return aDes?carnet(pm).t.solde:0}
+function ecranCarnet(){const {lignes,t,rep}=carnet(moisVu),auj=jour(),cpt=REG["compte-"+auj];
+ const estCeMois=moisVu===moisDe(auj);
+ const rows=lignes.map(l=>`<${l.vid?`button data-v="${l.vid}"`:l.sid?`button data-s="${l.sid}"`:"div"} class="r ${l.client?"new":""}">
+  <span>${l.date?jjmm(l.date):""}</span><span class="lib">${esc(l.lib)}${l.ref?` <span class="ref">${esc(l.ref)}</span>`:""}</span>
+  <span>${l.recTxt?esc(l.recTxt):nb(l.rec)}</span><span>${l.ent!=null?nb(l.ent):"—"}</span><span>${l.sor!=null?nb(l.sor):"—"}</span></${l.vid||l.sid?"button":"div"}>`).join("");
+ bar("");
+ return `<input class="t" id="mois" type="month" value="${moisVu}" max="${moisDe(auj)}">
+ ${estCeMois?`<div class="sec">Argent en caisse</div>
+ <div class="card"><div class="solde"><span>Solde de caisse</span><span>${eur(t.solde)}</span></div>
+  <p class="muted" style="margin:4px 0 12px">Report + entrées − sorties. Les pourboires vont dans le cochon, pas dans la caisse.</p>
+  <label style="font-weight:700">Argent compté dans la caisse</label><input class="t" id="compte" inputmode="decimal" placeholder="Billets + pièces" value="${virg(cpt)}" style="margin-top:6px">
+  <div id="ecart">${ecartHtml(cpt,t.solde)}</div>
+  <div class="acts">${sortieOuverte?`<div class="card" style="background:var(--bg)"><label style="font-weight:700">Sortie de caisse</label>
+   <input class="t" id="sLib" value="Dépôt banque" style="margin:6px 0 8px"><input class="t" id="sMt" inputmode="decimal" placeholder="Montant sorti">
+   <div class="seg"><button id="sNon">Annuler</button><button id="sOk" class="sel">Enregistrer</button></div></div>`
+   :`<button class="big ghost" id="sortie" style="min-height:52px;font-size:17px">− Sortie de caisse (dépôt banque…)</button>`}</div></div>`:""}
+ <div class="sec">Carnet · ${moisTxt(moisVu)}</div>
+ <div class="carnet"><div class="r th"><span>Date</span><span>Libellé</span><span>Recettes</span><span>Entrée<br>caisse</span><span>Sortie<br>caisse</span></div>
+  <div class="r"><span></span><span class="lib">Report : <button class="lien" id="report" style="padding:0;min-height:32px">${eur(rep)}</button></span><span></span><span>${nb(rep)}</span><span></span></div>
+  ${rows||'<div class="vide">Aucune vente ce mois-ci.</div>'}
+  <div class="r tot"><span></span><span>Totaux</span><span>${nb(t.rec)}</span><span>${nb(t.ent)}</span><span>${nb(t.sor)}</span></div></div>
+ <div class="card" style="margin-top:10px"><dl class="res">
+  <dt>Clients (passages caisse)</dt><dd>${t.clients}</dd>
+  <dt>Total des recettes</dt><dd>${eur(t.rec)}</dd><dt>dont TVA 21 %</dt><dd>${eur(dontTva(t.rec))}</dd>
+  <dt class="fort">Solde de la caisse</dt><dd class="fort">${eur(t.solde)}</dd></dl>
+  <p class="muted" style="margin:8px 0 0">Recettes : sans les ventes sur facture (n° noté à la place). Touchez une ligne pour voir le ticket.</p></div>
+ <div class="sec">Après la clôture</div>
+ <div class="acts">
+  <button class="big ghost" id="horsligne" style="font-size:17px">Articles à mettre hors ligne / VENDU</button>
+  <button class="big ghost" id="csvMois" style="font-size:17px">Carnet du mois (tableur)</button>
+  <button class="big ghost" id="csvTout" style="font-size:17px">Tous les articles vendus (tableur)</button>
+  <p class="muted" style="margin:0">Les ventes restent sur ce téléphone : le 2e fichier sert aussi de sauvegarde.</p></div>
+ <p class="muted" style="margin-top:24px">Caisse ${VERSION} · catalogue : export Impulsion du 14/10/2026</p>`}
+function ecartHtml(c,s){if(c==null)return"";const e=r2(c-s);if(Math.abs(e)<0.005)return`<div class="rendu">La caisse est juste</div>`;
+ return `<div class="rendu bad">${e>0?eur(e)+" en trop":"Il manque "+eur(-e)} : prévenir l'équipe</div>`}
+function brancherCarnet(){
+ $("#mois").onchange=e=>{if(e.target.value){moisVu=e.target.value;render()}};
+ const c=$("#compte");if(c)c.oninput=async()=>{const k="compte-"+jour(),v=num(c.value);REG[k]=v;await putSet(k,v);$("#ecart").innerHTML=ecartHtml(v,carnet(moisVu).t.solde)};
+ const so=$("#sortie");if(so)so.onclick=()=>{sortieOuverte=true;render();$("#sMt").focus()};
+ const sn=$("#sNon");if(sn)sn.onclick=()=>{sortieOuverte=false;render()};
+ const sk=$("#sOk");if(sk)sk.onclick=async()=>{const mt=num($("#sMt").value);if(!(mt>0)){toast("Indiquez le montant");return}
+  const now=new Date(),s={id:"S"+now.getTime(),date:jour(now),ts:now.getTime(),lib:$("#sLib").value.trim()||"Sortie de caisse",montant:mt};
+  await put("sorties",s);sorties.push(s);sortieOuverte=false;render();toast("Sortie enregistrée")};
+ $("#report").onclick=async()=>{const k="report-"+moisVu,v=prompt("Solde de la caisse au départ du mois (report) :",nb(report(moisVu)));
+  if(v==null)return;const n=num(v);REG[k]=n;await putSet(k,n);render()};
+ $$("[data-v]").forEach(b=>b.onclick=()=>{venteVue=ventes.find(v=>v.id===b.dataset.v);screen="ticket";render();scrollTo(0,0)});
+ $$("[data-s]").forEach(b=>b.onclick=async()=>{const s=sorties.find(x=>x.id===b.dataset.s);
+  if(!confirm(`Annuler la sortie « ${s.lib} » de ${eur(s.montant)} ?`))return;s.annulee=true;await put("sorties",s);render()});
+ $("#horsligne").onclick=async()=>{const vs=ventes.filter(v=>moisDe(v.date)===moisVu&&!v.annulee),refs={};
+  vs.forEach(v=>v.lignes.forEach(l=>{if(l.r)refs[l.r]=(refs[l.r]||"")||l.n}));
+  const t=Object.keys(refs).length?`Vendus en ${moisTxt(moisVu)} (à mettre hors ligne sur le site et VENDU dans le tableau) :\n`+Object.entries(refs).map(([r,n])=>r+" · "+n).join("\n"):"Aucun article avec référence vendu ce mois-ci.";
+  try{await navigator.clipboard.writeText(t);toast("Liste copiée")}catch(e){alert(t)}};
+ $("#csvMois").onclick=()=>telecharger(`carnet-de-caisse-${moisVu}.csv`,csvCarnet(moisVu));
+ $("#csvTout").onclick=()=>telecharger(`caisse-articles-vendus-${jour()}.csv`,csvArticles([...ventes].sort((a,b)=>a.ts-b.ts)))}
+
+// ---------- Fichiers pour tableur (Excel belge : « ; », virgule décimale, Windows-1252) ----------
+const qv=v=>{v=String(v??"");return /[;"\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+const dec=n=>n==null?"":r2(n).toFixed(2).replace(".",",");
+const csv=rows=>rows.map(r=>r.map(qv).join(";")).join("\r\n")+"\r\n";
+function csvCarnet(m){const {lignes,t,rep}=carnet(m),rows=[["N°","Date","Libellé","Recettes","Entrée caisse","Sortie caisse"],["","","report :","",dec(rep),""]];
+ lignes.forEach((l,i)=>rows.push([i+1,l.date?dateBe(l.date):"",l.lib+(l.ref?" "+l.ref:""),l.recTxt||dec(l.rec),dec(l.ent),dec(l.sor)]));
+ rows.push(["","","TOTAUX du mois",dec(t.rec),dec(t.ent),dec(t.sor)],["","","Solde de la caisse du mois","","",dec(t.solde)]);return csv(rows)}
+function csvArticles(list){const rows=[["Date","Ticket","Référence","Article","Quantité","Unité","Prix unitaire TVAc","Total ligne","Paiement","Statut"]];
+ list.forEach(v=>v.lignes.forEach(l=>rows.push([dateBe(v.date),v.num,l.r,l.n,virg(l.q),l.u||"pièce",dec(l.p),dec(l.p*l.q),modeTxt(v),v.annulee?"annulée":""])));
+ return csv(rows)}
+const CP={0x20AC:0x80,0x201A:0x82,0x192:0x83,0x201E:0x84,0x2026:0x85,0x2020:0x86,0x2021:0x87,0x2C6:0x88,0x2030:0x89,0x160:0x8A,0x2039:0x8B,0x152:0x8C,0x17D:0x8E,
+ 0x2018:0x91,0x2019:0x92,0x201C:0x93,0x201D:0x94,0x2022:0x95,0x2013:0x96,0x2014:0x97,0x2DC:0x98,0x2122:0x99,0x161:0x9A,0x203A:0x9B,0x153:0x9C,0x17E:0x9E,0x178:0x9F};
+function cp1252(s){const out=new Uint8Array(s.length);let n=0;for(const ch of s){const c=ch.codePointAt(0);
+ out[n++]=c<0x80||(c>=0xA0&&c<=0xFF)?c:(CP[c]??0x3F)}return out.slice(0,n)}
+async function telecharger(nom,txt){const f=new File([cp1252(txt)],nom,{type:"text/csv"});
+ try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:nom});return}}catch(e){if(e.name==="AbortError")return}
+ const u=URL.createObjectURL(f),a=document.createElement("a");a.href=u;a.download=nom;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}
+
+// ---------- Démarrage ----------
+(async()=>{
+ try{await openDb();ventes=await all("ventes");sorties=await all("sorties");REG=await allSet()}catch(e){toast("Stockage indisponible : les ventes ne seront pas gardées")}
+ try{CAT=await (await fetch("catalogue.json")).json()}catch(e){CAT=[]}
+ CAT.forEach(a=>a.k=sans([a.n,a.r,a.e,catLabel(a.c)].join(" ")));
+ calcVendu();render();
+ if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();
+ if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js");
+})();
+</script>
+</body>
+</html>
