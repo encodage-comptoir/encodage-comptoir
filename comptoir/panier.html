@@ -10,11 +10,14 @@
 <div class="maquette">Maquette : catalogue de test, prix et textes à valider par l'équipe.</div>
 <header class="haut"><div class="haut-in">
 <a class="logo" href="index.html"><img src="https://www.la-pile.be/img/logo-main.svg" alt="La Pile"></a>
-<nav><a href="catalogue.html">Catalogue</a><a href="faire-avec.html">Faire avec</a><a href="index.html#infos">Infos pratiques</a><a href="panier.html" class="lien-panier">Ma liste <span class="nb-panier" hidden>0</span></a></nav>
+<nav><a href="catalogue.html">Catalogue</a><a href="faire-avec.html">Faire avec</a><a href="index.html#infos">Infos pratiques</a><a href="panier.html" class="lien-panier">Mes listes <span class="nb-panier" hidden>0</span></a></nav>
 </div></header>
-<main class="contenu"><h1>Ma liste</h1>
-<p class="intro">Préparez vos achats : ajoutez des articles, puis envoyez la liste à l'équipe pour les réserver, ou gardez-la comme liste de courses pour votre passage au comptoir.</p>
+<main class="contenu"><p class="fil"><a href="catalogue.html">← Revenir au catalogue</a></p><h1>Mes listes</h1>
+<p class="intro">Une liste par projet si vous voulez (« Salle de bain », « Potager »…). Envoyez-la à l'équipe pour réserver, ou gardez-la comme liste de courses pour votre passage au comptoir.</p>
+<div class="puces" id="listes"></div>
+<h2 class="titre-liste"><span id="nom-liste"></span> <button type="button" class="lien" id="renommer">renommer</button> <button type="button" class="lien" id="suppr">supprimer</button></h2>
 <div id="panier" class="panier"></div>
+<p class="actions"><a class="bouton clair" href="catalogue.html">← Continuer dans le catalogue</a><a class="bouton clair" href="faire-avec.html">Idées Faire avec</a></p>
 <form id="envoi" class="envoi" hidden><h2>Réserver ces articles</h2>
 <label>Nom <input name="nom" required autocomplete="name"></label>
 <label>Téléphone <input name="tel" type="tel" required autocomplete="tel"></label>
@@ -22,7 +25,7 @@
 <label>Message <textarea name="msg" rows="3" placeholder="Une question, une découpe, un transport…"></textarea></label>
 <p class="petit">L'équipe vous confirme la disponibilité par téléphone ou par mail. Paiement au comptoir, à l'enlèvement.</p>
 <div class="actions"><button class="bouton">Envoyer ma réservation</button><button type="button" class="bouton clair" id="imprimer">Imprimer ma liste</button>
-<button type="button" class="bouton clair" id="partager">Partager ma liste</button><button type="button" class="lien" id="vider">Vider la liste</button></div>
+<button type="button" class="bouton clair" id="partager">Partager ma liste</button><button type="button" class="lien" id="vider">Vider cette liste</button></div>
 <p id="apres" class="petit" hidden>Votre messagerie s'est ouverte avec la liste : il ne reste qu'à envoyer le mail.</p></form></main>
 <footer class="pied"><div class="pied-in">
 <img src="https://www.la-pile.be/img/footer-logo.svg" alt="La Pile" class="pied-logo">

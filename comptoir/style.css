@@ -115,3 +115,37 @@ nav a:hover{color:var(--jaune)}
 .petit{font-size:14px;color:var(--gris)}
 .lien{font:inherit;background:none;border:0;color:var(--gris);text-decoration:underline;cursor:pointer}
 @media print{.maquette,.haut,.pied,.envoi label,.envoi .actions,.retirer,.qte button,.intro{display:none!important}.envoi{background:none;padding:0}}
+/* plusieurs listes */
+.puces{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.puce{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:14px;font-weight:600;border:2px solid var(--bleu);background:#fff;color:var(--bleu-f);border-radius:20px;padding:5px 12px;cursor:pointer;text-decoration:none;margin:4px 6px 0 0}
+.puce span{background:var(--clair);border-radius:10px;padding:0 6px;font-size:12px}
+.puce.sel{background:var(--bleu);color:#fff}.puce.sel span{background:var(--jaune);color:var(--encre)}
+.puce.plus{border-style:dashed}
+.puce svg{width:24px;height:24px}
+.titre-liste{margin-top:8px}.titre-liste .lien{font-size:14px;font-weight:400}
+.choix-liste{font:inherit;font-size:14px;padding:8px 10px;border:2px solid var(--ligne);border-radius:10px;background:#fff}
+/* Faire avec : projets illustrés */
+.illus svg{display:block;width:100%;height:auto}
+.projet-carte .illus{aspect-ratio:240/150;overflow:hidden}
+.projet-carte p{font-size:14px;margin:0 0 6px;color:var(--gris)}
+.projet-carte .petit{color:var(--bleu-f);font-weight:600;font-size:13px}
+.tuile svg{width:56px;height:56px}
+.projet-tete{display:grid;gap:20px;align-items:center;margin:8px 0 24px}
+@media(min-width:760px){.projet-tete{grid-template-columns:1fr 1fr}}
+.projet-tete .illus{border-radius:16px;overflow:hidden}
+.score{font-weight:700;color:var(--bleu-f)}
+.exemple{background:var(--clair);border-radius:16px;padding:20px 16px;margin:0 0 32px}
+.piece{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:end;margin-bottom:12px}
+.piece p{flex-basis:100%;margin:0}
+.piece label{display:flex;flex-direction:column;font-size:14px;font-weight:600;gap:4px}
+.piece input{font:inherit;width:90px;padding:8px 10px;border:2px solid var(--ligne);border-radius:10px}
+.ex-ligne{display:grid;grid-template-columns:56px 1fr auto;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--ligne)}
+.ex-ligne img,.ex-ligne .vide{width:56px;height:56px;border-radius:8px;object-fit:cover;background:#fff}
+.ex-ligne .vide{display:flex;align-items:center;justify-content:center;color:var(--gris);font-weight:700}
+.ex-ligne div{display:flex;flex-direction:column;min-width:0}
+.ex-ligne a{font-weight:600;color:var(--encre);text-decoration:none}
+.ex-ligne small{color:var(--gris);font-size:12px}.ex-ligne .besoin{color:var(--bleu-f);font-weight:600}
+.ex-prix{white-space:nowrap;color:var(--bleu-f);font-size:14px}.manque .ex-prix{color:var(--gris);font-weight:400;font-size:12px;white-space:normal;text-align:right;max-width:90px}
+.poste{margin:0 0 28px}.poste h3{font-size:18px}.poste h3 small{font-weight:400;color:var(--gris);font-size:14px}
+.conseil{background:#fff8dc;border-left:4px solid var(--jaune);padding:8px 12px;border-radius:6px;font-size:14px}
+[hidden]{display:none!important}

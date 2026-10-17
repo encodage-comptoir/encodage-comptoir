@@ -1,0 +1,57 @@
+Ambiance;Description;Pièce (L x l x h, m);Rôle;Référence;Calcul;Couverture par unité;Quantité;Note
+Petite chambre;Une chambre rafraîchie de A à Z avec ce qui est au Comptoir, porte détournée en tête de lit comprise.;3 x 3 x 2,5;Sol;PAR 1;sol;1;;Parquet stratifié
+Petite chambre;;;Sous-couche;PAR15;sol;10;;Rouleau de 10 m² (hypothèse)
+Petite chambre;;;Joint de dilatation;PAR17;plinthes;1;;
+Petite chambre;;;Plinthes;;plinthes;;;À trouver ailleurs
+Petite chambre;;;Préparation des murs;DIV14;murs;20;;Rouleau de 20 m² (hypothèse)
+Petite chambre;;;Mur d'accent;PAR 11;;1;6;Lambris de châtaignier derrière le lit (6 m²)
+Petite chambre;;;Tête de lit;PO 42;;;1;Porte ancienne en chêne posée à l'horizontale
+Petite chambre;;;Porte;PO 2g;;;1;
+Petite chambre;;;Poignée;Q03;;;1;Poignée ancienne
+Petite chambre;;;Radiateur;RA 6;;;1;
+Petite chambre;;;Vanne thermostatique;RA29;;;1;
+Petite chambre;;;Plafonnier;ELEC12;;;1;Suspension filaire métal
+Petite chambre;;;Liseuse;LUM14;;;1;Spot LED mural
+Petite chambre;;;Étagère;BOI04;;;1;Planche lamellée collée chêne
+Petite chambre;;;Supports d'étagère;DIV24;;;3;
+Petite salle de bain;Une salle d'eau avec douche, lavabo et WC, carrelée du sol au plafond.;2 x 1,8 x 2,4;Receveur de douche;SA103;;;1;
+Petite salle de bain;;;Paroi de douche;PA 29;;;1;
+Petite salle de bain;;;Mitigeur de douche;SA72;;;1;
+Petite salle de bain;;;Lavabo d'angle;SA 32;;;1;
+Petite salle de bain;;;Colonne de lavabo;SA 60;;;1;
+Petite salle de bain;;;Robinet;SA19;;;1;
+Petite salle de bain;;;WC;SA 67;;;1;
+Petite salle de bain;;;Carrelage de sol;CAR 29;sol;1;;Hypothèse : 1 unité = 1 m²
+Petite salle de bain;;;Carrelage mural;CAR 1;murs;1;;Hypothèse : 1 unité = 1 m²
+Petite salle de bain;;;Sèche-serviettes;RA42;;;1;
+Petite salle de bain;;;Miroir;SA84;;;1;
+Petite salle de bain;;;Plafonnier;LUM10;;;1;
+Petite salle de bain;;;Siphons;SA82;;;2;
+Cuisine d'appoint;Une kitchenette pour un studio ou un gîte, avec une crédence effet marbre.;3 x 2,5 x 2,5;Évier deux bacs;SA138;;;1;
+Cuisine d'appoint;;;Plan de travail;BOI07;;;1;
+Cuisine d'appoint;;;Taque vitrocéramique;ELECTRO01;;;1;
+Cuisine d'appoint;;;Four encastrable;DIV2;;;1;
+Cuisine d'appoint;;;Hotte;DIV11;;;1;
+Cuisine d'appoint;;;Crédence;CAR68;;1;3;Environ 3 m² derrière le plan de travail
+Cuisine d'appoint;;;Sol;CAR 51;sol;1;;Carrelage ancien (hypothèse : 1 unité = 1 m²)
+Cuisine d'appoint;;;Étagère;BOI06;;;1;
+Cuisine d'appoint;;;Poignées;Q09;;;6;Poignées en fer forgé
+Cuisine d'appoint;;;Spots;LUM5;;;1;
+Atelier au garage;Un atelier de bricolage avec établi, rangements et bonne lumière.;5 x 3 x 2,4;Établi portatif;OUT09;;;1;
+Atelier au garage;;;Grand plan de travail;PO 41;;;1;Porte en sapin posée sur deux tréteaux
+Atelier au garage;;;Étagères;BOI10;;;4;Panneaux MDF 18 mm
+Atelier au garage;;;Supports d'étagère;DIV3;;;2;
+Atelier au garage;;;Éclairage;LUM11;;;2;Plafonniers LED
+Atelier au garage;;;Prises;ELEC05;;;4;
+Atelier au garage;;;Évier de service;SA108;;;1;
+Atelier au garage;;;Scie à onglet;OUT02;;;1;
+Atelier au garage;;;Perceuse;OUT05;;;1;
+Atelier au garage;;;Chauffage d'appoint;RA32;;;1;
+Terrasse conviviale;Une terrasse en pavés de récupération avec banc, table et bac potager.;4 x 3 x 0;Pavés;GRO 14;sol;0,02;;Hypothèse : 50 pavés par m²
+Terrasse conviviale;;;Bordures;GRO 7;perimetre;1;;Bordures de 1 m (hypothèse)
+Terrasse conviviale;;;Sable de pose;GRO30;sol;0,5;;Hypothèse : 1 sac pour 0,5 m²
+Terrasse conviviale;;;Table de jardin;DIV34;;;1;
+Terrasse conviviale;;;Banc (pieds);GRO22;;;4;4 blocs béton
+Terrasse conviviale;;;Banc (assise);BOI03;;;3;3 planches brutes
+Terrasse conviviale;;;Bac potager;SA 70;;;1;Baignoire en acier
+Terrasse conviviale;;;Éclairage;LUM9;;;1;LED extérieur
