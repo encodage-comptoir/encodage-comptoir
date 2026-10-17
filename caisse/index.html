@@ -165,7 +165,6 @@ const CATS=[["SA","Sanitaire"],["PA","Parois de douche"],["CH","Châssis"],["PO"
 const catLabel=c=>(CATS.find(x=>x[0]===c)||[,""])[1];
 const TVA=0.21;      // tous les articles de l'export Impulsion sont à 21 %
 const PRIX_KM=0.5;   // livraison : 0,50 € / km (procédure, point 10)
-// Comme dans le carnet : « Achat et cash », « Achat et virement » (carte ou virement), « Facture ».
 // Matières : mêmes valeurs que l'app d'encodage (et le moteur « Faire avec »).
 const MATIERES=["Bois massif","Panneau (multiplex, OSB, MDF)","Métal","Verre","Céramique","Pierre / béton","PVC / plastique","Textile","Mélange / autre"];
 // Matière devinée d'après le nom, puis d'après la catégorie, quand la fiche ne la donne pas.
@@ -187,9 +186,11 @@ let MAT_RE,POIDS_RE;
 function estimer(a){if(!MAT_RE){MAT_RE=sansAcc(MAT_MOTS);POIDS_RE=sansAcc(POIDS)}const txt=sans([a.t,a.n].join(" "));
  if(!a.m){const x=MAT_RE.find(([re])=>re.test(txt));a.m=x?x[1]:MAT_CAT[a.c]||""}
  if(a.kg==null){if(a.u==="m²")a.kg=POIDS_M2[a.c]??null;else if(!a.u||a.u==="pièce"){const x=POIDS_RE.find(([re,,c])=>(!c||c===a.c)&&re.test(txt));a.kg=x?x[1]:null}else a.kg=null;a.kgEst=a.kg!=null}}
-const MODES={especes:"Espèces",carte:"Carte bancaire",virement:"Virement",facture:"Facture"};
+// Comme dans le carnet : « Achat et cash », « Achat et virement » (QR code ou virement), « Facture ».
+// La clé « carte » est gardée pour les ventes déjà enregistrées : le paiement électronique se fait par QR code.
+const MODES={especes:"Espèces",carte:"QR code",virement:"Virement",facture:"Facture"};
 const ICON={especes:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></svg>',
- carte:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>',
+ carte:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/></svg>',
  virement:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h14l-4-4M20 16H6l4 4"/></svg>',
  facture:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l4 4v16H6z"/><path d="M9 11h7M9 15h7M9 7h3"/></svg>'};
 
