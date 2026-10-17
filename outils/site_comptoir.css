@@ -90,3 +90,28 @@ nav a:hover{color:var(--jaune)}
 .pied a{color:#fff}
 .pied-in{max-width:1180px;margin:0 auto;padding:32px 16px;display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));align-items:start;font-size:14px}
 .pied-logo{height:70px;width:auto}
+/* panier « ma liste » */
+.lien-panier{background:var(--jaune);color:var(--encre)!important;padding:2px 12px;border-radius:20px}
+.nb-panier{display:inline-block;min-width:20px;text-align:center;background:var(--violet);color:#fff;border-radius:10px;font-size:12px;padding:0 6px;margin-left:2px}
+.actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:14px 0}
+.bouton.clair{background:#fff;color:var(--bleu-f);border:2px solid var(--bleu)}
+.bouton.ok{background:var(--jaune);color:var(--encre)}
+.carte-w{display:flex;flex-direction:column;gap:6px}
+.carte-w .carte{flex:1}
+.ajout-mini{font:inherit;font-size:14px;font-weight:600;border:2px solid var(--bleu);background:#fff;color:var(--bleu-f);border-radius:20px;padding:6px 10px;cursor:pointer}
+.ajout-mini.ok{background:var(--jaune);border-color:var(--jaune);color:var(--encre)}
+.panier .ligne{display:grid;grid-template-columns:64px 1fr auto;gap:6px 12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--ligne)}
+.panier .ligne img{width:64px;height:64px;object-fit:cover;border-radius:8px;background:var(--clair);grid-row:span 2}
+.panier .quoi a{font-weight:600;color:var(--encre);text-decoration:none}.panier .quoi small{display:block;color:var(--gris)}
+.panier .qte{display:flex;align-items:center;gap:8px}
+.panier .qte button,.panier .retirer{width:34px;height:34px;border-radius:50%;border:2px solid var(--ligne);background:#fff;font:inherit;font-weight:700;cursor:pointer}
+.panier .st{font-weight:700;color:var(--bleu-f);text-align:right}
+.panier .quoi{grid-column:2;grid-row:1}.panier .retirer{grid-column:3;grid-row:1;justify-self:end;border:0;color:var(--gris)}
+.panier .qte{grid-column:2;grid-row:2}.panier .st{grid-column:3;grid-row:2}
+.panier .total{font-size:1.2rem;text-align:right;margin:16px 0}
+.envoi{background:var(--clair);border-radius:16px;padding:20px;display:grid;gap:12px;max-width:640px}
+.envoi label{display:flex;flex-direction:column;gap:4px;font-weight:600;font-size:14px}
+.envoi input,.envoi textarea{font:inherit;padding:10px 12px;border:2px solid var(--ligne);border-radius:10px}
+.petit{font-size:14px;color:var(--gris)}
+.lien{font:inherit;background:none;border:0;color:var(--gris);text-decoration:underline;cursor:pointer}
+@media print{.maquette,.haut,.pied,.envoi label,.envoi .actions,.retirer,.qte button,.intro{display:none!important}.envoi{background:none;padding:0}}

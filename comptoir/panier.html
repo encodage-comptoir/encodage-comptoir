@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ma liste – Comptoir des Matériaux</title><meta name="description" content="Préparez votre liste de matériaux et réservez-la au Comptoir des Matériaux.">
+<meta name="robots" content="noindex"><!-- maquette : à retirer à la mise en ligne réelle -->
+<meta property="og:title" content="Ma liste – Comptoir des Matériaux"><meta property="og:description" content="Préparez votre liste de matériaux et réservez-la au Comptoir des Matériaux.">
+<link rel="canonical" href="https://encodage-comptoir.github.io/encodage-comptoir/comptoir/panier.html">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="style.css"><script src="panier.js" defer></script>
+</head><body>
+<div class="maquette">Maquette : catalogue de test, prix et textes à valider par l'équipe.</div>
+<header class="haut"><div class="haut-in">
+<a class="logo" href="index.html"><img src="https://www.la-pile.be/img/logo-main.svg" alt="La Pile"></a>
+<nav><a href="catalogue.html">Catalogue</a><a href="faire-avec.html">Faire avec</a><a href="index.html#infos">Infos pratiques</a><a href="panier.html" class="lien-panier">Ma liste <span class="nb-panier" hidden>0</span></a></nav>
+</div></header>
+<main class="contenu"><h1>Ma liste</h1>
+<p class="intro">Préparez vos achats : ajoutez des articles, puis envoyez la liste à l'équipe pour les réserver, ou gardez-la comme liste de courses pour votre passage au comptoir.</p>
+<div id="panier" class="panier"></div>
+<form id="envoi" class="envoi" hidden><h2>Réserver ces articles</h2>
+<label>Nom <input name="nom" required autocomplete="name"></label>
+<label>Téléphone <input name="tel" type="tel" required autocomplete="tel"></label>
+<label>Passage prévu <input name="quand" placeholder="ex. samedi matin"></label>
+<label>Message <textarea name="msg" rows="3" placeholder="Une question, une découpe, un transport…"></textarea></label>
+<p class="petit">L'équipe vous confirme la disponibilité par téléphone ou par mail. Paiement au comptoir, à l'enlèvement.</p>
+<div class="actions"><button class="bouton">Envoyer ma réservation</button><button type="button" class="bouton clair" id="imprimer">Imprimer ma liste</button>
+<button type="button" class="bouton clair" id="partager">Partager ma liste</button><button type="button" class="lien" id="vider">Vider la liste</button></div>
+<p id="apres" class="petit" hidden>Votre messagerie s'est ouverte avec la liste : il ne reste qu'à envoyer le mail.</p></form></main>
+<footer class="pied"><div class="pied-in">
+<img src="https://www.la-pile.be/img/footer-logo.svg" alt="La Pile" class="pied-logo">
+<div><b>Comptoir des Matériaux</b><br>Rue Frédéric Lang 3, 4960 Malmedy<br>Tél. <a href="tel:+32493049929">+32 (0)493 04 99 29</a><br><a href="mailto:info@la-pile.be">info@la-pile.be</a></div>
+<div>Un projet de <a href="https://www.la-pile.be">La Pile asbl</a><br><a href="https://www.instagram.com/lapile_malmedy/">Instagram</a> · <a href="https://www.facebook.com/LaPileMalmedy/">Facebook</a></div>
+</div></footer></body></html>

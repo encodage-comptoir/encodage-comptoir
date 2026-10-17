@@ -55,12 +55,12 @@ def page(titre, desc, corps, prof='', image='', canon='', extra_head=''):
 <meta property="og:title" content="{esc(titre)}"><meta property="og:description" content="{esc(desc)}">
 {f'<meta property="og:image" content="{esc(image)}">' if image else ''}{f'<link rel="canonical" href="{esc(BASE + canon)}">' if canon else ''}
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="{prof}style.css">{extra_head}
+<link rel="stylesheet" href="{prof}style.css"><script src="{prof}panier.js" defer></script>{extra_head}
 </head><body>
 <div class="maquette">Maquette : catalogue de test, prix et textes à valider par l'équipe.</div>
 <header class="haut"><div class="haut-in">
 <a class="logo" href="{prof}index.html"><img src="{PILE}/img/logo-main.svg" alt="La Pile"></a>
-<nav><a href="{prof}catalogue.html">Catalogue</a><a href="{prof}faire-avec.html">Faire avec</a><a href="{prof}index.html#infos">Infos pratiques</a></nav>
+<nav><a href="{prof}catalogue.html">Catalogue</a><a href="{prof}faire-avec.html">Faire avec</a><a href="{prof}index.html#infos">Infos pratiques</a><a href="{prof}panier.html" class="lien-panier">Ma liste <span class="nb-panier" hidden>0</span></a></nav>
 </div></header>
 {corps}
 <footer class="pied"><div class="pied-in">
@@ -101,7 +101,8 @@ for a in pub:
 <div class="art-grille"><div class="galerie">{photos}</div>
 <div class="infos"><h1>{esc(a['titre'])}</h1><p class="accroche">{esc(a['accroche'])}</p>
 <p class="prix-gros">{esc(a['_prix_txt'])}</p>{neuf}{eco}
-<a class="bouton" href="mailto:info@la-pile.be?subject={esc('Article ' + a['ref'])}&body={esc(msg)}">Réserver ou poser une question</a>
+<div class="actions"><button class="bouton" data-ajout="{esc(json.dumps({'r': a['ref'], 't': a['titre'], 'p': a['_prix'], 'pt': a['_prix_txt'], 'v': a['_vignette']}, ensure_ascii=False))}">Ajouter à ma liste</button>
+<a class="bouton clair" href="mailto:info@la-pile.be?subject={esc('Article ' + a['ref'])}&body={esc(msg)}">Poser une question</a></div>
 <div class="partage"><span>Partager :</span><a href="https://wa.me/?text={esc(a['titre'] + ' ' + lien)}">WhatsApp</a>
 <a href="https://www.facebook.com/sharer/sharer.php?u={esc(lien)}">Facebook</a><button onclick="navigator.clipboard.writeText('{esc(lien)}');this.textContent='Lien copié'">Copier le lien</button></div>
 <p class="descr">{esc(a['description'])}</p>
@@ -167,7 +168,7 @@ function maj(){{
   &&mots.every(w=>sans(a.k).includes(w)));
  if($('tri').value==='p')r.sort((a,b)=>(a.p||1e9)-(b.p||1e9));if($('tri').value==='e')r.sort((a,b)=>b.e-a.e);
  $('nb').textContent=r.length+' article'+(r.length>1?'s':'');
- $('liste').innerHTML=r.slice(0,240).map(a=>`<a class="carte" href="article/${{a.r}}.html"><div class="img"><img loading="lazy" src="${{a.v}}" alt="${{esc(a.t)}}">${{a.e>=20?`<span class="eco">−${{a.e}} % vs neuf</span>`:''}}</div><div class="txt"><h3>${{esc(a.t)}}</h3><p class="prix">${{esc(a.pt)}}</p>${{a.n?`<p class="neuf">Neuf : ${{esc(a.n)}}</p>`:''}}</div></a>`).join('');
+ $('liste').innerHTML=r.slice(0,240).map(a=>`<div class="carte-w"><a class="carte" href="article/${{a.r}}.html"><div class="img"><img loading="lazy" src="${{a.v}}" alt="${{esc(a.t)}}">${{a.e>=20?`<span class="eco">−${{a.e}} % vs neuf</span>`:''}}</div><div class="txt"><h3>${{esc(a.t)}}</h3><p class="prix">${{esc(a.pt)}}</p>${{a.n?`<p class="neuf">Neuf : ${{esc(a.n)}}</p>`:''}}</div></a><button class="ajout-mini" data-ajout="${{esc(JSON.stringify({{r:a.r,t:a.t,p:a.p,pt:a.pt,v:a.v}}))}}">+ Ma liste</button></div>`).join('');
  history.replaceState(null,'',$('cat').value?'#cat='+$('cat').value:location.pathname+location.search);
 }}
 document.querySelectorAll('#filtres input,#filtres select').forEach(e=>e.addEventListener('input',maj));
@@ -194,9 +195,25 @@ fetch('donnees.json').then(r=>r.json()).then(d=>{{D=d;const h=decodeURIComponent
 </script>'''
 open(f'{out}/faire-avec.html', 'w').write(page('Faire avec – Comptoir des Matériaux', 'Des idées pour réutiliser les matériaux du Comptoir : cloisons, potager, abri, déco…', corps, '', '', 'faire-avec.html'))
 
+# --- ma liste / réservation ---
+corps = '''<main class="contenu"><h1>Ma liste</h1>
+<p class="intro">Préparez vos achats : ajoutez des articles, puis envoyez la liste à l'équipe pour les réserver, ou gardez-la comme liste de courses pour votre passage au comptoir.</p>
+<div id="panier" class="panier"></div>
+<form id="envoi" class="envoi" hidden><h2>Réserver ces articles</h2>
+<label>Nom <input name="nom" required autocomplete="name"></label>
+<label>Téléphone <input name="tel" type="tel" required autocomplete="tel"></label>
+<label>Passage prévu <input name="quand" placeholder="ex. samedi matin"></label>
+<label>Message <textarea name="msg" rows="3" placeholder="Une question, une découpe, un transport…"></textarea></label>
+<p class="petit">L'équipe vous confirme la disponibilité par téléphone ou par mail. Paiement au comptoir, à l'enlèvement.</p>
+<div class="actions"><button class="bouton">Envoyer ma réservation</button><button type="button" class="bouton clair" id="imprimer">Imprimer ma liste</button>
+<button type="button" class="bouton clair" id="partager">Partager ma liste</button><button type="button" class="lien" id="vider">Vider la liste</button></div>
+<p id="apres" class="petit" hidden>Votre messagerie s'est ouverte avec la liste : il ne reste qu'à envoyer le mail.</p></form></main>'''
+open(f'{out}/panier.html', 'w').write(page('Ma liste – Comptoir des Matériaux', 'Préparez votre liste de matériaux et réservez-la au Comptoir des Matériaux.', corps, '', '', 'panier.html'))
+
 # --- plan du site pour Google ---
 urls = ['index.html', 'catalogue.html', 'faire-avec.html'] + [a['_url'] for a in pub]
 open(f'{out}/sitemap.xml', 'w').write('<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
                                        + ''.join(f'<url><loc>{BASE}{u}</loc></url>\n' for u in urls) + '</urlset>\n')
 shutil.copy(os.path.join(os.path.dirname(__file__), 'site_comptoir.css'), f'{out}/style.css')
+shutil.copy(os.path.join(os.path.dirname(__file__), 'site_comptoir_panier.js'), f'{out}/panier.js')
 print(len(pub), 'articles publiés,', len(FONCTIONS), 'fonctions,', len(choix), 'bonnes affaires')
