@@ -1,0 +1,704 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Faire avec</title>
+<meta name="description" content="Trouver des idées et des matériaux de réemploi dans le stock du Comptoir des Matériaux de La Pile.">
+<meta name="theme-color" content="#f2b705">
+<link rel="icon" href="../icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
+<style>
+:root{
+  --bg:#f3f2ee; --surface:#ffffff; --ink:#1d2328; --muted:#5d656c; --line:#d9d7d0;
+  --accent:#f2b705; --accent-ink:#1d2328; --ok:#2f7d4a; --ok-bg:#e3f1e7; --warn-bg:#fff4cc; --no:#9a3b2e;
+  --display:"Archivo", "Arial Black", system-ui, sans-serif;
+  --body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#15191c; --surface:#1f2428; --ink:#eef0f1; --muted:#a3abb2; --line:#343b41;
+  --accent:#f5c22b; --accent-ink:#15191c; --ok:#6fcf8e; --ok-bg:#1d3326; --warn-bg:#3a3214; --no:#e6907f; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#15191c; --surface:#1f2428; --ink:#eef0f1; --muted:#a3abb2; --line:#343b41;
+  --accent:#f5c22b; --accent-ink:#15191c; --ok:#6fcf8e; --ok-bg:#1d3326; --warn-bg:#3a3214; --no:#e6907f; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 var(--body)}
+a{color:inherit}
+button,input,select{font:inherit;color:inherit}
+h1,h2,h3{font-family:var(--display);line-height:1.15;margin:0}
+.wrap{max-width:1040px;margin:0 auto;padding:0 16px}
+header.top{background:var(--accent);color:var(--accent-ink)}
+header.top .wrap{display:flex;align-items:center;gap:12px;padding-top:12px;padding-bottom:12px}
+header.top a.brand{font-family:var(--display);font-weight:800;font-size:20px;text-decoration:none}
+header.top .sub{font-size:13px;opacity:.8}
+header.top .spacer{flex:1}
+.listbtn{background:var(--accent-ink);color:var(--accent);border:0;border-radius:999px;padding:8px 14px;font-weight:700;cursor:pointer;white-space:nowrap}
+.proto{background:var(--warn-bg);font-size:14px;border-bottom:1px solid var(--line)}
+.proto .wrap{padding-top:8px;padding-bottom:8px}
+main{padding:20px 0 60px}
+.crumbs{margin:0 0 12px;font-size:14px}
+.crumbs a{color:var(--muted)}
+.hero h1{font-size:clamp(28px,6vw,44px);font-weight:800}
+.hero p{color:var(--muted);max-width:640px}
+.ask{display:flex;gap:8px;margin:16px 0 24px}
+.ask input{flex:1;min-width:0;padding:14px 16px;border:2px solid var(--ink);border-radius:12px;background:var(--surface)}
+.btn{border:2px solid var(--ink);background:var(--ink);color:var(--bg);border-radius:12px;padding:12px 16px;font-weight:700;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn.small{padding:6px 10px;border-radius:9px;font-size:14px}
+.doors{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.door{display:block;text-decoration:none;background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;transition:transform .1s}
+.door:hover{transform:translateY(-2px);border-color:var(--ink)}
+.door .n{font-family:var(--display);font-size:13px;color:var(--muted)}
+.door h2{font-size:20px;margin:4px 0 6px}
+.door p{margin:0;color:var(--muted);font-size:15px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.chip{text-decoration:none;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 12px;cursor:pointer;font-size:15px}
+.chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:14px}
+.filters label{display:flex;flex-direction:column;font-size:13px;color:var(--muted);gap:4px}
+.filters input,.filters select{padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);font-size:15px;min-width:0}
+.filters .pair{display:flex;gap:6px}
+.filters .pair input{width:50%}
+.filters .check{flex-direction:row;align-items:center;gap:8px;color:var(--ink);font-size:15px}
+.count{color:var(--muted);font-size:14px;margin:6px 0 12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.row{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(190px,220px);gap:12px;overflow-x:auto;padding-bottom:6px;scroll-snap-type:x mandatory}
+.row .card{scroll-snap-align:start}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;cursor:pointer;text-align:left;padding:0}
+.card:hover{border-color:var(--ink)}
+.tile{height:84px;display:flex;align-items:center;justify-content:center;font-size:38px;position:relative}
+.tile .ref{position:absolute;left:8px;bottom:6px;font-size:12px;font-family:var(--body);background:rgba(255,255,255,.75);color:#1d2328;border-radius:6px;padding:1px 6px}
+.card .body{padding:10px 12px 12px;display:flex;flex-direction:column;gap:4px;flex:1}
+.card .name{font-weight:700}
+.card .meta{font-size:13px;color:var(--muted)}
+.card .price{font-weight:700;margin-top:auto}
+.badge{display:inline-block;font-size:12px;border-radius:6px;padding:1px 6px;background:var(--ok-bg);color:var(--ok)}
+.badge.ex{background:var(--warn-bg);color:var(--ink)}
+.more{margin:16px auto 0;display:block}
+.section{margin:22px 0}
+.section h2{font-size:22px;margin-bottom:4px}
+.section h3{font-size:18px}
+.hint{color:var(--muted);font-size:15px;margin:2px 0 10px}
+.poste{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}
+.poste .head{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
+.poste .qty{font-size:14px;color:var(--muted)}
+.empty{border:1px dashed var(--line);border-radius:12px;padding:14px;color:var(--muted)}
+.score{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0 4px}
+.bar{flex:1;min-width:160px;max-width:320px;height:10px;background:var(--line);border-radius:5px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ok)}
+.amb{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.ambrow{display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0}
+.ambrow .pic{font-size:28px;width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex:none}
+.ambrow .txt{flex:1;min-width:0}
+.ambrow .role{font-size:13px;color:var(--muted)}
+.st{font-size:13px;font-weight:700}
+.st.ok{color:var(--ok)} .st.no{color:var(--no)}
+dialog{border:0;border-radius:16px;padding:0;max-width:560px;width:calc(100% - 32px);background:var(--surface);color:var(--ink)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+.dlg{padding:18px}
+.dlg .tile{border-radius:12px;height:120px;font-size:56px;margin-bottom:12px}
+.dlg h2{font-size:22px}
+.dlg table{width:100%;border-collapse:collapse;margin:10px 0;font-size:15px}
+.dlg td{padding:5px 0;border-bottom:1px solid var(--line);vertical-align:top}
+.dlg td:first-child{color:var(--muted);width:40%}
+.dlg ul{margin:4px 0 10px;padding-left:20px}
+.dlg .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
+.listitem{display:flex;gap:10px;align-items:center;border-bottom:1px solid var(--line);padding:10px 0}
+.listitem .txt{flex:1;min-width:0}
+.listitem input{width:64px;padding:6px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+.total{font-weight:700;font-size:18px;margin:12px 0}
+.err{background:var(--warn-bg);padding:14px;border-radius:12px}
+footer{color:var(--muted);font-size:13px;padding:24px 0 40px;border-top:1px solid var(--line)}
+.card{position:relative}
+.card .add{position:absolute;top:8px;right:8px;width:34px;height:34px;border-radius:50%;border:0;background:var(--ink);color:var(--bg);font-size:20px;font-weight:700;line-height:1;cursor:pointer;z-index:1}
+.card .add.done{background:var(--ok)}
+.tile img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.card .tile{height:120px}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;justify-content:space-between}
+.toolbar select{padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.guide{background:var(--ink);color:var(--bg);border-radius:16px;padding:16px 18px;margin:20px 0;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.guide .txt{flex:1;min-width:220px}
+.guide h3{font-size:19px;margin-bottom:4px}
+.guide p{margin:0;font-size:15px;opacity:.85}
+.guide .btn{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);text-decoration:none;display:inline-block}
+.guide .btn.ghost{background:transparent;color:var(--bg);border-color:var(--bg)}
+.ideas{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:8px 0 14px}
+.idea{background:var(--bg);border:1px solid var(--line);border-radius:12px;overflow:hidden;font-size:14px}
+.idea .ph{height:90px;background:var(--line);display:flex;align-items:center;justify-content:center;font-size:30px;position:relative}
+.idea .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.idea .t{padding:8px 10px 4px;font-weight:700}
+.idea .l{padding:0 10px 8px;font-size:13px}
+.idea .cr{padding:0 10px 8px;font-size:11px;color:var(--muted)}
+.room{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}
+.room label{display:flex;flex-direction:column;font-size:13px;color:var(--muted);gap:4px}
+.room input{width:90px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);font-size:16px}
+.room .res{flex:1;min-width:200px;font-size:14px}
+.ambrow .pic{overflow:hidden;position:relative}
+.ambrow .pic img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ambrow .calc{font-size:13px}
+.ambrow .btn{flex:none}
+.lists{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0 16px}
+.amb .door .ph{height:110px;border-radius:10px;margin:-6px -6px 10px;background:var(--line);display:flex;align-items:center;justify-content:center;font-size:42px;overflow:hidden;position:relative}
+.amb .door .ph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.dlg select{padding:8px;border:1px solid var(--line);border-radius:8px;background:var(--bg)}
+@media print{header.top,.proto,.no-print,footer,.crumbs,.guide{display:none!important}body{background:#fff;color:#000}}
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+  <div><a class="brand" href="#">Faire avec</a><div class="sub">Comptoir des Matériaux · La Pile</div></div>
+  <div class="spacer"></div>
+  <button class="listbtn" id="listBtn" type="button">Panier (0)</button>
+</div></header>
+<div class="proto"><div class="wrap"><strong>Prototype de test.</strong> Le stock vient de l'export Impulsion du 14/10/2026. Les dimensions, matières et états marqués « exemple » sont des valeurs de démonstration, pas des mesures.</div></div>
+<main><div class="wrap" id="app"><p>Chargement du stock…</p></div></main>
+<footer><div class="wrap">Les données sont lues depuis le dossier <code>donnees/</code> (export de stock + bibliothèque d'idées). Aucun compte ni serveur : tout se passe dans votre navigateur.</div></footer>
+<dialog id="dlg"></dialog>
+
+<script>
+// Sources de données. Pour passer à Google Sheets plus tard, remplacer ces chemins
+// par les liens « Publier sur le web > CSV » de chaque onglet.
+const SOURCES = {
+  stock: "donnees/stock.csv",
+  familles: "donnees/familles.csv",
+  fiches: "donnees/fiches.csv",
+  fonctions: "donnees/fonctions.csv",
+  projets: "donnees/projets.csv",
+  ambiances: "donnees/ambiances.csv",
+  idees: "donnees/idees.csv",
+};
+// Dossier des photos : une valeur « SA139-1.jpg » dans fiches.csv devient donnees/photos/SA139-1.jpg
+const PHOTOS = "donnees/photos/";
+// Service « être guidé » : coordonnées du Comptoir (site la-pile.be, octobre 2026)
+const CONTACT = {
+  tel: "+32455100921", telAffiche: "0455 10 09 21",
+  email: "info@la-pile.be",
+  horaires: "Mercredi et samedi de 9 h à 16 h, ou sur rendez-vous",
+};
+const COLORS = ["#f6d98b","#b9d7c3","#c7d3e8","#f0c1b4","#d9c8e6","#c9e3e6","#e8d4b8","#d6e2b3","#f2c9d8","#cfd8dc"];
+
+// ---------- Lecture des CSV ----------
+async function load(url){
+  const r = await fetch(url, {cache:"no-store"});
+  if(!r.ok) throw new Error(url + " : " + r.status);
+  const buf = await r.arrayBuffer();
+  let txt;
+  try { txt = new TextDecoder("utf-8", {fatal:true}).decode(buf); }
+  catch(e){ txt = new TextDecoder("windows-1252").decode(buf); }   // export Impulsion
+  return parseCSV(txt.replace(/^﻿/, ""));
+}
+function parseCSV(txt){
+  const first = txt.split(/\r?\n/)[0];
+  const sep = (first.split(";").length >= first.split(",").length) ? ";" : ",";
+  const rows = []; let row = [], cell = "", q = false;
+  for(let i=0;i<txt.length;i++){
+    const c = txt[i];
+    if(q){ if(c === '"'){ if(txt[i+1] === '"'){ cell += '"'; i++; } else q = false; } else cell += c; }
+    else if(c === '"') q = true;
+    else if(c === sep){ row.push(cell); cell = ""; }
+    else if(c === "\n" || c === "\r"){ if(c === "\r" && txt[i+1] === "\n") i++; row.push(cell); rows.push(row); row = []; cell = ""; }
+    else cell += c;
+  }
+  if(cell !== "" || row.length){ row.push(cell); rows.push(row); }
+  const head = (rows.shift() || []).map(h => h.trim());
+  return rows.filter(r => r.some(x => x.trim() !== "")).map(r => Object.fromEntries(head.map((h,i) => [h, (r[i] || "").trim()])));
+}
+
+// ---------- Outils ----------
+const norm = s => (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/œ/g, "oe");
+const list = s => (s || "").split(",").map(x => x.trim()).filter(Boolean);
+const refKey = s => (s || "").trim().replace(/\s+/g, " ").toUpperCase();
+const num = s => { const n = parseFloat(String(s ?? "").replace(",", ".")); return isNaN(n) ? null : n; };
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const decodeEnt = s => (s || "").replace(/&#(\d+);?/g, (m, n) => String.fromCharCode(+n)).replace(/&amp;/g, "&");
+const euro = n => n ? n.toLocaleString("fr-BE", {style:"currency", currency:"EUR"}) : "Prix au comptoir";
+const fmt = n => (Math.round(n * 10) / 10).toLocaleString("fr-BE");
+// Mots ramenés à une forme simple : sans accents, sans pluriel (portes → porte, carreaux → carreau)
+const STOP = new Set(["le","la","les","l","un","une","des","de","du","d","pour","mon","ma","mes","en","et","a","au","aux","dans","je","veux","voudrais","faire","avec","sur","un","notre","son","sa","ses"]);
+const stem = w => w.length > 3 ? w.replace(/(s|x)$/, "") : w;
+const toks = s => norm(s).split(/[^a-z0-9]+/).filter(Boolean).map(stem);
+// Un mot-clé (un ou plusieurs mots) correspond s'il apparaît d'un seul tenant dans le texte
+function hasWord(text, word){
+  const t = typeof text === "string" ? toks(text) : text, w = toks(word);
+  if(!w.length) return false;
+  for(let i = 0; i + w.length <= t.length; i++) if(w.every((x, j) => t[i + j] === x)) return true;
+  return false;
+}
+const anyWord = (text, words) => { const t = toks(text); return words.some(w => hasWord(t, w)); };
+// Dans une question libre, les mots d'un mot-clé peuvent être dispersés (« abri pour le bois » = « abri bois »)
+function inQuestion(q, kw){ const qt = new Set(toks(q)), w = toks(kw).filter(x => !STOP.has(x)); return w.length > 0 && w.every(x => qt.has(x)); }
+// « Revêtir un sol (pave|klinker) » : la fonction ne vaut que pour les articles dont le nom contient un de ces mots
+function parseFonctions(s){
+  return (s || "").split(/,(?![^(]*\))/).map(x => x.trim()).filter(Boolean).map(x => {
+    const m = x.match(/^(.*?)\s*\((.*)\)\s*$/);
+    return m ? { nom: m[1].trim(), mots: m[2].split("|").map(y => y.trim()).filter(Boolean) } : { nom: x, mots: [] };
+  });
+}
+const photoUrl = p => /^(https?:)?\/\//.test(p) || p.startsWith("data:") ? p : PHOTOS + p;
+const imgSearch = q => "https://www.google.com/search?tbm=isch&q=" + encodeURIComponent(q + " réemploi récup");
+
+let D = {};  // toutes les données
+
+async function init(){
+  const app = document.getElementById("app");
+  try {
+    const keys = Object.keys(SOURCES);
+    const res = await Promise.all(keys.map(k => load(SOURCES[k]).catch(e => { if(k === "idees") return []; throw e; })));
+    keys.forEach((k,i) => D[k] = res[i]);
+  } catch(e){
+    app.innerHTML = `<div class="err"><strong>Impossible de charger les données.</strong><br>${esc(e.message)}<br>Ouvrez le site depuis son adresse web (pas en double-cliquant sur le fichier).</div>`;
+    return;
+  }
+  prepare();
+  window.addEventListener("hashchange", route);
+  route();
+}
+
+function prepare(){
+  D.familles.forEach((f,i) => { f.color = COLORS[i % COLORS.length]; f.mots = list(f["Mots du nom"]); f.prefixes = list(f["Préfixes"]).map(p => p.toUpperCase()); f.fonctions = parseFonctions(f.Fonctions); f.usages = list(f["Usages détournés"]); });
+  D.famBy = Object.fromEntries(D.familles.map(f => [f.Famille, f]));
+  D.fiches.forEach(f => f.key = refKey(f["Référence"]));
+  const fichesBy = Object.fromEntries(D.fiches.map(f => [f.key, f]));
+  D.fonctions.forEach(f => f.syn = [f.Fonction, ...list(f.Synonymes)]);
+  D.ideeBy = Object.fromEntries(D.idees.filter(x => x["Idée"]).map(x => [norm(x["Idée"]), x]));
+
+  // Articles en vente : nommés, stock > 0, pas marqués « VENDU »
+  D.items = [];
+  D.stock.forEach((r, i) => {
+    const nom = decodeEnt(r["Nom"]).trim();
+    const stock = num(r["Stock"]) || 0;
+    if(!nom || stock <= 0 || /^vendu\b/i.test(nom)) return;
+    const ref = (r["Référence"] || "").trim();
+    const fiche = ref ? fichesBy[refKey(ref)] : null;
+    // Noms de colonnes de l'export « caractéristiques » de l'app d'encodage, avec les anciens noms en secours
+    const fv = (...names) => { if(!fiche) return ""; for(const n of names) if(fiche[n]) return fiche[n]; return ""; };
+    const it = { id: i, ref, nom, stock, prix: num(r["PV particulier TVAc"]) || 0, fiche };
+    it.famille = (fiche && fiche.Famille && D.famBy[fiche.Famille]) || guessFamily(it);
+    const f = it.famille, t = toks(nom);
+    it.matiere = fv("Matière");
+    it.matiereFam = f["Matière"] || "";
+    it.couleur = fv("Couleur");
+    it.etat = fv("État");
+    it.inout = fv("Intérieur / extérieur", "Intérieur/extérieur") || f["Intérieur/extérieur"] || "";
+    it.L = num(fv("Largeur (cm)", "Largeur")); it.H = num(fv("Hauteur (cm)", "Hauteur")); it.P = num(fv("Profondeur (cm)", "Profondeur"));
+    it.forme = fv("Forme");
+    it.arrivee = fv("Arrivée");
+    it.emplacement = fv("Emplacement");
+    it.photos = fv("Photos").split(/\s+/).filter(Boolean);
+    const famF = f.fonctions.filter(x => !x.mots.length || x.mots.some(m => hasWord(t, m))).map(x => x.nom);
+    it.fonctions = [...new Set([...famF, ...parseFonctions(fv("Fonctions")).map(x => x.nom)])];
+    it.usages = [...new Set([...list(fv("Usages détournés")), ...f.usages])];
+    it.transport = fv("Transport"); it.bricolage = fv("Bricolage");
+    it.exemple = !!fiche && norm(fiche["Mesuré"]) === "non";
+    it.detail = !!(fiche && (it.L || it.matiere));
+    it.toks = t;
+    it.search = norm([ref, nom, f.Famille, it.matiere, it.couleur].join(" "));
+    D.items.push(it);
+  });
+  D.itemById = Object.fromEntries(D.items.map(it => [it.id, it]));
+  D.byRef = {};
+  D.items.forEach(it => { if(it.ref) (D.byRef[refKey(it.ref)] ||= []).push(it); });
+
+  // Projets : une ligne par poste, regroupées par nom de projet
+  D.proj = [];
+  D.projets.forEach(r => {
+    let p = D.proj.find(x => x.nom === r.Projet);
+    if(!p){ p = { nom: r.Projet, mots: [], desc: "", postes: [] }; D.proj.push(p); }
+    p.mots.push(...list(r["Mots-clés"])); if(r.Description) p.desc = r.Description;
+    p.postes.push({ nom: r.Poste, familles: list(r.Familles), fonction: r.Fonction, mots: list(r["Mots du nom"]), qte: r["Quantité"], conseil: r.Conseil });
+  });
+  D.amb = [];
+  D.ambiances.forEach(r => {
+    let a = D.amb.find(x => x.nom === r.Ambiance);
+    if(!a){ a = { nom: r.Ambiance, desc: "", piece: [3, 3, 2.5], image: "", lignes: [] }; D.amb.push(a); }
+    if(r.Description) a.desc = r.Description;
+    if(r.Image) a.image = r.Image;
+    const p = (r["Pièce (L x l x h, m)"] || "").split(/x/i).map(num);
+    if(p.length === 3 && p.every(x => x != null)) a.piece = p;
+    a.lignes.push({ role: r["Rôle"], ref: r["Référence"], calc: norm(r.Calcul), couv: num(r["Couverture par unité"]) || 1, qte: num(r["Quantité"]) || 1, note: r.Note });
+  });
+  updateListBtn();
+}
+
+function guessFamily(it){
+  const t = toks(it.nom);
+  for(const f of D.familles) if(f.mots.length && f.mots.some(m => hasWord(t, m))) return f;
+  const pre = (it.ref.match(/^[A-Za-zÀ-ÿ]+/) || [""])[0].toUpperCase();
+  for(const f of D.familles) if(pre && f.prefixes.includes(pre)) return f;
+  return D.famBy["Divers"] || D.familles[D.familles.length - 1];
+}
+
+// ---------- Tri ----------
+const rank = it => (it.detail ? 0 : 2) + (it.prix ? 0 : 1);
+const sortItems = arr => arr.slice().sort((a,b) => rank(a) - rank(b) || a.nom.localeCompare(b.nom, "fr"));
+const SORTS = {
+  pertinence: { label: "Pertinence", fn: null },
+  prixAsc: { label: "Prix croissant", fn: (a,b) => (a.prix || 1e9) - (b.prix || 1e9) },
+  prixDesc: { label: "Prix décroissant", fn: (a,b) => b.prix - a.prix },
+  az: { label: "De A à Z", fn: (a,b) => a.nom.localeCompare(b.nom, "fr") },
+  stock: { label: "Plus grande quantité", fn: (a,b) => b.stock - a.stock },
+  taille: { label: "Plus grandes dimensions", fn: (a,b) => ((b.L || 0) * (b.H || 0)) - ((a.L || 0) * (a.H || 0)) },
+  arrivee: { label: "Arrivées récentes", fn: (a,b) => (b.arrivee || "").localeCompare(a.arrivee || "") },
+};
+
+// ---------- Rendu commun ----------
+function dims(it){ if(!it.L && !it.H) return ""; return [it.L, it.H, it.P].filter(x => x != null).map(x => String(x).replace(".", ",")).join(" × ") + " cm"; }
+function tile(it, big){
+  const img = it.photos.length ? `<img src="${esc(photoUrl(it.photos[0]))}" alt="" loading="lazy" onerror="this.remove()">` : "";
+  return `<div class="tile" style="background:${it.famille.color}">${it.famille.Pictogramme || "📦"}${img}${big ? "" : `<span class="ref">${esc(it.ref || "sans réf.")}</span>`}</div>`;
+}
+function card(it){
+  const d = dims(it);
+  return `<div class="card" role="button" tabindex="0" data-item="${it.id}"><button class="add" type="button" data-add="${it.id}" title="Ajouter au panier" aria-label="Ajouter au panier">+</button>${tile(it)}<div class="body">
+    <div class="name">${esc(it.nom)}</div>
+    <div class="meta">${esc(it.famille.Famille)}${it.stock > 1 ? " · " + it.stock + " en stock" : ""}</div>
+    ${d ? `<div class="meta">${d} ${it.exemple ? '<span class="badge ex">exemple</span>' : ""}</div>` : ""}
+    <div class="price">${euro(it.prix)}</div></div></div>`;
+}
+const cards = arr => arr.map(card).join("");
+function crumbs(...parts){ return `<p class="crumbs"><a href="#">Accueil</a>${parts.map(p => " › " + p).join("")}</p>`; }
+// Idées détournées illustrées : image du fichier idees.csv si elle existe, sinon lien vers des exemples en ligne
+function ideas(usages){
+  if(!usages.length) return "";
+  return `<div class="ideas">${usages.map(u => { const x = D.ideeBy[norm(u)];
+    return `<div class="idea"><div class="ph">💡${x && x.Image ? `<img src="${esc(photoUrl(x.Image))}" alt="${esc(u)}" loading="lazy" onerror="this.remove()">` : ""}</div><div class="t">${esc(u)}</div>
+      ${x && x["Crédit"] ? `<div class="cr">${x.Lien ? `<a href="${esc(x.Lien)}" target="_blank" rel="noopener">${esc(x["Crédit"])}</a>` : esc(x["Crédit"])}</div>` : ""}
+      <div class="l"><a href="${imgSearch(u)}" target="_blank" rel="noopener">Voir des exemples ↗</a></div></div>`; }).join("")}</div>`;
+}
+// Bouton « être guidé » : un vrai contact, avec le projet et le panier pré-remplis
+function guide(sujet){
+  const body = `Bonjour,\n\nJe voudrais être guidé(e) par le Comptoir des Matériaux pour ce projet : ${sujet || "(décrivez votre projet)"}.\n\n` + (curList().items.length ? listText() + "\n\n" : "") + "Mes disponibilités :\nMon numéro de téléphone :\n";
+  const mail = `mailto:${CONTACT.email}?subject=${encodeURIComponent("Être guidé pour mon projet : " + (sujet || "Faire avec"))}&body=${encodeURIComponent(body)}`;
+  return `<div class="guide no-print"><div class="txt"><h3>Être guidé par quelqu'un du Comptoir</h3>
+    <p>Un membre de l'équipe regarde votre projet avec vous et vous montre les matériaux sur place. ${esc(CONTACT.horaires)}.</p></div>
+    <a class="btn" href="tel:${CONTACT.tel}">Appeler le ${esc(CONTACT.telAffiche)}</a>
+    <a class="btn ghost" href="${mail}">Envoyer mon projet</a></div>`;
+}
+
+// ---------- Pages ----------
+function route(){
+  const h = decodeURIComponent(location.hash.slice(1));
+  const page = h.split("/")[0], arg = h.split("/").slice(1).join("/");
+  const app = document.getElementById("app");
+  window.scrollTo(0, 0);
+  if(page === "chercher") return pageChercher(app, arg);
+  if(page === "fonction") return pageFonction(app, arg);
+  if(page === "projet") return pageProjet(app, arg);
+  if(page === "inspiration") return pageInspiration(app, arg);
+  if(page === "liste") return pageListe(app);
+  if(page === "q") return pageQuestion(app, arg);
+  return pageAccueil(app);
+}
+
+function askForm(ph){ return `<form class="ask" id="ask"><input id="askIn" placeholder="${esc(ph)}" aria-label="Votre besoin ou projet"><button class="btn">Chercher</button></form>`; }
+function bindAsk(){ const f = document.getElementById("ask"); if(f) f.onsubmit = e => { e.preventDefault(); const v = document.getElementById("askIn").value.trim(); if(v) location.hash = "q/" + encodeURIComponent(v); }; }
+
+function pageAccueil(app){
+  app.innerHTML = `<section class="hero"><h1>Partez de ce qui existe.</h1>
+    <p>Dites-nous votre besoin ou votre projet : nous cherchons dans les ${D.items.length} matériaux en stock au Comptoir ce qui peut y répondre, même si vous n'y aviez pas pensé.</p></section>
+    ${askForm("Ex. : aménager mon atelier, un abri bois, une cloison…")}
+    <div class="doors">
+      <a class="door" href="#chercher"><div class="n">1</div><h2>Je cherche un matériau</h2><p>Filtrer par dimensions, matière, état, intérieur ou extérieur.</p></a>
+      <a class="door" href="#fonction"><div class="n">2</div><h2>J'ai besoin d'une fonction</h2><p>Séparer, couvrir, planter… et tout ce qui peut le faire, détourné ou non.</p></a>
+      <a class="door" href="#projet"><div class="n">3</div><h2>J'ai un projet</h2><p>La liste de matériaux pour le monter, avec ce qui est en stock aujourd'hui.</p></a>
+      <a class="door" href="#inspiration"><div class="n">4</div><h2>Je veux m'inspirer</h2><p>Des pièces complètes composées avec le stock, ajustées à vos dimensions.</p></a>
+    </div>`;
+  bindAsk();
+}
+
+// Question libre : projet > fonction > proposition sur mesure
+function matchProjet(q){
+  const scored = D.proj.map(p => ({ p, s: Math.max(0, ...[p.nom, ...p.mots].map(m => inQuestion(q, m) ? toks(m).length : 0)) })).filter(x => x.s > 0);
+  const best = Math.max(0, ...scored.map(x => x.s));
+  return scored.filter(x => x.s === best).map(x => x.p);
+}
+function matchFonction(q){ return D.fonctions.filter(f => f.syn.some(s => inQuestion(q, s))); }
+function textSearch(q){
+  const words = toks(q).filter(w => w.length > 2 && !STOP.has(w));
+  if(!words.length) return [];
+  return D.items.map(it => ({ it, s: words.filter(w => it.toks.includes(w) || it.search.includes(w)).length })).filter(x => x.s === words.length || (words.length > 2 && x.s >= words.length - 1)).map(x => x.it);
+}
+function pageQuestion(app, q){
+  const p = matchProjet(q), f = matchFonction(q);
+  if(p.length === 1) { location.replace("#projet/" + encodeURIComponent(p[0].nom)); return; }
+  const txt = textSearch(q);
+  if(!p.length && f.length === 1 && !txt.length) { location.replace("#fonction/" + encodeURIComponent(f[0].Fonction)); return; }
+  let html = crumbs("« " + esc(q) + " »") + `<h1>Pour « ${esc(q)} »</h1>`;
+  if(p.length) html += `<div class="section"><h2>Projets proches</h2><div class="doors">${p.map(x => `<a class="door" href="#projet/${encodeURIComponent(x.nom)}"><h2>${esc(x.nom)}</h2><p>${esc(x.desc)}</p></a>`).join("")}</div></div>`;
+  else html += `<p class="hint">Ce projet n'a pas encore de fiche toute faite. Voici ce que le stock propose pour ce que vous décrivez, et vous pouvez être guidé par l'équipe.</p>`;
+  html += guide(q);
+  f.forEach(fn => { const its = sortItems(itemsForFonction(fn.Fonction));
+    html += `<div class="section"><h2>${esc(fn.Fonction)}</h2><p class="hint">${esc(fn.Explication)}</p>${its.length ? `<div class="row">${cards(its.slice(0, 12))}</div><p><a href="#fonction/${encodeURIComponent(fn.Fonction)}">Tout voir (${its.length})</a></p>` : `<div class="empty">Rien en stock pour l'instant.</div>`}</div>`; });
+  if(txt.length || !f.length) html += `<div class="section"><h2>Articles dont le nom correspond (${txt.length})</h2>${txt.length ? `<div class="grid">${cards(sortItems(txt).slice(0, 24))}</div>` : `<div class="empty">Aucun article ne porte ce nom. Essayez un autre mot, ou demandez à être guidé.</div>`}</div>`;
+  app.innerHTML = html;
+}
+
+// Porte 1 : filtres
+const F = { q:"", fam:"", mat:"", inout:"", etat:"", Lmin:"", Lmax:"", Hmin:"", Hmax:"", tol:"5", prix:"", detail:false, tri:"pertinence" };
+let shown = 48;
+function pageChercher(app, arg){
+  if(arg) { Object.assign(F, { q:"", fam:"", mat:"", inout:"", etat:"" }); F.fam = arg; }
+  const opts = (vals, cur, all) => `<option value="">${all}</option>` + vals.map(v => `<option${v === cur ? " selected" : ""}>${esc(v)}</option>`).join("");
+  const fams = [...new Set(D.items.map(i => i.famille.Famille))].sort((a,b) => a.localeCompare(b, "fr"));
+  const mats = [...new Set(D.items.map(i => i.matiere).filter(Boolean))].sort((a,b) => a.localeCompare(b, "fr"));
+  const etats = [...new Set(D.items.map(i => i.etat).filter(Boolean))];
+  app.innerHTML = crumbs("Je cherche un matériau") + `<h1>Je cherche un matériau</h1><p class="hint">Les dimensions sont en centimètres. La tolérance montre aussi ce qui est « presque » bon.</p>
+    <form class="filters" id="filt">
+      <label>Mot-clé<input name="q" value="${esc(F.q)}" placeholder="porte, évier, chêne…"></label>
+      <label>Famille<select name="fam">${opts(fams, F.fam, "Toutes")}</select></label>
+      <label>Matière<select name="mat">${opts(mats, F.mat, "Toutes")}</select></label>
+      <label>Intérieur / extérieur<select name="inout">${opts(["Intérieur","Extérieur"], F.inout, "Peu importe")}</select></label>
+      <label>État<select name="etat">${opts(etats, F.etat, "Tous")}</select></label>
+      <label>Largeur (min – max)<span class="pair"><input name="Lmin" inputmode="numeric" value="${esc(F.Lmin)}" placeholder="min"><input name="Lmax" inputmode="numeric" value="${esc(F.Lmax)}" placeholder="max"></span></label>
+      <label>Hauteur (min – max)<span class="pair"><input name="Hmin" inputmode="numeric" value="${esc(F.Hmin)}" placeholder="min"><input name="Hmax" inputmode="numeric" value="${esc(F.Hmax)}" placeholder="max"></span></label>
+      <label>Tolérance (± cm)<input name="tol" inputmode="numeric" value="${esc(F.tol)}"></label>
+      <label>Prix max (€)<input name="prix" inputmode="numeric" value="${esc(F.prix)}"></label>
+      <label class="check"><input type="checkbox" name="detail"${F.detail ? " checked" : ""}> Fiches détaillées seulement</label>
+      <label>Trier par<select name="tri">${Object.entries(SORTS).map(([k, s]) => `<option value="${k}"${k === F.tri ? " selected" : ""}>${s.label}</option>`).join("")}</select></label>
+    </form><div id="res"></div>`;
+  const form = document.getElementById("filt");
+  form.oninput = () => { const fd = new FormData(form); Object.keys(F).forEach(k => F[k] = k === "detail" ? fd.has("detail") : (fd.get(k) || "")); shown = 48; renderRes(); };
+  form.onsubmit = e => e.preventDefault();
+  shown = 48; renderRes();
+}
+function filtered(){
+  const tol = num(F.tol) || 0, words = toks(F.q).filter(w => w.length > 1);
+  const between = (v, mn, mx) => { mn = num(mn); mx = num(mx); if(mn == null && mx == null) return true; if(v == null) return false; return (mn == null || v >= mn - tol) && (mx == null || v <= mx + tol); };
+  return D.items.filter(it =>
+    words.every(w => it.toks.includes(w) || it.search.includes(w)) &&
+    (!F.fam || it.famille.Famille === F.fam) &&
+    (!F.mat || it.matiere === F.mat) &&
+    (!F.inout || it.inout === F.inout || it.inout === "Les deux") &&
+    (!F.etat || it.etat === F.etat) &&
+    between(it.L, F.Lmin, F.Lmax) && between(it.H, F.Hmin, F.Hmax) &&
+    (!num(F.prix) || (it.prix && it.prix <= num(F.prix))) &&
+    (!F.detail || it.detail));
+}
+// Pertinence : le mot-clé au début du nom d'abord, puis fiches détaillées, puis articles avec prix
+function relevance(arr){
+  const w = toks(F.q);
+  const sc = it => (w.length && it.toks[0] === w[0] ? 0 : w.length && it.toks.includes(w[0]) ? 1 : 2) * 10 + rank(it);
+  return arr.slice().sort((a,b) => sc(a) - sc(b) || a.nom.localeCompare(b.nom, "fr"));
+}
+function renderRes(){
+  const s = SORTS[F.tri] || SORTS.pertinence;
+  const base = filtered(), r = s.fn ? base.slice().sort((a,b) => s.fn(a,b) || a.nom.localeCompare(b.nom, "fr")) : relevance(base);
+  const withDims = r.filter(i => i.L).length, dimFilter = F.Lmin || F.Lmax || F.Hmin || F.Hmax;
+  document.getElementById("res").innerHTML = `<p class="count">${r.length} article${r.length > 1 ? "s" : ""} · ${withDims} avec dimensions${dimFilter ? " (les articles sans dimensions sont masqués par ce filtre)" : ""}</p>
+    ${r.length ? `<div class="grid">${cards(r.slice(0, shown))}</div>` : `<div class="empty">Rien ne correspond. Élargissez la tolérance ou retirez un filtre.</div>`}
+    ${r.length > shown ? `<button class="btn ghost more" id="moreBtn" type="button">Afficher plus (${r.length - shown} restants)</button>` : ""}`;
+  const m = document.getElementById("moreBtn"); if(m) m.onclick = () => { shown += 48; renderRes(); };
+}
+
+// Porte 2 : fonctions
+function itemsForFonction(fn){ return D.items.filter(it => it.fonctions.includes(fn)); }
+function pageFonction(app, arg){
+  const fn = D.fonctions.find(f => f.Fonction === arg);
+  let html = crumbs(fn ? `<a href="#fonction">J'ai besoin d'une fonction</a> › ${esc(fn.Fonction)}` : "J'ai besoin d'une fonction") +
+    `<h1>${fn ? esc(fn.Fonction) : "J'ai besoin d'une fonction"}</h1><p class="hint">${fn ? esc(fn.Explication) : "Choisissez ce que vous voulez obtenir. Nous montrons tout ce qui peut le faire, y compris des usages détournés."}</p>
+    <div class="chips">${D.fonctions.map(f => `<a class="chip${fn && f === fn ? " on" : ""}" href="#fonction/${encodeURIComponent(f.Fonction)}">${esc(f.Fonction)}</a>`).join("")}</div>`;
+  if(fn){
+    const its = itemsForFonction(fn.Fonction);
+    const groups = {};
+    its.forEach(it => (groups[it.famille.Famille] ||= []).push(it));
+    const names = Object.keys(groups).sort((a,b) => groups[b].length - groups[a].length);
+    html += `<p class="count">${its.length} articles en stock dans ${names.length} familles</p>`;
+    html += names.map(n => { const f = D.famBy[n], g = sortItems(groups[n]);
+      return `<div class="section"><h2>${f.Pictogramme || ""} ${esc(n)} <span class="count">(${g.length})</span></h2>
+        ${f.usages.length ? `<p class="hint">Idées de détournement :</p>${ideas(f.usages)}` : ""}
+        <div class="row">${cards(g.slice(0, 10))}</div>
+        ${g.length > 10 ? `<p><a href="#chercher/${encodeURIComponent(n)}">Voir les ${g.length} articles « ${esc(n)} »</a></p>` : ""}</div>`; }).join("");
+    if(!its.length) html += `<div class="empty">Rien en stock pour cette fonction aujourd'hui.</div>`;
+  }
+  app.innerHTML = html;
+}
+
+// Porte 3 : projets
+function itemsForPoste(po){
+  return D.items.filter(it => {
+    const scoped = po.familles.length || po.fonction;
+    const inScope = (po.familles.length && po.familles.includes(it.famille.Famille)) || (po.fonction && it.fonctions.includes(po.fonction));
+    if(scoped && !inScope) return false;
+    return !po.mots.length || po.mots.some(m => hasWord(it.toks, m));
+  });
+}
+function pageProjet(app, arg){
+  const p = D.proj.find(x => x.nom === arg);
+  if(!p){
+    app.innerHTML = crumbs("J'ai un projet") + `<h1>J'ai un projet</h1><p class="hint">Décrivez-le en quelques mots, ou choisissez un projet ci-dessous.</p>
+      ${askForm("Ex. : construire un abri pour le bois")}
+      <div class="doors">${D.proj.map(x => { const ok = x.postes.filter(po => itemsForPoste(po).length).length;
+        return `<a class="door" href="#projet/${encodeURIComponent(x.nom)}"><h2>${esc(x.nom)}</h2><p>${esc(x.desc)}</p><p class="count">${ok} postes sur ${x.postes.length} trouvables en stock</p></a>`; }).join("")}</div>
+      ${guide("")}`;
+    bindAsk();
+    return;
+  }
+  const res = p.postes.map(po => ({ po, its: sortItems(itemsForPoste(po)) }));
+  const ok = res.filter(r => r.its.length).length;
+  app.innerHTML = crumbs(`<a href="#projet">J'ai un projet</a> › ${esc(p.nom)}`) + `<h1>${esc(p.nom)}</h1><p class="hint">${esc(p.desc)}</p>
+    <div class="score"><div class="bar"><i style="width:${Math.round(ok / p.postes.length * 100)}%"></i></div><strong>${ok} postes sur ${p.postes.length}</strong> trouvables dans le stock aujourd'hui</div>
+    ${guide(p.nom)}
+    ${res.map(({po, its}) => `<div class="poste"><div class="head"><h3>${esc(po.nom)}</h3><span class="qty">${po.qte ? "Quantité indicative : " + esc(po.qte) : ""}</span></div>
+      ${po.conseil ? `<p class="hint">${esc(po.conseil)}</p>` : ""}
+      ${its.length ? `<p class="count">${its.length} possibilité${its.length > 1 ? "s" : ""} en stock</p><div class="row">${cards(its.slice(0, 12))}</div>` : `<div class="empty">Rien en stock aujourd'hui pour ce poste : à trouver ailleurs, ou demandez au Comptoir s'il en arrive bientôt.</div>`}</div>`).join("")}
+    <p class="hint">Pas équipé pour le monter ? Le Comptoir propose des ateliers de montage guidé avec ses outils.</p>`;
+}
+
+// Porte 4 : ambiances, ajustées aux dimensions de la pièce
+function ambItem(l){
+  const its = l.ref ? (D.byRef[refKey(l.ref)] || []) : [];
+  if(its.length < 2) return its[0] || null;
+  const hint = toks(l.role + " " + (l.note || ""));      // plusieurs articles sous la même référence : on prend celui qui ressemble au rôle
+  return its.map(it => ({ it, s: it.toks.filter(t => hint.includes(t)).length })).sort((a,b) => b.s - a.s)[0].it;
+}
+const room = {};
+function besoins(a){
+  const [L, l, h] = room[a.nom] || a.piece;
+  const per = 2 * (L + l);
+  const surf = { sol: L * l * 1.1, murs: Math.max(0, per * h - 3) * 1.1, plinthes: Math.max(0, per - 0.9), perimetre: per };
+  const unite = { sol: "m²", murs: "m²", plinthes: "m", perimetre: "m" };
+  return a.lignes.map(li => {
+    const it = ambItem(li);
+    let r;
+    if(surf[li.calc] != null){
+      const need = surf[li.calc], units = Math.ceil(need / li.couv - 1e-9), dispo = it ? it.stock * li.couv : 0;
+      r = { need, unit: unite[li.calc], units, dispo, manque: Math.max(0, need - dispo), parSurface: true };
+    } else {
+      const dispo = it ? it.stock : 0;
+      r = { need: li.qte, unit: li.qte > 1 ? "pièces" : "pièce", units: li.qte, dispo, manque: Math.max(0, li.qte - dispo), parSurface: false };
+    }
+    r.prendre = it ? Math.min(r.units, it.stock) : 0;
+    return { li, it, ...r };
+  });
+}
+function pageInspiration(app, arg){
+  const a = D.amb.find(x => x.nom === arg);
+  if(!a){
+    app.innerHTML = crumbs("Je veux m'inspirer") + `<h1>Je veux m'inspirer</h1><p class="hint">Des pièces complètes composées avec ce qui est au Comptoir. Indiquez les dimensions de votre pièce : les quantités s'ajustent.</p>
+      <div class="amb">${D.amb.map(x => { const av = x.lignes.filter(ambItem).length; const first = x.lignes.map(ambItem).find(it => it && it.photos.length);
+        const img = x.image || (first && first.photos[0]);
+        return `<a class="door" href="#inspiration/${encodeURIComponent(x.nom)}"><div class="ph">🏡${img ? `<img src="${esc(photoUrl(img))}" alt="" loading="lazy" onerror="this.remove()">` : ""}</div><h2>${esc(x.nom)}</h2><p>${esc(x.desc)}</p><p class="count">${av} éléments sur ${x.lignes.length} disponibles</p></a>`; }).join("")}</div>`;
+    return;
+  }
+  const r0 = room[a.nom] || a.piece;
+  app.innerHTML = crumbs(`<a href="#inspiration">Je veux m'inspirer</a> › ${esc(a.nom)}`) + `<h1>${esc(a.nom)}</h1><p class="hint">${esc(a.desc)}</p>
+    <form class="room no-print" id="roomF">
+      <label>Longueur (m)<input name="L" inputmode="decimal" value="${String(r0[0]).replace(".", ",")}"></label>
+      <label>Largeur (m)<input name="l" inputmode="decimal" value="${String(r0[1]).replace(".", ",")}"></label>
+      <label>Hauteur (m)<input name="h" inputmode="decimal" value="${String(r0[2]).replace(".", ",")}"></label>
+      <div class="res" id="roomRes"></div></form>
+    <div id="ambRows"></div>`;
+  const form = document.getElementById("roomF");
+  form.oninput = () => { const fd = new FormData(form); const v = ["L","l","h"].map(k => num(fd.get(k))); if(v.every(x => x != null && x >= 0)){ room[a.nom] = v; renderAmb(a); } };
+  form.onsubmit = e => e.preventDefault();
+  renderAmb(a);
+}
+function renderAmb(a){
+  const [L, l, h] = room[a.nom] || a.piece;
+  const rows = besoins(a);
+  const total = rows.reduce((s, r) => s + (r.it ? r.it.prix * r.prendre : 0), 0);
+  const manques = rows.filter(r => r.manque > 0);
+  document.getElementById("roomRes").innerHTML = `Sol ${fmt(L * l)} m²${h ? ` · murs ${fmt(Math.max(0, 2 * (L + l) * h - 3))} m² (portes et fenêtres déduites)` : ""} · périmètre ${fmt(2 * (L + l))} m. Les surfaces comptent 10 % de chutes.`;
+  document.getElementById("ambRows").innerHTML = rows.map(r => {
+    const it = r.it;
+    const calc = r.parSurface
+      ? `Besoin ${fmt(r.need)} ${r.unit} · disponible ${fmt(r.dispo)} ${r.unit}`
+      : (r.need > 1 ? `Besoin ${r.need} ${r.unit} · ${r.dispo} en stock` : "");
+    const st = !it ? (r.li.ref ? `<span class="st no">Vendu${r.need ? ` · à compléter : ${fmt(r.need)} ${r.unit}` : ""}</span>` : `<span class="st no">À trouver ailleurs : ${fmt(r.need)} ${r.unit}</span>`)
+      : r.manque > 0 ? `<span class="st no">Disponible en partie · manque ${fmt(r.manque)} ${r.unit} à compléter</span>`
+      : `<span class="st ok">Disponible · ${euro(it.prix)}${r.prendre > 1 ? " × " + r.prendre : ""}</span>`;
+    return `<div class="ambrow"${it ? ` data-item="${it.id}" style="cursor:pointer"` : ""}>
+      <div class="pic" style="background:${it ? it.famille.color : "var(--line)"}">${it ? it.famille.Pictogramme : "?"}${it && it.photos.length ? `<img src="${esc(photoUrl(it.photos[0]))}" alt="" loading="lazy" onerror="this.remove()">` : ""}</div>
+      <div class="txt"><div class="role">${esc(r.li.role)}${it && it.ref ? " · " + esc(it.ref) : ""}</div><div><strong>${esc(it ? it.nom : (r.li.note || "À trouver"))}</strong>${it && r.li.note && norm(r.li.note) !== norm(it.nom) ? ` · ${esc(r.li.note)}` : ""}</div>
+      ${calc ? `<div class="calc">${calc}</div>` : ""}${st}</div>
+      ${it ? `<button class="btn small no-print" type="button" data-addq="${it.id}:${r.prendre}">+ ${r.prendre > 1 ? r.prendre : ""}</button>` : ""}</div>`; }).join("") +
+    `<p class="total">Total des éléments disponibles : ${euro(total)}</p>
+    ${manques.length ? `<p class="hint">À compléter ailleurs : ${manques.map(r => `${esc(r.li.role)} (${fmt(r.manque)} ${r.unit})`).join(", ")}.</p>` : ""}
+    <p class="hint">Les couvertures par unité marquées « hypothèse » sont à vérifier avec le Comptoir (m², boîtes ou pièces).</p>
+    <button class="btn no-print" id="addAll" type="button">Ajouter tout l'ensemble au panier</button> ${guide(a.nom)}`;
+  document.getElementById("addAll").onclick = () => { rows.filter(r => r.it && r.prendre).forEach(r => addToList(r.it.id, r.prendre)); location.hash = "liste"; };
+}
+
+// ---------- Paniers (plusieurs, gardés dans ce navigateur) ----------
+let MEM = null;
+function store(){
+  if(MEM) return MEM;
+  try { MEM = JSON.parse(localStorage.getItem("faireavec-paniers") || "null"); } catch(e){}
+  if(!MEM || !MEM.lists || !MEM.lists.length){
+    let old = []; try { old = JSON.parse(localStorage.getItem("faireavec-liste") || "[]"); } catch(e){}
+    MEM = { cur: 0, lists: [{ nom: "Mon panier", items: old }] };
+  }
+  return MEM;
+}
+function save(){ try { localStorage.setItem("faireavec-paniers", JSON.stringify(MEM)); } catch(e){} updateListBtn(); }
+const curList = () => { const s = store(); return s.lists[Math.min(s.cur, s.lists.length - 1)]; };
+function addToList(id, q = 1){
+  const it = D.itemById[id]; if(!it || q <= 0) return;
+  const l = curList(), e = l.items.find(x => x.ref === it.ref && x.nom === it.nom);
+  if(e) e.q = Math.min(it.stock, e.q + q); else l.items.push({ ref: it.ref, nom: it.nom, prix: it.prix, q: Math.min(it.stock, q) });
+  save();
+}
+function updateListBtn(){ const l = curList(); const n = l.items.reduce((s, x) => s + x.q, 0); document.getElementById("listBtn").textContent = `${l.nom} (${n})`; }
+function listText(l = curList()){ return `${l.nom} — Comptoir des Matériaux :\n` + l.items.map(x => `- ${x.q} × ${x.nom}${x.ref ? " (réf. " + x.ref + ")" : ""}`).join("\n") + `\nTotal indicatif : ${euro(l.items.reduce((s, x) => s + x.q * x.prix, 0))}`; }
+function pageListe(app){
+  const s = store(), l = curList();
+  app.innerHTML = crumbs("Paniers") + `<h1>Paniers</h1><p class="hint">Un panier par projet si vous voulez. Ils sont gardés dans ce navigateur : envoyez-les au Comptoir ou imprimez-les pour venir voir les matériaux.</p>
+    <div class="lists no-print">${s.lists.map((x, i) => `<button class="chip${x === l ? " on" : ""}" type="button" data-list="${i}">${esc(x.nom)} (${x.items.reduce((a, y) => a + y.q, 0)})</button>`).join("")}
+      <button class="btn small ghost" id="newL" type="button">+ Nouveau panier</button><button class="btn small ghost" id="renL" type="button">Renommer</button>${s.lists.length > 1 ? `<button class="btn small ghost" id="delL" type="button">Supprimer</button>` : ""}</div>
+    <h2>${esc(l.nom)}</h2>
+    ${l.items.length ? l.items.map((x, i) => `<div class="listitem"><div class="txt"><strong>${esc(x.nom)}</strong><div class="count">${esc(x.ref || "sans référence")} · ${euro(x.prix)}</div></div>
+      <input type="number" min="0" value="${x.q}" data-i="${i}" aria-label="Quantité"></div>`).join("") +
+      `<p class="total">Total indicatif : ${euro(l.items.reduce((a, x) => a + x.q * x.prix, 0))}</p>
+      <div class="no-print" style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="share" type="button">Envoyer</button><button class="btn ghost" id="copy" type="button">Copier</button><button class="btn ghost" id="print" type="button">Imprimer</button><button class="btn ghost" id="clear" type="button">Vider</button></div>`
+    : `<div class="empty">Ce panier est vide. Ajoutez des matériaux avec le bouton + sur chaque article.</div>`}
+    ${guide(l.nom)}`;
+  const rerender = () => pageListe(app);
+  app.querySelectorAll("[data-list]").forEach(b => b.onclick = () => { s.cur = +b.dataset.list; save(); rerender(); });
+  app.querySelectorAll("input[data-i]").forEach(inp => inp.onchange = () => { const q = Math.max(0, parseInt(inp.value) || 0); if(q) l.items[+inp.dataset.i].q = q; else l.items.splice(+inp.dataset.i, 1); save(); rerender(); });
+  const on = (id, fn) => { const b = document.getElementById(id); if(b) b.onclick = fn; };
+  on("newL", () => { const n = prompt("Nom du nouveau panier :", "Projet " + (s.lists.length + 1)); if(n && n.trim()){ s.lists.push({ nom: n.trim(), items: [] }); s.cur = s.lists.length - 1; save(); rerender(); } });
+  on("renL", () => { const n = prompt("Nouveau nom :", l.nom); if(n && n.trim()){ l.nom = n.trim(); save(); rerender(); } });
+  on("delL", () => { if(confirm(`Supprimer le panier « ${l.nom} » ?`)){ s.lists.splice(s.lists.indexOf(l), 1); s.cur = 0; save(); rerender(); } });
+  on("share", async () => { const t = listText(); if(navigator.share){ try { await navigator.share({ text: t }); return; } catch(e){ if(e.name === "AbortError") return; } } location.href = `mailto:${CONTACT.email}?subject=${encodeURIComponent(l.nom)}&body=${encodeURIComponent(t)}`; });
+  on("copy", async () => { try { await navigator.clipboard.writeText(listText()); document.getElementById("copy").textContent = "Copié ✓"; } catch(e){ prompt("Copiez le panier :", listText()); } });
+  on("print", () => window.print());
+  on("clear", () => { if(confirm("Vider ce panier ?")){ l.items = []; save(); rerender(); } });
+}
+
+// ---------- Fiche d'un article ----------
+function openItem(id){
+  const it = D.itemById[id]; if(!it) return;
+  const dlg = document.getElementById("dlg"), s = store();
+  const row = (k, v) => v ? `<tr><td>${k}</td><td>${v}</td></tr>` : "";
+  const ex = it.exemple ? ' <span class="badge ex">exemple</span>' : "";
+  dlg.innerHTML = `<div class="dlg">${tile(it, true)}<h2>${esc(it.nom)}</h2>
+    <table>${row("Référence", esc(it.ref || "sans référence"))}${row("Famille", esc(it.famille.Famille))}${row("Prix", euro(it.prix))}${row("En stock", it.stock)}
+    ${row("Dimensions", dims(it) && dims(it) + ex)}${row("Matière", it.matiere ? esc(it.matiere) + ex : (it.matiereFam ? esc(it.matiereFam) + " (selon la famille)" : ""))}
+    ${row("Couleur", esc(it.couleur))}${row("État", it.etat && esc(it.etat) + ex)}${row("Intérieur / extérieur", esc(it.inout))}${row("Forme", esc(it.forme))}
+    ${row("Emplacement au Comptoir", it.emplacement && (/^r$/i.test(it.emplacement) ? "Pas encore rangé (réception)" : esc(it.emplacement)))}${row("Transport", esc(it.transport))}${row("Bricolage", esc(it.bricolage))}</table>
+    ${it.fonctions.length ? `<strong>Peut servir à</strong><div class="chips">${it.fonctions.map(f => `<a class="chip" href="#fonction/${encodeURIComponent(f)}">${esc(f)}</a>`).join("")}</div>` : ""}
+    ${it.usages.length ? `<strong>Idées de réemploi détourné</strong>${ideas(it.usages)}` : ""}
+    ${!it.detail ? `<p class="hint">Cette fiche n'est pas encore détaillée (dimensions, matière, état). Demandez au Comptoir.</p>` : ""}
+    <div class="actions"><button class="btn ghost" id="dClose" type="button">Fermer</button>
+      ${s.lists.length > 1 ? `<select id="dList" aria-label="Panier">${s.lists.map((x, i) => `<option value="${i}"${x === curList() ? " selected" : ""}>${esc(x.nom)}</option>`).join("")}</select>` : ""}
+      <button class="btn" id="dAdd" type="button">Ajouter au panier</button></div></div>`;
+  dlg.querySelector("#dClose").onclick = () => dlg.close();
+  dlg.querySelector("#dAdd").onclick = () => { const sel = dlg.querySelector("#dList"); if(sel){ s.cur = +sel.value; } addToList(id); dlg.querySelector("#dAdd").textContent = "Ajouté ✓"; };
+  dlg.querySelectorAll("a.chip").forEach(a => a.onclick = () => dlg.close());
+  dlg.showModal();
+}
+document.addEventListener("click", e => {
+  const add = e.target.closest("[data-add]");
+  if(add){ e.stopPropagation(); addToList(+add.dataset.add); add.textContent = "✓"; add.classList.add("done"); return; }
+  const addq = e.target.closest("[data-addq]");
+  if(addq){ e.stopPropagation(); const [id, q] = addq.dataset.addq.split(":").map(Number); addToList(id, q || 1); addq.textContent = "✓"; return; }
+  const c = e.target.closest("[data-item]"); if(c && !e.target.closest("a")){ openItem(+c.dataset.item); return; }
+  if(e.target.id === "dlg") e.target.close();
+});
+document.addEventListener("keydown", e => { if(e.key === "Enter" && e.target.matches && e.target.matches(".card[data-item]")) openItem(+e.target.dataset.item); });
+document.getElementById("listBtn").onclick = () => location.hash = "liste";
+init();
+</script>
+</body>
+</html>
