@@ -49,6 +49,10 @@ ICONES = {'Sanitaire': '🛁', 'Portes': '🚪', 'Gros œuvre': '🧱', 'Chauffa
           'Châssis et fenêtres': '🪟', 'Quincaillerie': '🔩', 'Parquet, bardage et terrasse': '🪵', 'Divers': '📦', 'Toiture': '🏠',
           'Outillage': '🔧', 'Bois et panneaux': '🪚', 'Isolation': '🧶', 'Électroménager': '🍳', 'Lambris et plafonds': '▤'}
 
+# version des fichiers communs (style, scripts) : change à chaque modification, évite les vieilles copies en cache
+import hashlib
+VER = hashlib.md5(b''.join(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), f), 'rb').read() for f in ('site_comptoir.css', 'site_comptoir_panier.js', 'site_comptoir_zoom.js'))).hexdigest()[:8]
+
 def page(titre, desc, corps, prof='', image='', canon='', extra_head=''):
     return f'''<!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -57,7 +61,7 @@ def page(titre, desc, corps, prof='', image='', canon='', extra_head=''):
 <meta property="og:title" content="{esc(titre)}"><meta property="og:description" content="{esc(desc)}">
 {f'<meta property="og:image" content="{esc(image)}">' if image else ''}{f'<link rel="canonical" href="{esc(BASE + canon)}">' if canon else ''}
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="{prof}style.css"><script src="{prof}panier.js" defer></script>{extra_head}
+<link rel="stylesheet" href="{prof}style.css?v={VER}"><script src="{prof}panier.js?v={VER}" defer></script>{extra_head}
 </head><body>
 <div class="maquette">Maquette : catalogue de test, prix et textes à valider par l'équipe.</div>
 <header class="haut"><div class="haut-in">
@@ -113,7 +117,7 @@ for a in pub:
 {f'<section><h2>Pour compléter</h2><div class="grille">{lies}</div></section>' if lies else ''}
 </main>'''
     open(f"{out}/{a['_url']}", 'w').write(page(f"{a['titre']} – Comptoir des Matériaux", a['accroche'] or a['description'][:150], corps, '../',
-                                              a['_photo'], a['_url'], f'<script type="application/ld+json">{json.dumps(ld, ensure_ascii=False)}</script><script src="../zoom.js" defer></script>'))
+                                              a['_photo'], a['_url'], f'<script type="application/ld+json">{json.dumps(ld, ensure_ascii=False)}</script><script src="../zoom.js?v={VER}" defer></script>'))
 
 # Ordre de vitrine (« tous les rayons ») : on alterne les familles, grosses pièces d'abord, plutôt que la suite des références.
 GROS = {'Portes', 'Baignoires et douches', 'Châssis et fenêtres', 'Parois de douche', 'Meubles de salle de bain', 'Radiateurs et chauffage',
