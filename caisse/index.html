@@ -33,8 +33,8 @@ h1{font-size:26px} h2{font-size:24px}
 button{font:inherit;color:inherit;cursor:pointer}
 button:focus-visible,input:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
 .essai{background:var(--warn-bg);border-radius:10px;padding:8px 12px;font-size:15px;font-weight:700;margin-bottom:12px}
-.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
-.tabs button{min-height:52px;border-radius:12px;border:2px solid var(--line);background:var(--surface);font-family:var(--display);font-weight:800;font-size:18px}
+.tabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;margin-bottom:14px}
+.tabs button{min-height:52px;border-radius:12px;border:2px solid var(--line);background:var(--surface);font-family:var(--display);font-weight:800;font-size:15px;padding:0 2px}
 .tabs button.sel{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .big{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:64px;border-radius:14px;
   border:0;background:var(--accent);color:var(--accent-ink);font-family:var(--display);font-weight:800;font-size:20px;padding:10px 16px;box-sizing:border-box}
@@ -120,6 +120,32 @@ dl.res .fort{color:var(--ink);font-weight:700;border-top:1px solid var(--line);p
 .seg button.sel{border-color:var(--ink);background:var(--accent);color:var(--accent-ink)}
 .qin{width:72px!important;text-align:center!important}
 .solde{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--display);font-weight:800;font-size:24px}
+/* Stock et chiffres */
+:root{--barre:#2c68a8}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--barre:#6fa3e0}}
+:root[data-theme="dark"]{--barre:#6fa3e0}
+.tuiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tuile{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.tuile b{display:block;font-family:var(--display);font-weight:800;font-size:22px;font-variant-numeric:tabular-nums}
+.tuile span{color:var(--muted);font-size:14px}
+.hb{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,6fr) auto;gap:8px;align-items:center;padding:5px 0;font-size:15px}
+.hb .lab{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hb .trk{height:14px}
+.hb .trk i{display:block;height:100%;min-width:2px;background:var(--barre);border-radius:0 4px 4px 0}
+.hb .val{font-variant-numeric:tabular-nums;font-weight:700;text-align:right;white-space:nowrap}
+.cols{display:flex;align-items:flex-end;gap:2px;height:150px;border-bottom:1px solid var(--line);margin-top:8px}
+.cols button{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:stretch;background:none;border:0;padding:0}
+.cols button i{display:block;background:var(--barre);border-radius:4px 4px 0 0;min-height:2px}
+.cols button.sel i{background:var(--ink)}
+.mois{display:flex;gap:2px;font-size:11px;color:var(--muted);margin-top:4px}
+.mois span{flex:1;text-align:center}
+.tip{font-weight:700;margin-top:4px;min-height:24px;font-variant-numeric:tabular-nums}
+.nb{font-family:var(--display);font-weight:800;font-size:22px;text-align:right;white-space:nowrap}
+.nb small{display:block;font-family:var(--body);font-weight:400;font-size:12px;color:var(--muted)}
+table.t{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+table.t th{color:var(--muted);font-size:12px;text-align:right;font-weight:700;padding:4px}
+table.t th:first-child,table.t td:first-child{text-align:left}
+table.t td{border-top:1px solid var(--line);padding:6px 4px;text-align:right}
 </style>
 </head>
 <body>
@@ -164,8 +190,10 @@ function bar(html){$("#barIn").innerHTML=html;$("#bar").hidden=!html}
 
 // ---------- Stockage sur le téléphone ----------
 let idb;
-function openDb(){return new Promise((ok,ko)=>{const r=indexedDB.open("caisse-comptoir",1);
- r.onupgradeneeded=()=>{const d=r.result;d.createObjectStore("ventes",{keyPath:"id"});d.createObjectStore("sorties",{keyPath:"id"});d.createObjectStore("reglages")};
+function openDb(){return new Promise((ok,ko)=>{const r=indexedDB.open("caisse-comptoir",2);
+ r.onupgradeneeded=()=>{const d=r.result,n=d.objectStoreNames;
+  if(!n.contains("ventes"))d.createObjectStore("ventes",{keyPath:"id"});if(!n.contains("sorties"))d.createObjectStore("sorties",{keyPath:"id"});
+  if(!n.contains("reglages"))d.createObjectStore("reglages");if(!n.contains("inventaire"))d.createObjectStore("inventaire",{keyPath:"k"})};
  r.onsuccess=()=>{idb=r.result;ok()};r.onerror=()=>ko(r.error)})}
 function tx(store,mode,fn){return new Promise((ok,ko)=>{const t=idb.transaction(store,mode),s=t.objectStore(store);const res=fn(s);
  t.oncomplete=()=>ok(res&&res.result);t.onerror=()=>ko(t.error)})}
@@ -175,24 +203,43 @@ const putSet=(k,v)=>tx("reglages","readwrite",s=>s.put(v,k));
 async function allSet(){const o={};await new Promise((ok,ko)=>{const t=idb.transaction("reglages"),s=t.objectStore("reglages"),c=s.openCursor();
  c.onsuccess=()=>{const x=c.result;if(x){o[x.key]=x.value;x.continue()}else ok()};c.onerror=()=>ko(c.error)});return o}
 
-let CAT=[], ventes=[], sorties=[], REG={}, vendu={};
+// Fiches de l'app d'encodage : même adresse, donc lisibles sur le même téléphone. Lecture seule ;
+// si la base n'existe pas, on annule l'ouverture pour ne pas la créer vide (l'app d'encodage la créera).
+function lireFiches(nom){return new Promise(ok=>{let r;try{r=indexedDB.open(nom)}catch(e){return ok([])}
+ r.onupgradeneeded=()=>r.transaction.abort();r.onerror=()=>ok([]);r.onblocked=()=>ok([]);
+ r.onsuccess=()=>{const d=r.result;if(!d.objectStoreNames.contains("fiches")){d.close();return ok([])}
+  const g=d.transaction("fiches").objectStore("fiches").getAll();g.onsuccess=()=>{d.close();ok(g.result||[])};g.onerror=()=>{d.close();ok([])}}})}
+const norm=s=>String(s||"").replace(/\s+/g,"").toUpperCase();
+const photo1=f=>{const p=(f.photos||[]).find(Boolean);return typeof p==="string"?p:p&&(p.src||p.data)||""};
+function ajouterFiches(fiches,source){let n=0;
+ fiches.forEach(f=>{const prix=num(f.prix),empl=f.empl&&f.empl!=="R"?f.empl:"";
+  if(f.type==="maj"){const a=CAT.find(x=>x.r===norm(f.annonce));if(a){if(empl)a.e=empl;if(prix)a.p=prix}return}
+  const r=norm(f.code);if(!r||!(f.nom||f.titre))return;
+  const a=CAT.find(x=>x.r===r);if(a){if(empl&&!a.e)a.e=empl;if(prix&&!a.p)a.p=prix;return}
+  CAT.push({r,n:f.titre||f.nom,p:prix||0,s:num(f.qte)??1,u:f.unite||"pièce",c:f.cat,e:empl,f:photo1(f),src:source,cree:f.cree});n++});
+ return n}
+
+let CAT=[], ventes=[], sorties=[], REG={}, vendu={}, INV={}, nbFiches=0;
 let screen="vendre", q="", cat="", panier=[], pay={}, derniere=null, moisVu=moisDe(jour()), venteVue=null, sortieOuverte=false;
 // l.id = identifiant de l'annonce (pour le stock), l.r = référence affichée (vide pour une annonce sans référence).
-function calcVendu(){vendu={};ventes.forEach(v=>{if(!v.annulee)v.lignes.forEach(l=>{const k=l.id||l.r;if(k)vendu[k]=(vendu[k]||0)+l.q})})}
+// vendu[k] = ventes de l'article avec leur moment, pour compter ce qui est parti depuis le dernier comptage.
+function calcVendu(){vendu={};ventes.forEach(v=>{if(!v.annulee)v.lignes.forEach(l=>{const k=l.id||l.r;if(k)(vendu[k]=vendu[k]||[]).push({ts:v.ts,q:l.q})})})}
+const venduDepuis=(k,ts)=>(vendu[k]||[]).reduce((t,x)=>t+(x.ts>=ts?x.q:0),0);
 const refAff=a=>a.x?"":a.r;
-const reste=a=>a.s==null?null:a.s-(vendu[a.r]||0);
+function reste(a){const i=INV[a.r];if(i)return r2(i.compte-venduDepuis(a.r,i.ts));return a.s==null?null:r2(a.s-venduDepuis(a.r,0))}
 const totalPanier=()=>r2(panier.reduce((t,l)=>t+(l.p||0)*(l.q||0),0));
 const panierPret=()=>panier.length&&panier.every(l=>l.p!=null&&l.p>=0&&l.q>0&&(l.id||l.n.trim()));
 const entreeCaisse=v=>v.mode==="especes"||(v.mode==="facture"&&v.facture.paye==="especes");
 
 // ---------- Écrans ----------
+const ONGLETS={vendre:"Vendre",stock:"Stock",carnet:"Carnet",chiffres:"Chiffres"};
 function render(){const app=$("#app");
  let h=`<div class="essai">Essai : continuez à tenir le carnet de caisse papier.</div>`;
- if(screen==="vendre"||screen==="carnet")h+=`<div class="tabs"><button data-go="vendre" class="${screen==="vendre"?"sel":""}">Vendre</button><button data-go="carnet" class="${screen==="carnet"?"sel":""}">Carnet de caisse</button></div>`;
- h+=({vendre:ecranVendre,panier:ecranPanier,payer:ecranPayer,ticket:ecranTicket,carnet:ecranCarnet}[screen])();
+ if(ONGLETS[screen])h+=`<div class="tabs">${Object.entries(ONGLETS).map(([k,t])=>`<button data-go="${k}" class="${screen===k?"sel":""}">${t}</button>`).join("")}</div>`;
+ h+=({vendre:ecranVendre,panier:ecranPanier,payer:ecranPayer,ticket:ecranTicket,carnet:ecranCarnet,stock:ecranStock,chiffres:ecranChiffres}[screen])();
  app.innerHTML=h;
  app.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>aller(b.dataset.go));
- ({vendre:brancherVendre,panier:brancherPanier,payer:brancherPayer,ticket:brancherTicket,carnet:brancherCarnet}[screen])();
+ ({vendre:brancherVendre,panier:brancherPanier,payer:brancherPayer,ticket:brancherTicket,carnet:brancherCarnet,stock:brancherStock,chiffres:brancherChiffres}[screen])();
 }
 $("#bar").addEventListener("click",e=>{const b=e.target.closest("[data-go]");if(b)aller(b.dataset.go)});
 function aller(s){$("#toast").hidden=true;screen=s;if(s!=="ticket")venteVue=null;render();scrollTo(0,0)}
@@ -218,7 +265,7 @@ function brancherVendre(){const i=$("#q");
  $$("[data-cat]").forEach(b=>b.onclick=()=>{cat=b.dataset.cat;render()});
  $("#libre").onclick=()=>{panier.push({r:"",n:"",p:null,q:1});aller("panier")};
  $$("[data-add]").forEach(b=>b.onclick=()=>{const a=CAT.find(x=>x.r===b.dataset.add);
-  const l=panier.find(x=>x.id===a.r);if(l)l.q++;else panier.push({id:a.r,r:refAff(a),n:a.n,p:a.p||null,q:1,u:a.u});
+  const l=panier.find(x=>x.id===a.r);if(l)l.q++;else panier.push({id:a.r,r:refAff(a),n:a.n,p:a.p||null,q:1,u:a.u,c:a.c});
   toast(a.n+" ajouté");render()})}
 
 // Panier : quantités, prix modifiables, livraison
@@ -279,7 +326,7 @@ function brancherPayer(){const ok=()=>$("#valider").disabled=!peutValider();
 async function valider(){const now=new Date(),d=jour(now),t=totalPanier();
  const n=ventes.filter(v=>v.date===d).length+1;
  const v={id:d+"-"+String(n).padStart(3,"0"),num:n,date:d,heure:now.toTimeString().slice(0,5),ts:now.getTime(),
-  lignes:panier.map(l=>({id:l.id||"",r:l.r,n:l.n.trim(),q:l.q,p:l.p,u:l.u||""})),total:t,mode:pay.mode,annulee:false};
+  lignes:panier.map(l=>({id:l.id||"",r:l.r,c:l.c||"",n:l.n.trim(),q:l.q,p:l.p,u:l.u||""})),total:t,mode:pay.mode,annulee:false};
  if(pay.mode==="especes"&&num(pay.recu)!=null){v.recu=num(pay.recu);v.rendu=r2(v.recu-t)}
  if(pay.mode==="facture")v.facture={num:pay.fnum.trim(),paye:pay.fpaye};
  try{await put("ventes",v)}catch(e){alert("La vente n'a pas pu être enregistrée sur le téléphone. Notez-la dans le carnet.");return}
@@ -384,6 +431,78 @@ function brancherCarnet(){
  $("#csvMois").onclick=()=>telecharger(`carnet-de-caisse-${moisVu}.csv`,csvCarnet(moisVu));
  $("#csvTout").onclick=()=>telecharger(`caisse-articles-vendus-${jour()}.csv`,csvArticles([...ventes].sort((a,b)=>a.ts-b.ts)))}
 
+// ---------- Stock : ce qui reste, d'après l'export Impulsion, les nouvelles fiches, les ventes et les comptages ----------
+let stQ="", stF="";
+const stFiltres={"":"Tout",vendus:"Vendus",rupture:"Plus en stock",comptes:"Comptés",nouveaux:"Nouvelles fiches"};
+function stockListe(){const mots=sans(stQ).split(/\s+/).filter(Boolean);
+ return CAT.filter(a=>(!mots.length||mots.every(m=>a.k.includes(m)))&&(
+  !stF||(stF==="vendus"&&vendu[a.r])||(stF==="rupture"&&reste(a)!=null&&reste(a)<=0)||(stF==="comptes"&&INV[a.r])||(stF==="nouveaux"&&a.src)))}
+function stockTotaux(){let n=0,pcs=0,val=0;CAT.forEach(a=>{const r=reste(a);if(r>0){n++;if(!a.u||a.u==="pièce")pcs+=r;val+=r*(a.p||0)}});return {n,pcs,val:r2(val)}}
+function ecranStock(){const L=stockListe(),T=stockTotaux();bar("");
+ return `<div class="tuiles"><div class="tuile"><b>${T.n}</b><span>articles en stock</span></div><div class="tuile"><b>${eur(T.val).replace(/,\d\d /," ")}</b><span>valeur au prix de vente</span></div></div>
+ <input class="t" id="stq" type="search" placeholder="Nom, référence ou emplacement" value="${esc(stQ)}" autocomplete="off" style="margin-top:12px">
+ <div class="chips">${Object.entries(stFiltres).map(([k,t])=>`<button class="chip ${stF===k?"sel":""}" data-stf="${k}">${t}</button>`).join("")}</div>
+ <p class="muted" style="margin:0 0 6px">Touchez un article pour noter ce que vous comptez sur place.</p>
+ <div class="list">${L.slice(0,80).map(a=>{const r=reste(a),i=INV[a.r],v=(vendu[a.r]||[]).reduce((t,x)=>t+x.q,0);
+  return `<button class="item" data-cpt="${esc(a.r)}"><span class="thumb">${a.f?`<img src="${esc(a.f)}" alt="" loading="lazy" onerror="this.remove()">`:""}${esc(a.c||"")}</span>
+  <span><span class="n">${esc(a.n)}</span><br><span class="d">${esc(refAff(a))||"sans réf."}${a.e?" · "+esc(a.e):""}${v?" · vendu "+virg(v):""}${a.src?' · <span class="pill">nouvelle fiche</span>':""}</span></span>
+  <span class="nb">${r==null?"?":virg(r)}<small>${i?"compté le "+dateBe(jour(new Date(i.ts))).slice(0,5):a.src?"fiche":"export 14/10"}</small></span></button>`}).join("")||'<div class="vide">Aucun article.</div>'}</div>
+ ${L.length>80?`<p class="muted">Encore ${L.length-80} articles : précisez la recherche.</p>`:""}
+ <div class="sec">Pour Impulsion</div>
+ <div class="acts"><button class="big ghost" id="csvStock" style="font-size:17px">Stock à jour (tableur)</button>
+ <p class="muted" style="margin:0">Le fichier liste chaque article avec le stock de l'export, les ventes, les comptages et le stock actuel, à reporter à la main dans Impulsion. La caisse ne modifie rien dans Impulsion.</p></div>
+ <p class="muted" style="margin-top:16px">${nbFiches?`${nbFiches} fiche${nbFiches>1?"s":""} de l'app d'encodage ajoutée${nbFiches>1?"s":""} au catalogue.`:"Les fiches de l'app d'encodage faites sur ce téléphone apparaissent ici automatiquement."}</p>`}
+function brancherStock(){const i=$("#stq");
+ i.oninput=()=>{stQ=i.value;const pos=i.selectionStart;render();const j=$("#stq");j.focus();j.setSelectionRange(pos,pos)};
+ $$("[data-stf]").forEach(b=>b.onclick=()=>{stF=b.dataset.stf;render()});
+ $$("[data-cpt]").forEach(b=>b.onclick=async()=>{const a=CAT.find(x=>x.r===b.dataset.cpt),r=reste(a);
+  const v=prompt(`Combien de « ${a.n} » comptez-vous sur place${a.u&&a.u!=="pièce"?" (en "+a.u+")":""} ?`,r==null?"":virg(r));if(v==null)return;
+  const n=num(v);if(n==null||n<0){toast("Indiquez un nombre");return}
+  const x={k:a.r,compte:n,ts:Date.now()};await put("inventaire",x);INV[a.r]=x;render();toast("Stock noté : "+virg(n))});
+ $("#csvStock").onclick=()=>telecharger(`stock-${jour()}.csv`,csvStock())}
+function csvStock(){const rows=[["Référence","Nom","Catégorie","Emplacement","Stock export 14/10","Vendu (caisse)","Compté le","Quantité comptée","Stock actuel","Unité","Prix TVAc","Valeur","Origine"]];
+ CAT.forEach(a=>{const i=INV[a.r],v=(vendu[a.r]||[]).reduce((t,x)=>t+x.q,0),r=reste(a);
+  rows.push([refAff(a),a.n,catLabel(a.c)||a.c||"",a.e||"",a.src?"":virg(a.s),virg(v),i?dateBe(jour(new Date(i.ts))):"",i?virg(i.compte):"",virg(r),a.u||"pièce",dec(a.p),r>0?dec(r*(a.p||0)):"",a.src?"fiche app":"export Impulsion"])});
+ return csv(rows)}
+
+// ---------- Chiffres : ventes par mois, par catégorie, par jour, par paiement ; stock par catégorie ----------
+let chP="12";
+const JOURS=["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
+const catLigne=l=>{if(/^livraison$/i.test(l.n)&&!l.r)return "Livraison";const c=l.c||(CAT.find(a=>a.r===l.id)||{}).c||(l.r.match(/^[A-Z]+/)||[""])[0];return catLabel(c)||(c?c:"Sans fiche")};
+function moisListe(n){const m=[];let x=moisDe(jour());for(let i=0;i<n;i++){m.unshift(x);x=moisAvant(x)}return m}
+function hbars(rows,fmt){const mx=Math.max(...rows.map(r=>r[1]),0)||1;
+ return rows.map(([lab,v])=>`<div class="hb"><span class="lab">${esc(lab)}</span><span class="trk"><i style="width:${(100*v/mx).toFixed(1)}%"></i></span><span class="val">${fmt(v)}</span></div>`).join("")||'<div class="vide">Pas encore de ventes.</div>'}
+function ecranChiffres(){bar("");
+ const debut=chP==="tout"?"":moisListe(+chP)[0],V=ventes.filter(v=>!v.annulee&&moisDe(v.date)>=debut);
+ const ca=r2(V.reduce((t,v)=>t+v.total,0)),cl=V.length,art=V.reduce((t,v)=>t+v.lignes.reduce((s,l)=>s+(qSaisie(l)?1:l.q),0),0);
+ const parCat={},parJour=JOURS.map(j=>[j,0]),parMode={};
+ V.forEach(v=>{parJour[(new Date(v.date+"T12:00").getDay()+6)%7][1]++;parMode[MODES[v.mode]]=r2((parMode[MODES[v.mode]]||0)+v.total);
+  v.lignes.forEach(l=>{const c=catLigne(l);parCat[c]=r2((parCat[c]||0)+l.p*l.q)})});
+ const M=moisListe(12).map(m=>[m,r2(ventes.filter(v=>!v.annulee&&moisDe(v.date)===m).reduce((t,v)=>t+v.total,0))]),mx=Math.max(...M.map(x=>x[1]))||1;
+ const stk={};CAT.forEach(a=>{const r=reste(a),c=catLabel(a.c)||a.c||"Autre";if(!(r>0))return;stk[c]=stk[c]||{n:0,val:0,vendus:0};stk[c].n++;stk[c].val+=r*(a.p||0)});
+ V.forEach(v=>v.lignes.forEach(l=>{const c=catLigne(l);if(stk[c])stk[c].vendus+=qSaisie(l)?1:l.q}));
+ const per={"1":"Ce mois","3":"3 mois","12":"12 mois",tout:"Tout"};
+ return `<div class="chips" style="margin-top:0">${Object.entries(per).map(([k,t])=>`<button class="chip ${chP===k?"sel":""}" data-chp="${k}">${t}</button>`).join("")}</div>
+ <div class="tuiles"><div class="tuile"><b>${eur(ca)}</b><span>vendu (TVAc)</span></div><div class="tuile"><b>${cl}</b><span>clients</span></div>
+  <div class="tuile"><b>${cl?eur(ca/cl):"–"}</b><span>panier moyen</span></div><div class="tuile"><b>${art}</b><span>articles vendus</span></div></div>
+ <div class="sec">Ventes par mois (12 derniers)</div>
+ <div class="card"><div class="cols">${M.map(([m,v],i)=>`<button data-tip="${esc(moisTxt(m))} : ${eur(v)}" class="${i===11?"sel":""}" aria-label="${esc(moisTxt(m))} : ${eur(v)}"><i style="height:${(100*v/mx).toFixed(1)}%"></i></button>`).join("")}</div>
+  <div class="mois">${M.map(([m])=>`<span>${new Date(m+"-15T12:00").toLocaleDateString("fr-BE",{month:"narrow"})}</span>`).join("")}</div>
+  <div class="tip" id="tip">${esc(moisTxt(M[11][0]))} : ${eur(M[11][1])}</div></div>
+ <div class="sec">Ventes par catégorie</div>
+ <div class="card">${hbars(Object.entries(parCat).sort((a,b)=>b[1]-a[1]),v=>eur(v).replace(/,00 /," "))}</div>
+ <div class="sec">Clients par jour de la semaine</div>
+ <div class="card">${cl?hbars(parJour.filter(([j,n])=>n||j!=="Dimanche"),v=>String(v)):'<div class="vide">Pas encore de ventes.</div>'}</div>
+ <div class="sec">Paiement</div>
+ <div class="card">${hbars(Object.entries(parMode).sort((a,b)=>b[1]-a[1]),v=>eur(v).replace(/,00 /," "))}</div>
+ <div class="sec">Stock par catégorie</div>
+ <div class="card" style="overflow-x:auto"><table class="t"><thead><tr><th>Catégorie</th><th>En stock</th><th>Vendus*</th><th>Valeur</th></tr></thead><tbody>
+  ${Object.entries(stk).sort((a,b)=>b[1].val-a[1].val).map(([c,x])=>`<tr><td>${esc(c)}</td><td>${x.n}</td><td>${x.vendus}</td><td>${eur(x.val).replace(/,\d\d /," ")}</td></tr>`).join("")}</tbody></table>
+  <p class="muted" style="margin:8px 0 0">* sur la période choisie. « En stock » = nombre d'articles différents encore disponibles.</p></div>
+ <p class="muted" style="margin-top:16px">Les chiffres viennent des ventes enregistrées dans cette caisse, sur ce téléphone.</p>`}
+function brancherChiffres(){$$("[data-chp]").forEach(b=>b.onclick=()=>{chP=b.dataset.chp;render()});
+ $$("[data-tip]").forEach(b=>b.onclick=()=>{$$("[data-tip]").forEach(x=>x.classList.remove("sel"));b.classList.add("sel");$("#tip").textContent=b.dataset.tip})}
+
 // ---------- Fichiers pour tableur (Excel belge : « ; », virgule décimale, Windows-1252) ----------
 const qv=v=>{v=String(v??"");return /[;"\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
 const dec=n=>n==null?"":r2(n).toFixed(2).replace(".",",");
@@ -404,8 +523,9 @@ async function telecharger(nom,txt){const f=new File([cp1252(txt)],nom,{type:"te
 
 // ---------- Démarrage ----------
 (async()=>{
- try{await openDb();ventes=await all("ventes");sorties=await all("sorties");REG=await allSet()}catch(e){toast("Stockage indisponible : les ventes ne seront pas gardées")}
+ try{await openDb();ventes=await all("ventes");sorties=await all("sorties");REG=await allSet();(await all("inventaire")).forEach(i=>INV[i.k]=i)}catch(e){toast("Stockage indisponible : les ventes ne seront pas gardées")}
  try{CAT=await (await fetch("catalogue.json")).json()}catch(e){CAT=[]}
+ nbFiches=ajouterFiches(await lireFiches("comptoir"),"app")+ajouterFiches(await lireFiches("comptoir-essai"),"essai");
  CAT.forEach(a=>a.k=sans([a.n,a.r,a.e,catLabel(a.c)].join(" ")));
  calcVendu();render();
  if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();

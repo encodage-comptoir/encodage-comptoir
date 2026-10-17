@@ -25,5 +25,8 @@ emplacement (catalogue tiré de l'export de stock Impulsion du 14/10/2026 et des
 prix modifiable, article sans fiche, livraison à 0,50 €/km, paiement espèces / carte / virement / facture, ticket
 à envoyer au client. L'onglet « Carnet de caisse » reprend le carnet papier : une page par mois, une ligne par
 article, colonnes Recettes / Entrée caisse / Sortie caisse, report, dépôts banque, solde et comptage de la caisse,
-liste des articles à mettre hors ligne / VENDU, export pour tableur. Rien n'est écrit dans Impulsion.
+liste des articles à mettre hors ligne / VENDU, export pour tableur. L'onglet « Stock » calcule ce qui reste
+(export Impulsion + fiches de l'app d'encodage faites sur le même téléphone − ventes, corrigé par les comptages
+sur place) et exporte un fichier « stock à jour » à reporter dans Impulsion. L'onglet « Chiffres » montre les ventes
+par mois, catégorie, jour de la semaine et mode de paiement, et le stock par catégorie. Rien n'est écrit dans Impulsion.
 Adresse : https://encodage-comptoir.github.io/encodage-comptoir/caisse/
