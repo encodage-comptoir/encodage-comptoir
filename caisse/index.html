@@ -155,6 +155,7 @@ table.t td{border-top:1px solid var(--line);padding:6px 4px;text-align:right}
 <div class="app" id="app"></div>
 <div class="bar" id="bar"><div class="in" id="barIn"></div></div>
 <div class="toast" id="toast" hidden></div>
+<script src="poids.js"></script>
 <script>
 "use strict";
 const VERSION="0.1 (essai)";
@@ -165,27 +166,10 @@ const CATS=[["SA","Sanitaire"],["PA","Parois de douche"],["CH","Châssis"],["PO"
 const catLabel=c=>(CATS.find(x=>x[0]===c)||[,""])[1];
 const TVA=0.21;      // tous les articles de l'export Impulsion sont à 21 %
 const PRIX_KM=0.5;   // livraison : 0,50 € / km (procédure, point 10)
-// Matières : mêmes valeurs que l'app d'encodage (et le moteur « Faire avec »).
-const MATIERES=["Bois massif","Panneau (multiplex, OSB, MDF)","Métal","Verre","Céramique","Pierre / béton","PVC / plastique","Textile","Mélange / autre"];
-// Matière devinée d'après le nom, puis d'après la catégorie, quand la fiche ne la donne pas.
-const MAT_MOTS=[[/pvc|plastique|acryl/,"PVC / plastique"],[/\balu|acier|inox|fonte|métal|metal|zinc|cuivre/,"Métal"],[/osb|mdf|multiplex|agglo|stratifi|trespa/,"Panneau (multiplex, OSB, MDF)"],
- [/chêne|chene|bois|sapin|hêtre|pin\b|mélèze|meleze|parquet/,"Bois massif"],[/vitr|verre|miroir/,"Verre"],[/céram|ceram|porcelaine|grès|faïence|carrelage|évier|wc|lavabo|vasque/,"Céramique"],
- [/béton|beton|pierre|brique|marbre|granit|pavé|tuile|ardoise|ytong|mortier|bloc/,"Pierre / béton"]];
-const MAT_CAT={CAR:"Céramique",GRO:"Pierre / béton",RA:"Métal",Q:"Métal",OUT:"Métal",BOI:"Bois massif",PAR:"Bois massif",LAM:"Bois massif",ISO:"Mélange / autre",ELECTRO:"Mélange / autre",ELEC:"Mélange / autre",LUM:"Mélange / autre"};
-// Poids moyen estimé (kg par pièce, ou par m² / m courant), à corriger à la vente si besoin. null = inconnu, à peser.
-const POIDS=[[/baignoire/,40],[/bac de douche/,20],[/\bwc\b|toilette/,25],[/évier|evier/,15],[/lave-mains/,6],[/lavabo|vasque/,12],[/colonne/,15],[/meuble/,25],
- [/paroi|porte de douche/,25],[/mitigeur|robinet|tête de douche|douchette|porte-serviettes|porte-papier|cache-siphon/,1],
- [/porte de garage/,80,"PO"],[/porte exterieure|porte d'entree|porte-fenetre/,45,"PO"],[/bloc-porte/,35,"PO"],[/porte/,25,"PO"],[/chassis|fenetre|velux/,35,"CH"],
- [/sèche-serviettes/,12],[/radiateur électrique/,10],[/radiateur/,25],[/boiler/,40],[/thermostat|vanne/,0.5],
- [/frigo|réfrigérateur/,50],[/lave-linge/,70],[/lave-vaisselle/,45],[/four/,35],[/taque/,10],[/hotte/,12],
- [/spot|prise|interrupteur|variateur/,0.2],[/plafonnier|applique|suspension|réglette/,2],[/poignée|charnière|serrure/,0.3]];
-const POIDS_M2={CAR:22,PAR:12,LAM:8,TOI:30,ISO:3};
-// Le texte comparé est sans accents : on retire aussi les accents des motifs.
-const sansAcc=L=>L.map(x=>[new RegExp(sans(x[0].source)),...x.slice(1)]);
-let MAT_RE,POIDS_RE;
-function estimer(a){if(!MAT_RE){MAT_RE=sansAcc(MAT_MOTS);POIDS_RE=sansAcc(POIDS)}const txt=sans([a.t,a.n].join(" "));
- if(!a.m){const x=MAT_RE.find(([re])=>re.test(txt));a.m=x?x[1]:MAT_CAT[a.c]||""}
- if(a.kg==null){if(a.u==="m²")a.kg=POIDS_M2[a.c]??null;else if(!a.u||a.u==="pièce"){const x=POIDS_RE.find(([re,,c])=>(!c||c===a.c)&&re.test(txt));a.kg=x?x[1]:null}else a.kg=null;a.kgEst=a.kg!=null}}
+// Matière et poids estimé : calcul partagé avec l'app d'encodage (poids.js).
+const MATIERES=Poids.MATIERES;
+function estimer(a){if(!a.m)a.m=Poids.matiere({nom:a.t||a.n,titre:a.n,cat:a.c});
+ if(a.kg==null){const r=Poids.estimer({nom:a.t||a.n,titre:a.n,cat:a.c,matiere:a.m,unite:a.u,L:a.L,l:a.l,h:a.h});a.kg=r?r.kg:null;a.kgEst=!!r}}
 // Comme dans le carnet : « Achat et cash », « Achat et virement » (QR code ou virement), « Facture ».
 // La clé « carte » est gardée pour les ventes déjà enregistrées : le paiement électronique se fait par QR code.
 const MODES={especes:"Espèces",carte:"QR code",virement:"Virement",facture:"Facture"};
@@ -241,7 +225,7 @@ function ajouterFiches(fiches,source){let n=0;
   if(f.type==="maj"){const a=CAT.find(x=>x.r===norm(f.annonce));if(a){if(empl)a.e=empl;if(prix)a.p=prix}return}
   const r=norm(f.code);if(!r||!(f.nom||f.titre))return;
   const a=CAT.find(x=>x.r===r);if(a){if(empl&&!a.e)a.e=empl;if(prix&&!a.p)a.p=prix;return}
-  CAT.push({r,n:f.titre||f.nom,t:f.nom,p:prix||0,s:num(f.qte)??1,u:f.unite||"pièce",c:f.cat,e:empl,f:photo1(f),src:source,cree:f.cree,m:f.matiere||"",kg:num(f.poids)});n++});
+  CAT.push({r,n:f.titre||f.nom,t:f.nom,p:prix||0,s:num(f.qte)??1,u:f.unite||"pièce",c:f.cat,e:empl,f:photo1(f),src:source,cree:f.cree,m:f.matiere||"",kg:num(f.poids),kgEst:!!f.poidsEst,L:f.L,l:f.l,h:f.h});n++});
  return n}
 
 let CAT=[], ventes=[], sorties=[], REG={}, vendu={}, INV={}, nbFiches=0;
@@ -290,7 +274,7 @@ function brancherVendre(){const i=$("#q");
  $$("[data-cat]").forEach(b=>b.onclick=()=>{cat=b.dataset.cat;render()});
  $("#libre").onclick=()=>{panier.push({r:"",n:"",p:null,q:1});aller("panier")};
  $$("[data-add]").forEach(b=>b.onclick=()=>{const a=CAT.find(x=>x.r===b.dataset.add);
-  const l=panier.find(x=>x.id===a.r);if(l)l.q++;else panier.push({id:a.r,r:refAff(a),n:a.n,p:a.p||null,q:1,u:a.u,c:a.c,m:a.m,kg:a.kg,kgEst:a.kgEst});
+  const l=panier.find(x=>x.id===a.r);if(l)l.q++;else panier.push({id:a.r,r:refAff(a),n:a.n,t:a.t,p:a.p||null,q:1,u:a.u,c:a.c,m:a.m,kg:a.kg,kgEst:a.kgEst,L:a.L,l:a.l,h:a.h});
   toast(a.n+" ajouté");render()})}
 
 // Panier : quantités, prix modifiables, livraison
@@ -322,7 +306,9 @@ function brancherPanier(){
  $$("[data-prix]").forEach(i=>i.oninput=()=>{panier[i.dataset.prix].p=num(i.value);i.classList.toggle("need",panier[i.dataset.prix].p==null);maj(i.dataset.prix)});
  $$("[data-q]").forEach(i=>i.oninput=()=>{panier[i.dataset.q].q=num(i.value);i.classList.toggle("need",!(panier[i.dataset.q].q>0));maj(i.dataset.q)});
  $$("[data-kg]").forEach(i=>i.oninput=()=>{const l=panier[i.dataset.kg];l.kg=num(i.value);l.kgEst=false});
- $$("[data-mat]").forEach(s=>s.onchange=()=>{panier[s.dataset.mat].m=s.value});
+ // Matière changée : si le poids était estimé, on le recalcule avec la nouvelle matière.
+ $$("[data-mat]").forEach(s=>s.onchange=()=>{const l=panier[s.dataset.mat];l.m=s.value;
+  if(l.kgEst||l.kg==null){const r=Poids.estimer({nom:l.t||l.n,titre:l.n,cat:l.c,matiere:l.m,unite:l.u,L:l.L,l:l.l,h:l.h});if(r){l.kg=r.kg;l.kgEst=true;render()}}});
  $$("[data-nom]").forEach(i=>i.oninput=()=>{panier[i.dataset.nom].n=i.value;$("#encaisser").disabled=!panierPret()});
  const lv=$("#livraison");if(lv)lv.onclick=()=>{panier.push({r:"",n:"Livraison",liv:1,u:"km",p:PRIX_KM,q:null});render();$(`[data-q="${panier.length-1}"]`).focus()};
  const v=$("#vider");if(v)v.onclick=()=>{if(confirm("Vider le panier ?")){panier=[];aller("vendre")}};
