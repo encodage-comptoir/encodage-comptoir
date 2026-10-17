@@ -21,6 +21,18 @@ def prix_num(p):
     except ValueError:
         return 0.0
 
+def unite_site(u):
+    u = (u or '').strip().lower()
+    if u in ('pc', 'piece', 'piéce', 'pièce', 'pièces', 'pieces'):
+        return 'pièce'
+    if u in ('m2', 'm²', 'mètre²', 'metre²'):
+        return 'm²'
+    if u in ('m', 'ml', 'mètre', 'mètres', 'metre', 'metres', 'm courant'):
+        return 'm courant'
+    if u in ('lot', 'sac', 'kg', 'rouleau', 'rouleaux'):
+        return u.rstrip('x') if u != 'rouleaux' else 'rouleau'
+    return ''
+
 def euros(v):
     return (f'{v:.2f}'.replace('.', ',').replace(',00', '')) + ' €'
 
@@ -30,7 +42,9 @@ refs = {a['ref'] for a in pub}
 for a in pub:
     p = prix_num(a['prix'])
     a['_prix'] = p
-    a['_prix_txt'] = f"{euros(p)} / {a['unite']}" if p > 0 else 'Prix au comptoir'
+    # le prix et le stock d'Impulsion sont dans l'unité actuelle : on l'affiche telle quelle (l'unité proposée reste une proposition dans le classeur)
+    a['_unite'] = unite_site(unite_act.get(a['ref'], '')) or a['unite']
+    a['_prix_txt'] = f"{euros(p)} / {a['_unite']}" if p > 0 else 'Prix au comptoir'
     n = a.get('neuf')
     a['_neuf_txt'] = ''
     a['_eco'] = 0
@@ -89,16 +103,21 @@ def dims(a):
     d = [('Largeur', a['L']), ('Profondeur', a['l']), ('Hauteur', a['h']), ('Diamètre', a['diametre']), ('Épaisseur', a['epaisseur'])]
     return [(k, v + ' cm') for k, v in d if v]
 
+CO2_EXEMPLES = {'CH75', 'SA43', 'PO141'}
 os.makedirs(f'{out}/article', exist_ok=True)
 
 # --- pages article ---
 for a in pub:
     car = dims(a) + [(k, v) for k, v in [('Autres mesures', a['mesures']), ('Matière', a['matiere']), ('Couleur', a['couleur']),
-                                          ('Marque', a['marque']), ('État', a['etat']), ('Usage', a['lieu']), ('Vendu par', a['unite']),
-                                          ('Disponible', a['_stock'] or ''), ('Référence', a['ref'])] if v] + [('Emplacement au Comptoir', a['_empl'] or 'à compléter')]
+                                          ('Marque', a['marque']), ('État', a['etat']), ('Usage', a['lieu']), ('Vendu par', a['_unite']),
+                                          ('Disponible', f"{a['_stock']} {a['_unite'] if a['_unite'] != 'pièce' else 'pièce'}{'s' if a['_stock'] > 1 and a['_unite'] in ('pièce', 'lot', 'sac', 'rouleau') else ''}" if a['_stock'] else ''), ('Référence', a['ref'])] if v] + [('Emplacement au Comptoir', a['_empl'] or 'à compléter')]
     photos = ''.join(f'<img src="{esc(PILE + p)}" alt="{esc(a["titre"])} – photo {i + 1}" {"loading=lazy" if i else ""}>' for i, p in enumerate(a['photos']))
     lies = ''.join(f'<div class="lie">{carte(par_ref[l["ref"]], "../")}<p class="pourquoi">{esc(l["pourquoi"])}</p></div>' for l in a['_lies'])
     eco = f'<p class="eco-grand">Environ {a["_eco"]} % moins cher que le neuf</p>' if a['_eco'] >= 20 else ''
+    # CO₂ évité : encart d'exemple sur quelques fiches, en attendant les facteurs d'une base commune (travail en pause)
+    if a['ref'] in CO2_EXEMPLES:
+        eco += ('<div class="co2"><b>CO₂ évité par rapport au neuf : ≈ XX kg CO₂e</b><small>Exemple d’affichage : chiffre à calculer à partir d’une base commune '
+                '(piste : TOTEM pour la Belgique, ou INIES / Base Empreinte de l’ADEME), source citée sous le chiffre.</small></div>')
     neuf = (f'<p class="neuf-gros">Prix du neuf équivalent : <b>{esc(a["_neuf_txt"])}</b> <small>(indicatif : {esc(a["neuf"]["base"])})</small></p>'
             if a['_neuf_txt'] else '')
     lien = BASE + a['_url']
@@ -249,7 +268,8 @@ for r in lire_csv('ambiances.csv'):
     if r['Description']:
         p['desc'] = p['desc'] if p['nom'] in DESC else r['Description']
         p['piece'] = [prix_num(x) for x in r['Pièce (L x l x h, m)'].split('x')]
-    cands = [par_ref[x] for x in ancienne.get(r['Référence'].replace(' ', '').upper(), []) if x in par_ref]
+    cle = r['Référence'].replace(' ', '').upper()
+    cands = [par_ref[x] for x in ancienne.get(cle, []) if x in par_ref] if cle else []
     indice = set(toks(r['Rôle'] + ' ' + r['Note']))
     it = max(cands, key=lambda a: len(indice & set(a['_toks']))) if cands else None
     rempl = False
@@ -299,14 +319,28 @@ for p in PROJ.values():
         lignes = ''
         for l in p['exemple']:
             a = l['it']
-            att = f' data-calc="{esc(l["calc"])}" data-couv="{l["couv"]}"' if l['calc'] else f' data-q="{l["qte"]}"'
+            att = f' data-calc="{esc(l["calc"])}"' if l['calc'] else f' data-q="{l["qte"]}"'
+            if a:
+                # combien couvre une unité vendue : m² ou m directement, sinon la taille d'une pièce, sinon l'hypothèse de l'exemple
+                surf_calc = l['calc'] in ('sol', 'murs')
+                taille = False
+                if a['_unite'] == ('m²' if surf_calc else 'm courant'):
+                    cp = 1
+                elif a['_unite'] == 'pièce' and surf_calc and prix_num(a['L']) and prix_num(a['l'] or a['h']):
+                    cp, taille = prix_num(a['L']) * prix_num(a['l'] or a['h']) / 10000, True
+                elif a['_unite'] == 'pièce' and not surf_calc and prix_num(a['L']):
+                    cp, taille = prix_num(a['L']) / 100, True
+                else:
+                    cp = l['couv'] if l['couv'] != 1 else 0
+                src = 'direct' if cp == 1 and not taille and a['_unite'] in ('m²', 'm courant') else 'taille' if taille else 'hyp'
+                att += f' data-cp="{cp:g}" data-src="{src}" data-u="{esc(a["_unite"])}" data-s="{a["_stock"]}"'
             if a:
                 lignes += f'''<div class="ex-ligne"{att} data-r="{esc(a['ref'])}" data-p="{a['_prix']}"><img src="{esc(a['_vignette'])}" alt="" loading="lazy">
 <div><small>{esc(l['role'])}{' · proposé à la place d’un article vendu' if l['rempl'] else ''}</small><a href="../{a['_url']}">{esc(a['titre'])}</a>{f'<small>{esc(l["note"])}</small>' if l['note'] else ''}<small class="besoin"></small></div>
 <b class="ex-prix">{esc(a['_prix_txt'])}</b></div>'''
             else:
                 lignes += f'<div class="ex-ligne manque"{att}><span class="vide">?</span><div><small>{esc(l["role"])}</small><span>{esc(l["note"] or "À trouver")}</span><small class="besoin"></small></div><b class="ex-prix">vendu ou à trouver ailleurs</b></div>'
-        tout = [ajout(l['it'], l['qte']) for l in p['exemple'] if l['it']]
+        tout = [ajout(l['it'], 1) for l in p['exemple'] if l['it']]
         piece = p['piece'] or [3, 3, 2.5]
         form = (f'''<form class="piece" id="piece" onsubmit="return false"><p>Les dimensions de votre pièce (en mètres) : les quantités s'ajustent.</p>
 <label>Longueur <input name="L" inputmode="decimal" value="{str(piece[0]).replace('.', ',').removesuffix(',0')}"></label>
@@ -315,7 +349,7 @@ for p in PROJ.values():
         ex = f'''<section class="exemple"><h2>Un exemple composé avec le stock</h2>{form}<div id="ex-lignes">{lignes}</div>
 <p class="total">Total indicatif des éléments disponibles : <b id="ex-total"></b></p>
 <button class="bouton jaune" id="ex-tout" data-liste-projet="{esc(p['nom'])}" data-vers="../panier.html" data-tout="{esc(json.dumps(tout, ensure_ascii=False))}">Tout mettre dans ma liste « {esc(p['nom'])} »</button>
-<p class="petit">Les quantités au m² sont des estimations (10 % de chutes compris) : l'équipe vérifie avec vous ce qui reste en stock.</p></section>'''
+<p class="petit">Quantités calculées dans l'unité de vente de chaque article (10 % de chutes compris) et limitées au stock : l'équipe vérifie avec vous ce qui reste.</p></section>'''
     postes = ''.join(f'''<div class="poste"><h3>{esc(po['nom'])}{f' <small>· {esc(po["qte"])}</small>' if po['qte'] else ''}</h3>{f'<p class="conseil">{esc(po["conseil"])}</p>' if po['conseil'] else ''}
 {f'<div class="grille">{"".join(carte_w(a, "../") for a in its[:4])}</div>{deplier(its[4:])}' if its else '<p class="petit">Rien en stock aujourd’hui pour ce poste : demandez à l’équipe s’il en arrive bientôt.</p>'}</div>''' for po, its in p['_postes'])
     n_ok = sum(1 for _, its in p['_postes'] if its)
@@ -339,11 +373,18 @@ function calc(){let L=3,l=3,h=2.5;if(F){const v=k=>parseFloat(F[k].value.replace
  const per=2*(L+l),S={sol:L*l*1.1,murs:Math.max(0,per*h-3)*1.1,plinthes:Math.max(0,per-.9),perimetre:per};
  if(F)document.getElementById('surfaces').textContent=`Sol ${f1(L*l)} m² · murs ${f1(Math.max(0,per*h-3))} m² (porte et fenêtre déduites) · périmètre ${f1(per)} m`;
  let tot=0;const tout=[];
- document.querySelectorAll('.ex-ligne').forEach(d=>{let q=+d.dataset.q||1,txt='';
-  if(d.dataset.calc){const need=S[d.dataset.calc];q=Math.max(1,Math.ceil(need/+d.dataset.couv-1e-9));txt=`Il faut environ ${f1(need)} ${U[d.dataset.calc]} : ${q} unité${q>1?'s':''}`}
-  else if(q>1)txt=`${q} pièces`;
-  d.querySelector('.besoin').textContent=txt;
-  if(d.dataset.r){const p=+d.dataset.p;if(p>0)tot+=p*q;d.querySelector('.ex-prix').textContent=p>0?eur(p*q):'prix au comptoir';tout.push(d.dataset.r+':'+q)}});
+ const pl=(n,u)=>u==='pièce'?(n>1?'pièces':'pièce'):u==='m courant'?'m':u==='rouleau'?(n>1?'rouleaux':'rouleau'):u+(n>1&&/^(sac|lot)$/.test(u)?'s':'');
+ document.querySelectorAll('.ex-ligne').forEach(d=>{let q=+d.dataset.q||1,txt='',ok=true;const u=d.dataset.u||'pièce',st=+d.dataset.s||0,cp=+d.dataset.cp;
+  if(d.dataset.calc){const need=S[d.dataset.calc];txt=`Il faut environ ${f1(need)} ${U[d.dataset.calc]}`;
+   if(!d.dataset.r){q=0}
+   else if(cp>0){q=Math.max(1,Math.ceil(need/cp-1e-9));const cm=U[d.dataset.calc];txt+=` : ${q} ${pl(q,u)}`+({taille:cp<.2?` (≈ ${Math.round(1/cp)} pièces par ${cm}, selon leur taille)`:` (une pièce ≈ ${f1(cp)} ${cm})`,hyp:` (hypothèse : 1 ${pl(1,u)} ≈ ${f1(cp)} ${cm}, à vérifier)`}[d.dataset.src]||'')}
+   else{ok=false;q=1;txt+=' : quantité à voir avec l’équipe (unité de vente : '+u+')'}}
+  else if(q>1)txt=`${q} ${pl(q,u)}`;
+  let prendre=q;
+  if(d.dataset.r&&st>0&&q>st){prendre=st;txt+=` · ${st} ${pl(st,u)} en stock, il en manque ${f1(q-st)}`}
+  else if(d.dataset.r&&st>0&&ok)txt+=` · ${st} ${pl(st,u)} en stock`;
+  d.querySelector('.besoin').textContent=txt.replace(/^ · /,'');
+  if(d.dataset.r){const p=+d.dataset.p;if(p>0&&ok)tot+=p*prendre;d.querySelector('.ex-prix').textContent=!ok?'à voir':p>0?eur(p*prendre):'prix au comptoir';tout.push(d.dataset.r+':'+prendre)}});
  document.getElementById('ex-total').textContent=eur(tot);
  const b=document.getElementById('ex-tout'),T=JSON.parse(b.dataset.tout);T.forEach(a=>{const x=tout.find(s=>s.startsWith(a.r+':'));if(x)a.q=+x.split(':')[1]});b.dataset.tout=JSON.stringify(T)}
 if(F)F.addEventListener('input',calc);calc();
