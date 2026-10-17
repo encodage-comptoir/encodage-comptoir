@@ -228,7 +228,7 @@ function ajouterFiches(fiches,source){let n=0;
   CAT.push({r,n:f.titre||f.nom,t:f.nom,p:prix||0,s:num(f.qte)??1,u:f.unite||"pièce",c:f.cat,e:empl,f:photo1(f),src:source,cree:f.cree,m:f.matiere||"",kg:num(f.poids),kgEst:!!f.poidsEst,L:f.L,l:f.l,h:f.h});n++});
  return n}
 
-let CAT=[], ventes=[], sorties=[], REG={}, vendu={}, INV={}, nbFiches=0;
+let CAT=[], HIST=[], ventes=[], sorties=[], REG={}, vendu={}, INV={}, nbFiches=0;
 let screen="vendre", q="", cat="", panier=[], pay={}, derniere=null, moisVu=moisDe(jour()), venteVue=null, sortieOuverte=false;
 // l.id = identifiant de l'annonce (pour le stock), l.r = référence affichée (vide pour une annonce sans référence).
 // vendu[k] = ventes de l'article avec leur moment, pour compter ce qui est parti depuis le dernier comptage.
@@ -482,29 +482,33 @@ function csvStock(){const rows=[["Référence","Nom","Catégorie","Emplacement",
  return csv(rows)}
 
 // ---------- Chiffres : ventes par mois, par catégorie, par jour, par paiement ; stock par catégorie ----------
-let chP="12", chPoids="m";
+let chP="12", chPoids="m", chHist=true;
+// Ventes recopiées du carnet papier (janvier à septembre 2026) : comptées dans les chiffres, jamais dans le carnet ni le stock.
+const venduesTout=()=>ventes.filter(v=>!v.annulee).concat(chHist?HIST:[]);
 // Poids d'une ligne vendue (kg). null si on ne le connaît pas.
 const kgLigne=l=>l.kg==null?null:r2(l.kg*l.q);
 const groupe=(l,par)=>par==="m"?(l.m||"Non précisée"):catLigne(l);
 const JOURS=["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
 const catLigne=l=>{if(/^livraison$/i.test(l.n)&&!l.r)return "Livraison";const c=l.c||(CAT.find(a=>a.r===l.id)||{}).c||(l.r.match(/^[A-Z]+/)||[""])[0];return catLabel(c)||(c?c:"Sans fiche")};
 function moisListe(n){const m=[];let x=moisDe(jour());for(let i=0;i<n;i++){m.unshift(x);x=moisAvant(x)}return m}
+const debutPeriode=()=>chP==="tout"?"":chP==="an"?jour().slice(0,4)+"-01":moisListe(+chP)[0];
 function hbars(rows,fmt){const mx=Math.max(...rows.map(r=>r[1]),0)||1;
  return rows.map(([lab,v])=>`<div class="hb"><span class="lab">${esc(lab)}</span><span class="trk"><i style="width:${(100*v/mx).toFixed(1)}%"></i></span><span class="val">${fmt(v)}</span></div>`).join("")||'<div class="vide">Pas encore de ventes.</div>'}
 function ecranChiffres(){bar("");
- const debut=chP==="tout"?"":moisListe(+chP)[0],V=ventes.filter(v=>!v.annulee&&moisDe(v.date)>=debut);
+ const debut=debutPeriode(),TOUT=venduesTout(),V=TOUT.filter(v=>moisDe(v.date)>=debut);
  const ca=r2(V.reduce((t,v)=>t+v.total,0)),cl=V.length,art=V.reduce((t,v)=>t+v.lignes.reduce((s,l)=>s+(qSaisie(l)?1:l.q),0),0);
  const parCat={},parJour=JOURS.map(j=>[j,0]),parMode={};
  V.forEach(v=>{parJour[(new Date(v.date+"T12:00").getDay()+6)%7][1]++;parMode[MODES[v.mode]]=r2((parMode[MODES[v.mode]]||0)+v.total);
   v.lignes.forEach(l=>{const c=catLigne(l);parCat[c]=r2((parCat[c]||0)+l.p*l.q)})});
  let kg=0,sansPoids=0;const parPoids={};
  V.forEach(v=>v.lignes.forEach(l=>{if(/^livraison$/i.test(l.n)&&!l.r)return;const k=kgLigne(l);if(k==null){sansPoids++;return}kg+=k;const g=groupe(l,chPoids);parPoids[g]=r2((parPoids[g]||0)+k)}));kg=r2(kg);
- const MK=moisListe(12).map(m=>[m,r2(ventes.filter(v=>!v.annulee&&moisDe(v.date)===m).reduce((t,v)=>t+v.lignes.reduce((s,l)=>s+(kgLigne(l)||0),0),0))]),mxk=Math.max(...MK.map(x=>x[1]))||1;
- const M=moisListe(12).map(m=>[m,r2(ventes.filter(v=>!v.annulee&&moisDe(v.date)===m).reduce((t,v)=>t+v.total,0))]),mx=Math.max(...M.map(x=>x[1]))||1;
+ const MK=moisListe(12).map(m=>[m,r2(TOUT.filter(v=>moisDe(v.date)===m).reduce((t,v)=>t+v.lignes.reduce((s,l)=>s+(kgLigne(l)||0),0),0))]),mxk=Math.max(...MK.map(x=>x[1]))||1;
+ const M=moisListe(12).map(m=>[m,r2(TOUT.filter(v=>moisDe(v.date)===m).reduce((t,v)=>t+v.total,0))]),mx=Math.max(...M.map(x=>x[1]))||1;
  const stk={};CAT.forEach(a=>{const r=reste(a),c=catLabel(a.c)||a.c||"Autre";if(!(r>0))return;stk[c]=stk[c]||{n:0,val:0,vendus:0};stk[c].n++;stk[c].val+=r*(a.p||0)});
  V.forEach(v=>v.lignes.forEach(l=>{const c=catLigne(l);if(stk[c])stk[c].vendus+=qSaisie(l)?1:l.q}));
- const per={"1":"Ce mois","3":"3 mois","12":"12 mois",tout:"Tout"};
+ const per={"1":"Ce mois","3":"3 mois","an":jour().slice(0,4),"12":"12 mois",tout:"Tout"};
  return `<div class="chips" style="margin-top:0">${Object.entries(per).map(([k,t])=>`<button class="chip ${chP===k?"sel":""}" data-chp="${k}">${t}</button>`).join("")}</div>
+ ${HIST.length?`<label class="muted" style="display:flex;gap:8px;align-items:center;margin:4px 0 10px"><input type="checkbox" id="chHist" ${chHist?"checked":""} style="width:22px;height:22px"> Compter le carnet papier (janvier à septembre 2026)</label>`:""}
  <div class="tuiles"><div class="tuile"><b>${eur(ca)}</b><span>vendu (TVAc)</span></div><div class="tuile"><b>${cl}</b><span>clients</span></div>
   <div class="tuile"><b>${cl?eur(ca/cl):"–"}</b><span>panier moyen</span></div><div class="tuile"><b>${art}</b><span>articles vendus</span></div>
   <div class="tuile" style="grid-column:1/-1"><b>${kgTxt(kg)}</b><span>de matériaux réemployés${sansPoids?` (+ ${sansPoids} article${sansPoids>1?"s":""} sans poids)`:""}</span></div></div>
@@ -531,15 +535,16 @@ function ecranChiffres(){bar("");
  <div class="card" style="overflow-x:auto"><table class="t"><thead><tr><th>Catégorie</th><th>En stock</th><th>Vendus*</th><th>Valeur</th></tr></thead><tbody>
   ${Object.entries(stk).sort((a,b)=>b[1].val-a[1].val).map(([c,x])=>`<tr><td>${esc(c)}</td><td>${x.n}</td><td>${x.vendus}</td><td>${eur(x.val).replace(/,\d\d /," ")}</td></tr>`).join("")}</tbody></table>
   <p class="muted" style="margin:8px 0 0">* sur la période choisie. « En stock » = nombre d'articles différents encore disponibles.</p></div>
- <p class="muted" style="margin-top:16px">Les chiffres viennent des ventes enregistrées dans cette caisse, sur ce téléphone.</p>`}
+ <p class="muted" style="margin-top:16px">Les chiffres viennent des ventes enregistrées dans cette caisse, sur ce téléphone${chHist&&HIST.length?", et du carnet papier recopié (janvier à septembre 2026 ; une ligne du carnet compte pour un article et chaque date écrite pour un client ; poids du carnet estimés d'après le type d'article ou le prix)":""}.</p>`}
 function brancherChiffres(){$$("[data-chp]").forEach(b=>b.onclick=()=>{chP=b.dataset.chp;render()});
+ const h=$("#chHist");if(h)h.onchange=()=>{chHist=h.checked;render()};
  $$("[data-chpoids]").forEach(b=>b.onclick=()=>{chPoids=b.dataset.chpoids;render()});
  $$(".cols").forEach(c=>{const tip=c.parentNode.querySelector(".tip");c.querySelectorAll("[data-tip]").forEach(b=>b.onclick=()=>{c.querySelectorAll("button").forEach(x=>x.classList.remove("sel"));b.classList.add("sel");tip.textContent=b.dataset.tip})});
  $("#csvPoids").onclick=()=>telecharger(`poids-vendu-${jour()}.csv`,csvPoids())}
 const kgTxt=k=>k>=1000?(k/1000).toLocaleString("fr-BE",{maximumFractionDigits:2})+" t":Math.round(k).toLocaleString("fr-BE")+" kg";
 // Une ligne par mois × matière × catégorie : de quoi faire n'importe quel tableau croisé.
 function csvPoids(){const t={};
- ventes.filter(v=>!v.annulee).forEach(v=>v.lignes.forEach(l=>{if(/^livraison$/i.test(l.n)&&!l.r)return;
+ venduesTout().forEach(v=>v.lignes.forEach(l=>{if(/^livraison$/i.test(l.n)&&!l.r)return;
   const k=[moisDe(v.date),l.m||"Non précisée",catLigne(l)].join("|"),x=t[k]=t[k]||{kg:0,n:0,est:0,sans:0,eur:0};
   x.n+=qSaisie(l)?1:l.q;x.eur+=l.p*l.q;const p=kgLigne(l);if(p==null)x.sans++;else{x.kg+=p;if(l.kgEst)x.est+=p}}));
  const rows=[["Mois","Matière","Catégorie","Poids (kg)","dont estimé (kg)","Articles","Lignes sans poids","Vendu TVAc"]];
@@ -568,6 +573,7 @@ async function telecharger(nom,txt){const f=new File([cp1252(txt)],nom,{type:"te
 (async()=>{
  try{await openDb();ventes=await all("ventes");sorties=await all("sorties");REG=await allSet();(await all("inventaire")).forEach(i=>INV[i.k]=i)}catch(e){toast("Stockage indisponible : les ventes ne seront pas gardées")}
  try{CAT=await (await fetch("catalogue.json")).json()}catch(e){CAT=[]}
+ try{HIST=await (await fetch("historique.json")).json()}catch(e){HIST=[]}
  nbFiches=ajouterFiches(await lireFiches("comptoir"),"app")+ajouterFiches(await lireFiches("comptoir-essai"),"essai");
  CAT.forEach(a=>{a.k=sans([a.n,a.r,a.e,catLabel(a.c)].join(" "));estimer(a)});
  calcVendu();render();

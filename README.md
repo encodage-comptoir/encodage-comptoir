@@ -31,5 +31,5 @@ liste des articles à mettre hors ligne / VENDU, export pour tableur. L'onglet �
 sur place) et exporte un fichier « stock à jour » à reporter dans Impulsion. L'onglet « Chiffres » montre les ventes
 par mois, catégorie, jour de la semaine et mode de paiement, le poids vendu par matière et par catégorie
 (poids pesé dans l'app d'encodage, sinon estimé par `poids.js` d'après la matière et les dimensions
-— masse volumique × volume × part pleine de l'objet — ou d'après le type d'article ; corrigeable à la vente ; export mois × matière × catégorie), et le stock par catégorie. Rien n'est écrit dans Impulsion.
+— masse volumique × volume × part pleine de l'objet — ou d'après le type d'article ; corrigeable à la vente ; export mois × matière × catégorie), et le stock par catégorie. `caisse/historique.json` reprend les ventes du carnet papier de janvier à septembre 2026 (recopiées des photos du carnet, catégorie et matière d'après le libellé, poids estimé d'après le type d'article ou, à défaut, le prix) : comptées dans les Chiffres (case à décocher), jamais dans le carnet ni le stock. Rien n'est écrit dans Impulsion.
 Adresse : https://encodage-comptoir.github.io/encodage-comptoir/caisse/
