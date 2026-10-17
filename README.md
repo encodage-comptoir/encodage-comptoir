@@ -28,5 +28,6 @@ article, colonnes Recettes / Entrée caisse / Sortie caisse, report, dépôts ba
 liste des articles à mettre hors ligne / VENDU, export pour tableur. L'onglet « Stock » calcule ce qui reste
 (export Impulsion + fiches de l'app d'encodage faites sur le même téléphone − ventes, corrigé par les comptages
 sur place) et exporte un fichier « stock à jour » à reporter dans Impulsion. L'onglet « Chiffres » montre les ventes
-par mois, catégorie, jour de la semaine et mode de paiement, et le stock par catégorie. Rien n'est écrit dans Impulsion.
+par mois, catégorie, jour de la semaine et mode de paiement, le poids vendu par matière et par catégorie
+(poids estimé d'après le type d'article, corrigeable à la vente ; export mois × matière × catégorie), et le stock par catégorie. Rien n'est écrit dans Impulsion.
 Adresse : https://encodage-comptoir.github.io/encodage-comptoir/caisse/

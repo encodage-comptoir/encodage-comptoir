@@ -119,6 +119,9 @@ dl.res .fort{color:var(--ink);font-weight:700;border-top:1px solid var(--line);p
 .seg button{min-height:52px;border-radius:12px;border:2px solid var(--line);background:var(--surface);font-weight:700}
 .seg button.sel{border-color:var(--ink);background:var(--accent);color:var(--accent-ink)}
 .qin{width:72px!important;text-align:center!important}
+.pds{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:15px}
+.pds input.t{width:68px;min-height:40px;font-size:16px;text-align:center;padding:4px 6px;display:inline-block}
+.pds select{min-height:40px;border-radius:10px;border:2px solid var(--line);background:var(--surface);color:var(--ink);font:inherit;font-size:15px;padding:0 8px;max-width:100%}
 .solde{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--display);font-weight:800;font-size:24px}
 /* Stock et chiffres */
 :root{--barre:#2c68a8}
@@ -163,6 +166,27 @@ const catLabel=c=>(CATS.find(x=>x[0]===c)||[,""])[1];
 const TVA=0.21;      // tous les articles de l'export Impulsion sont à 21 %
 const PRIX_KM=0.5;   // livraison : 0,50 € / km (procédure, point 10)
 // Comme dans le carnet : « Achat et cash », « Achat et virement » (carte ou virement), « Facture ».
+// Matières : mêmes valeurs que l'app d'encodage (et le moteur « Faire avec »).
+const MATIERES=["Bois massif","Panneau (multiplex, OSB, MDF)","Métal","Verre","Céramique","Pierre / béton","PVC / plastique","Textile","Mélange / autre"];
+// Matière devinée d'après le nom, puis d'après la catégorie, quand la fiche ne la donne pas.
+const MAT_MOTS=[[/pvc|plastique|acryl/,"PVC / plastique"],[/\balu|acier|inox|fonte|métal|metal|zinc|cuivre/,"Métal"],[/osb|mdf|multiplex|agglo|stratifi|trespa/,"Panneau (multiplex, OSB, MDF)"],
+ [/chêne|chene|bois|sapin|hêtre|pin\b|mélèze|meleze|parquet/,"Bois massif"],[/vitr|verre|miroir/,"Verre"],[/céram|ceram|porcelaine|grès|faïence|carrelage|évier|wc|lavabo|vasque/,"Céramique"],
+ [/béton|beton|pierre|brique|marbre|granit|pavé|tuile|ardoise|ytong|mortier|bloc/,"Pierre / béton"]];
+const MAT_CAT={CAR:"Céramique",GRO:"Pierre / béton",RA:"Métal",Q:"Métal",OUT:"Métal",BOI:"Bois massif",PAR:"Bois massif",LAM:"Bois massif",ISO:"Mélange / autre",ELECTRO:"Mélange / autre",ELEC:"Mélange / autre",LUM:"Mélange / autre"};
+// Poids moyen estimé (kg par pièce, ou par m² / m courant), à corriger à la vente si besoin. null = inconnu, à peser.
+const POIDS=[[/baignoire/,40],[/bac de douche/,20],[/\bwc\b|toilette/,25],[/évier|evier/,15],[/lave-mains/,6],[/lavabo|vasque/,12],[/colonne/,15],[/meuble/,25],
+ [/paroi|porte de douche/,25],[/mitigeur|robinet|tête de douche|douchette|porte-serviettes|porte-papier|cache-siphon/,1],
+ [/porte de garage/,80,"PO"],[/porte exterieure|porte d'entree|porte-fenetre/,45,"PO"],[/bloc-porte/,35,"PO"],[/porte/,25,"PO"],[/chassis|fenetre|velux/,35,"CH"],
+ [/sèche-serviettes/,12],[/radiateur électrique/,10],[/radiateur/,25],[/boiler/,40],[/thermostat|vanne/,0.5],
+ [/frigo|réfrigérateur/,50],[/lave-linge/,70],[/lave-vaisselle/,45],[/four/,35],[/taque/,10],[/hotte/,12],
+ [/spot|prise|interrupteur|variateur/,0.2],[/plafonnier|applique|suspension|réglette/,2],[/poignée|charnière|serrure/,0.3]];
+const POIDS_M2={CAR:22,PAR:12,LAM:8,TOI:30,ISO:3};
+// Le texte comparé est sans accents : on retire aussi les accents des motifs.
+const sansAcc=L=>L.map(x=>[new RegExp(sans(x[0].source)),...x.slice(1)]);
+let MAT_RE,POIDS_RE;
+function estimer(a){if(!MAT_RE){MAT_RE=sansAcc(MAT_MOTS);POIDS_RE=sansAcc(POIDS)}const txt=sans([a.t,a.n].join(" "));
+ if(!a.m){const x=MAT_RE.find(([re])=>re.test(txt));a.m=x?x[1]:MAT_CAT[a.c]||""}
+ if(a.kg==null){if(a.u==="m²")a.kg=POIDS_M2[a.c]??null;else if(!a.u||a.u==="pièce"){const x=POIDS_RE.find(([re,,c])=>(!c||c===a.c)&&re.test(txt));a.kg=x?x[1]:null}else a.kg=null;a.kgEst=a.kg!=null}}
 const MODES={especes:"Espèces",carte:"Carte bancaire",virement:"Virement",facture:"Facture"};
 const ICON={especes:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></svg>',
  carte:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>',
@@ -216,7 +240,7 @@ function ajouterFiches(fiches,source){let n=0;
   if(f.type==="maj"){const a=CAT.find(x=>x.r===norm(f.annonce));if(a){if(empl)a.e=empl;if(prix)a.p=prix}return}
   const r=norm(f.code);if(!r||!(f.nom||f.titre))return;
   const a=CAT.find(x=>x.r===r);if(a){if(empl&&!a.e)a.e=empl;if(prix&&!a.p)a.p=prix;return}
-  CAT.push({r,n:f.titre||f.nom,p:prix||0,s:num(f.qte)??1,u:f.unite||"pièce",c:f.cat,e:empl,f:photo1(f),src:source,cree:f.cree});n++});
+  CAT.push({r,n:f.titre||f.nom,t:f.nom,p:prix||0,s:num(f.qte)??1,u:f.unite||"pièce",c:f.cat,e:empl,f:photo1(f),src:source,cree:f.cree,m:f.matiere||"",kg:num(f.poids)});n++});
  return n}
 
 let CAT=[], ventes=[], sorties=[], REG={}, vendu={}, INV={}, nbFiches=0;
@@ -265,7 +289,7 @@ function brancherVendre(){const i=$("#q");
  $$("[data-cat]").forEach(b=>b.onclick=()=>{cat=b.dataset.cat;render()});
  $("#libre").onclick=()=>{panier.push({r:"",n:"",p:null,q:1});aller("panier")};
  $$("[data-add]").forEach(b=>b.onclick=()=>{const a=CAT.find(x=>x.r===b.dataset.add);
-  const l=panier.find(x=>x.id===a.r);if(l)l.q++;else panier.push({id:a.r,r:refAff(a),n:a.n,p:a.p||null,q:1,u:a.u,c:a.c});
+  const l=panier.find(x=>x.id===a.r);if(l)l.q++;else panier.push({id:a.r,r:refAff(a),n:a.n,p:a.p||null,q:1,u:a.u,c:a.c,m:a.m,kg:a.kg,kgEst:a.kgEst});
   toast(a.n+" ajouté");render()})}
 
 // Panier : quantités, prix modifiables, livraison
@@ -278,6 +302,9 @@ function ecranPanier(){
    :`<button data-moins="${i}" aria-label="Un de moins">−</button><b>${l.q}</b><button data-plus="${i}" aria-label="Un de plus">+</button>`}</span>
   <input class="t ${l.p==null?"need":""}" data-prix="${i}" inputmode="decimal" placeholder="Prix €" value="${virg(l.p)}" aria-label="Prix à l'unité" ${l.liv?"readonly":""}>
   <span class="tot" data-tot="${i}">${l.p==null||!l.q?"":eur(l.p*l.q)}</span></div>
+  ${l.liv?"":`<div class="pds"><label>Poids <input class="t" data-kg="${i}" inputmode="decimal" placeholder="?" value="${virg(l.kg)}"> kg${l.u&&l.u!=="pièce"?" / "+esc(l.u):l.q>1?" / pièce":""}</label>
+   ${l.kgEst?'<span class="muted">estimé</span>':""}
+   <select data-mat="${i}" aria-label="Matière"><option value="">Matière ?</option>${MATIERES.map(m=>`<option ${l.m===m?"selected":""}>${m}</option>`).join("")}</select></div>`}
   ${qSaisie(l)?`<button class="lien" data-suppr="${i}">Retirer</button>`:""}</div>`).join("");
  bar(`<button class="big ghost back" data-go="vendre">‹</button><button class="big ok" id="encaisser" ${panierPret()?"":"disabled"}>Encaisser</button>`);
  return `<h2>Panier</h2>
@@ -293,6 +320,8 @@ function brancherPanier(){
  const maj=i=>{const l=panier[i];$(`[data-tot="${i}"]`).textContent=l.p==null||!l.q?"":eur(l.p*l.q);$("#total").textContent=eur(totalPanier());$("#encaisser").disabled=!panierPret()};
  $$("[data-prix]").forEach(i=>i.oninput=()=>{panier[i.dataset.prix].p=num(i.value);i.classList.toggle("need",panier[i.dataset.prix].p==null);maj(i.dataset.prix)});
  $$("[data-q]").forEach(i=>i.oninput=()=>{panier[i.dataset.q].q=num(i.value);i.classList.toggle("need",!(panier[i.dataset.q].q>0));maj(i.dataset.q)});
+ $$("[data-kg]").forEach(i=>i.oninput=()=>{const l=panier[i.dataset.kg];l.kg=num(i.value);l.kgEst=false});
+ $$("[data-mat]").forEach(s=>s.onchange=()=>{panier[s.dataset.mat].m=s.value});
  $$("[data-nom]").forEach(i=>i.oninput=()=>{panier[i.dataset.nom].n=i.value;$("#encaisser").disabled=!panierPret()});
  const lv=$("#livraison");if(lv)lv.onclick=()=>{panier.push({r:"",n:"Livraison",liv:1,u:"km",p:PRIX_KM,q:null});render();$(`[data-q="${panier.length-1}"]`).focus()};
  const v=$("#vider");if(v)v.onclick=()=>{if(confirm("Vider le panier ?")){panier=[];aller("vendre")}};
@@ -326,7 +355,7 @@ function brancherPayer(){const ok=()=>$("#valider").disabled=!peutValider();
 async function valider(){const now=new Date(),d=jour(now),t=totalPanier();
  const n=ventes.filter(v=>v.date===d).length+1;
  const v={id:d+"-"+String(n).padStart(3,"0"),num:n,date:d,heure:now.toTimeString().slice(0,5),ts:now.getTime(),
-  lignes:panier.map(l=>({id:l.id||"",r:l.r,c:l.c||"",n:l.n.trim(),q:l.q,p:l.p,u:l.u||""})),total:t,mode:pay.mode,annulee:false};
+  lignes:panier.map(l=>({id:l.id||"",r:l.r,c:l.c||"",m:l.m||"",kg:l.liv?0:l.kg??null,kgEst:!!l.kgEst,n:l.n.trim(),q:l.q,p:l.p,u:l.u||""})),total:t,mode:pay.mode,annulee:false};
  if(pay.mode==="especes"&&num(pay.recu)!=null){v.recu=num(pay.recu);v.rendu=r2(v.recu-t)}
  if(pay.mode==="facture")v.facture={num:pay.fnum.trim(),paye:pay.fpaye};
  try{await put("ventes",v)}catch(e){alert("La vente n'a pas pu être enregistrée sur le téléphone. Notez-la dans le carnet.");return}
@@ -460,13 +489,16 @@ function brancherStock(){const i=$("#stq");
   const n=num(v);if(n==null||n<0){toast("Indiquez un nombre");return}
   const x={k:a.r,compte:n,ts:Date.now()};await put("inventaire",x);INV[a.r]=x;render();toast("Stock noté : "+virg(n))});
  $("#csvStock").onclick=()=>telecharger(`stock-${jour()}.csv`,csvStock())}
-function csvStock(){const rows=[["Référence","Nom","Catégorie","Emplacement","Stock export 14/10","Vendu (caisse)","Compté le","Quantité comptée","Stock actuel","Unité","Prix TVAc","Valeur","Origine"]];
+function csvStock(){const rows=[["Référence","Nom","Catégorie","Emplacement","Stock export 14/10","Vendu (caisse)","Compté le","Quantité comptée","Stock actuel","Unité","Prix TVAc","Valeur","Matière","Poids unitaire (kg)","Origine"]];
  CAT.forEach(a=>{const i=INV[a.r],v=(vendu[a.r]||[]).reduce((t,x)=>t+x.q,0),r=reste(a);
-  rows.push([refAff(a),a.n,catLabel(a.c)||a.c||"",a.e||"",a.src?"":virg(a.s),virg(v),i?dateBe(jour(new Date(i.ts))):"",i?virg(i.compte):"",virg(r),a.u||"pièce",dec(a.p),r>0?dec(r*(a.p||0)):"",a.src?"fiche app":"export Impulsion"])});
+  rows.push([refAff(a),a.n,catLabel(a.c)||a.c||"",a.e||"",a.src?"":virg(a.s),virg(v),i?dateBe(jour(new Date(i.ts))):"",i?virg(i.compte):"",virg(r),a.u||"pièce",dec(a.p),r>0?dec(r*(a.p||0)):"",a.m||"",a.kg==null?"":dec(a.kg)+(a.kgEst?" (estimé)":""),a.src?"fiche app":"export Impulsion"])});
  return csv(rows)}
 
 // ---------- Chiffres : ventes par mois, par catégorie, par jour, par paiement ; stock par catégorie ----------
-let chP="12";
+let chP="12", chPoids="m";
+// Poids d'une ligne vendue (kg). null si on ne le connaît pas.
+const kgLigne=l=>l.kg==null?null:r2(l.kg*l.q);
+const groupe=(l,par)=>par==="m"?(l.m||"Non précisée"):catLigne(l);
 const JOURS=["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
 const catLigne=l=>{if(/^livraison$/i.test(l.n)&&!l.r)return "Livraison";const c=l.c||(CAT.find(a=>a.r===l.id)||{}).c||(l.r.match(/^[A-Z]+/)||[""])[0];return catLabel(c)||(c?c:"Sans fiche")};
 function moisListe(n){const m=[];let x=moisDe(jour());for(let i=0;i<n;i++){m.unshift(x);x=moisAvant(x)}return m}
@@ -478,17 +510,30 @@ function ecranChiffres(){bar("");
  const parCat={},parJour=JOURS.map(j=>[j,0]),parMode={};
  V.forEach(v=>{parJour[(new Date(v.date+"T12:00").getDay()+6)%7][1]++;parMode[MODES[v.mode]]=r2((parMode[MODES[v.mode]]||0)+v.total);
   v.lignes.forEach(l=>{const c=catLigne(l);parCat[c]=r2((parCat[c]||0)+l.p*l.q)})});
+ let kg=0,sansPoids=0;const parPoids={};
+ V.forEach(v=>v.lignes.forEach(l=>{if(/^livraison$/i.test(l.n)&&!l.r)return;const k=kgLigne(l);if(k==null){sansPoids++;return}kg+=k;const g=groupe(l,chPoids);parPoids[g]=r2((parPoids[g]||0)+k)}));kg=r2(kg);
+ const MK=moisListe(12).map(m=>[m,r2(ventes.filter(v=>!v.annulee&&moisDe(v.date)===m).reduce((t,v)=>t+v.lignes.reduce((s,l)=>s+(kgLigne(l)||0),0),0))]),mxk=Math.max(...MK.map(x=>x[1]))||1;
  const M=moisListe(12).map(m=>[m,r2(ventes.filter(v=>!v.annulee&&moisDe(v.date)===m).reduce((t,v)=>t+v.total,0))]),mx=Math.max(...M.map(x=>x[1]))||1;
  const stk={};CAT.forEach(a=>{const r=reste(a),c=catLabel(a.c)||a.c||"Autre";if(!(r>0))return;stk[c]=stk[c]||{n:0,val:0,vendus:0};stk[c].n++;stk[c].val+=r*(a.p||0)});
  V.forEach(v=>v.lignes.forEach(l=>{const c=catLigne(l);if(stk[c])stk[c].vendus+=qSaisie(l)?1:l.q}));
  const per={"1":"Ce mois","3":"3 mois","12":"12 mois",tout:"Tout"};
  return `<div class="chips" style="margin-top:0">${Object.entries(per).map(([k,t])=>`<button class="chip ${chP===k?"sel":""}" data-chp="${k}">${t}</button>`).join("")}</div>
  <div class="tuiles"><div class="tuile"><b>${eur(ca)}</b><span>vendu (TVAc)</span></div><div class="tuile"><b>${cl}</b><span>clients</span></div>
-  <div class="tuile"><b>${cl?eur(ca/cl):"–"}</b><span>panier moyen</span></div><div class="tuile"><b>${art}</b><span>articles vendus</span></div></div>
+  <div class="tuile"><b>${cl?eur(ca/cl):"–"}</b><span>panier moyen</span></div><div class="tuile"><b>${art}</b><span>articles vendus</span></div>
+  <div class="tuile" style="grid-column:1/-1"><b>${kgTxt(kg)}</b><span>de matériaux réemployés${sansPoids?` (+ ${sansPoids} article${sansPoids>1?"s":""} sans poids)`:""}</span></div></div>
  <div class="sec">Ventes par mois (12 derniers)</div>
  <div class="card"><div class="cols">${M.map(([m,v],i)=>`<button data-tip="${esc(moisTxt(m))} : ${eur(v)}" class="${i===11?"sel":""}" aria-label="${esc(moisTxt(m))} : ${eur(v)}"><i style="height:${(100*v/mx).toFixed(1)}%"></i></button>`).join("")}</div>
   <div class="mois">${M.map(([m])=>`<span>${new Date(m+"-15T12:00").toLocaleDateString("fr-BE",{month:"narrow"})}</span>`).join("")}</div>
-  <div class="tip" id="tip">${esc(moisTxt(M[11][0]))} : ${eur(M[11][1])}</div></div>
+  <div class="tip">${esc(moisTxt(M[11][0]))} : ${eur(M[11][1])}</div></div>
+ <div class="sec">Poids vendu</div>
+ <div class="seg" style="margin-top:0"><button data-chpoids="m" class="${chPoids==="m"?"sel":""}">Par matière</button><button data-chpoids="c" class="${chPoids==="c"?"sel":""}">Par catégorie</button></div>
+ <div class="card" style="margin-top:8px">${hbars(Object.entries(parPoids).sort((a,b)=>b[1]-a[1]),kgTxt)}</div>
+ <div class="card" style="margin-top:8px"><div class="muted">Poids vendu par mois</div>
+  <div class="cols">${MK.map(([m,v],i)=>`<button data-tip="${esc(moisTxt(m))} : ${kgTxt(v)}" class="${i===11?"sel":""}" aria-label="${esc(moisTxt(m))} : ${kgTxt(v)}"><i style="height:${(100*v/mxk).toFixed(1)}%"></i></button>`).join("")}</div>
+  <div class="mois">${MK.map(([m])=>`<span>${new Date(m+"-15T12:00").toLocaleDateString("fr-BE",{month:"narrow"})}</span>`).join("")}</div>
+  <div class="tip">${esc(moisTxt(MK[11][0]))} : ${kgTxt(MK[11][1])}</div></div>
+ <div class="acts"><button class="big ghost" id="csvPoids" style="font-size:17px">Poids par mois, matière et catégorie (tableur)</button>
+ <p class="muted" style="margin:0">Poids estimés d'après le type d'article quand personne ne l'a pesé ; corrigeables à la vente.</p></div>
  <div class="sec">Ventes par catégorie</div>
  <div class="card">${hbars(Object.entries(parCat).sort((a,b)=>b[1]-a[1]),v=>eur(v).replace(/,00 /," "))}</div>
  <div class="sec">Clients par jour de la semaine</div>
@@ -501,7 +546,18 @@ function ecranChiffres(){bar("");
   <p class="muted" style="margin:8px 0 0">* sur la période choisie. « En stock » = nombre d'articles différents encore disponibles.</p></div>
  <p class="muted" style="margin-top:16px">Les chiffres viennent des ventes enregistrées dans cette caisse, sur ce téléphone.</p>`}
 function brancherChiffres(){$$("[data-chp]").forEach(b=>b.onclick=()=>{chP=b.dataset.chp;render()});
- $$("[data-tip]").forEach(b=>b.onclick=()=>{$$("[data-tip]").forEach(x=>x.classList.remove("sel"));b.classList.add("sel");$("#tip").textContent=b.dataset.tip})}
+ $$("[data-chpoids]").forEach(b=>b.onclick=()=>{chPoids=b.dataset.chpoids;render()});
+ $$(".cols").forEach(c=>{const tip=c.parentNode.querySelector(".tip");c.querySelectorAll("[data-tip]").forEach(b=>b.onclick=()=>{c.querySelectorAll("button").forEach(x=>x.classList.remove("sel"));b.classList.add("sel");tip.textContent=b.dataset.tip})});
+ $("#csvPoids").onclick=()=>telecharger(`poids-vendu-${jour()}.csv`,csvPoids())}
+const kgTxt=k=>k>=1000?(k/1000).toLocaleString("fr-BE",{maximumFractionDigits:2})+" t":Math.round(k).toLocaleString("fr-BE")+" kg";
+// Une ligne par mois × matière × catégorie : de quoi faire n'importe quel tableau croisé.
+function csvPoids(){const t={};
+ ventes.filter(v=>!v.annulee).forEach(v=>v.lignes.forEach(l=>{if(/^livraison$/i.test(l.n)&&!l.r)return;
+  const k=[moisDe(v.date),l.m||"Non précisée",catLigne(l)].join("|"),x=t[k]=t[k]||{kg:0,n:0,est:0,sans:0,eur:0};
+  x.n+=qSaisie(l)?1:l.q;x.eur+=l.p*l.q;const p=kgLigne(l);if(p==null)x.sans++;else{x.kg+=p;if(l.kgEst)x.est+=p}}));
+ const rows=[["Mois","Matière","Catégorie","Poids (kg)","dont estimé (kg)","Articles","Lignes sans poids","Vendu TVAc"]];
+ Object.keys(t).sort().forEach(k=>{const[m,ma,c]=k.split("|"),x=t[k];rows.push([m.split("-").reverse().join("/"),ma,c,dec(x.kg),dec(x.est),virg(x.n),x.sans,dec(x.eur)])});
+ return csv(rows)}
 
 // ---------- Fichiers pour tableur (Excel belge : « ; », virgule décimale, Windows-1252) ----------
 const qv=v=>{v=String(v??"");return /[;"\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
@@ -526,7 +582,7 @@ async function telecharger(nom,txt){const f=new File([cp1252(txt)],nom,{type:"te
  try{await openDb();ventes=await all("ventes");sorties=await all("sorties");REG=await allSet();(await all("inventaire")).forEach(i=>INV[i.k]=i)}catch(e){toast("Stockage indisponible : les ventes ne seront pas gardées")}
  try{CAT=await (await fetch("catalogue.json")).json()}catch(e){CAT=[]}
  nbFiches=ajouterFiches(await lireFiches("comptoir"),"app")+ajouterFiches(await lireFiches("comptoir-essai"),"essai");
- CAT.forEach(a=>a.k=sans([a.n,a.r,a.e,catLabel(a.c)].join(" ")));
+ CAT.forEach(a=>{a.k=sans([a.n,a.r,a.e,catLabel(a.c)].join(" "));estimer(a)});
  calcVendu();render();
  if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();
  if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js");
