@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Faire avec – Comptoir des Matériaux</title><meta name="description" content="Des idées pour réutiliser les matériaux du Comptoir : cloisons, potager, abri, déco…">
+<meta name="robots" content="noindex"><!-- maquette : à retirer à la mise en ligne réelle -->
+<meta property="og:title" content="Faire avec – Comptoir des Matériaux"><meta property="og:description" content="Des idées pour réutiliser les matériaux du Comptoir : cloisons, potager, abri, déco…">
+<link rel="canonical" href="https://encodage-comptoir.github.io/encodage-comptoir/comptoir/faire-avec.html">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="style.css">
+</head><body>
+<div class="maquette">Maquette : catalogue de test, prix et textes à valider par l'équipe.</div>
+<header class="haut"><div class="haut-in">
+<a class="logo" href="index.html"><img src="https://www.la-pile.be/img/logo-main.svg" alt="La Pile"></a>
+<nav><a href="catalogue.html">Catalogue</a><a href="faire-avec.html">Faire avec</a><a href="index.html#infos">Infos pratiques</a></nav>
+</div></header>
+<main class="contenu"><h1>Faire avec</h1><p class="intro">Partez de ce que vous voulez faire : chaque matériau du Comptoir peut servir à autre chose que son usage d’origine.</p>
+<div class="tuiles" id="fonctions"><button class="tuile" data-f="Séparer un espace">Séparer un espace<small>99 articles</small></button><button class="tuile" data-f="Point d&#x27;eau">Point d&#x27;eau<small>76 articles</small></button><button class="tuile" data-f="Revêtir un sol">Revêtir un sol<small>64 articles</small></button><button class="tuile" data-f="Apporter de la lumière">Apporter de la lumière<small>56 articles</small></button><button class="tuile" data-f="Faire un plateau">Faire un plateau<small>54 articles</small></button><button class="tuile" data-f="Fixer / assembler">Fixer / assembler<small>43 articles</small></button><button class="tuile" data-f="Habiller un mur">Habiller un mur<small>41 articles</small></button><button class="tuile" data-f="Chauffer">Chauffer<small>38 articles</small></button><button class="tuile" data-f="Décorer">Décorer<small>36 articles</small></button><button class="tuile" data-f="Construire une structure">Construire une structure<small>34 articles</small></button><button class="tuile" data-f="Couvrir / abriter">Couvrir / abriter<small>29 articles</small></button><button class="tuile" data-f="Éclairer">Éclairer<small>24 articles</small></button><button class="tuile" data-f="Isoler">Isoler<small>24 articles</small></button><button class="tuile" data-f="Ranger">Ranger<small>23 articles</small></button><button class="tuile" data-f="Cuisiner">Cuisiner<small>20 articles</small></button><button class="tuile" data-f="Récupérer l&#x27;eau">Récupérer l&#x27;eau<small>13 articles</small></button><button class="tuile" data-f="Clôturer">Clôturer<small>8 articles</small></button><button class="tuile" data-f="Planter">Planter<small>6 articles</small></button><button class="tuile" data-f="Toilettes">Toilettes<small>5 articles</small></button><button class="tuile" data-f="Composter">Composter<small>1 articles</small></button><button class="tuile" data-f="S&#x27;asseoir">S&#x27;asseoir<small>1 articles</small></button></div><h2 id="titre-f"></h2><div class="grille" id="liste"></div></main>
+<script>
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);let D=[];
+function voir(f){document.querySelectorAll('[data-f]').forEach(b=>b.classList.toggle('sel',b.dataset.f===f));
+ document.getElementById('titre-f').textContent=f;
+ document.getElementById('liste').innerHTML=D.filter(a=>a.fo.includes(f)).map(a=>`<a class="carte" href="article/${a.r}.html"><div class="img"><img loading="lazy" src="${a.v}" alt=""></div><div class="txt"><h3>${esc(a.t)}</h3><p class="prix">${esc(a.pt)}</p><ul class="mini-idees">${a.i.map(i=>`<li>${esc(i)}</li>`).join('')}</ul></div></a>`).join('');
+ location.hash=encodeURIComponent(f)}
+document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>voir(b.dataset.f));
+fetch('donnees.json').then(r=>r.json()).then(d=>{D=d;const h=decodeURIComponent(location.hash.slice(1));if(h)voir(h)});
+</script>
+<footer class="pied"><div class="pied-in">
+<img src="https://www.la-pile.be/img/footer-logo.svg" alt="La Pile" class="pied-logo">
+<div><b>Comptoir des Matériaux</b><br>Rue Frédéric Lang 3, 4960 Malmedy<br>Tél. <a href="tel:+32493049929">+32 (0)493 04 99 29</a><br><a href="mailto:info@la-pile.be">info@la-pile.be</a></div>
+<div>Un projet de <a href="https://www.la-pile.be">La Pile asbl</a><br><a href="https://www.instagram.com/lapile_malmedy/">Instagram</a> · <a href="https://www.facebook.com/LaPileMalmedy/">Facebook</a></div>
+</div></footer></body></html>

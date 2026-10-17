@@ -1,0 +1,92 @@
+/* Charte de La Pile : bleu canard, jaune, violet, police Poppins, bandes en biais. */
+:root{--bleu:#449ca8;--bleu-f:#2f7c87;--jaune:#fec300;--violet:#7b2382;--encre:#1f2a2c;--gris:#5f6b6d;--fond:#ffffff;--clair:#f4f7f7;--ligne:#dde5e6}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;font:16px/1.55 Poppins,system-ui,sans-serif;color:var(--encre);background:var(--fond)}
+a{color:var(--bleu-f)}
+img{max-width:100%;display:block}
+h1,h2,h3{line-height:1.2;margin:0 0 .5em}
+h1{font-size:clamp(1.6rem,4.5vw,2.4rem);font-weight:800}
+h2{font-size:clamp(1.3rem,3.5vw,1.8rem);font-weight:700}
+.maquette{background:var(--violet);color:#fff;text-align:center;font-size:13px;padding:6px 16px}
+.haut{background:var(--bleu);color:#fff}
+.haut-in{max-width:1180px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.logo img{height:56px;width:auto;background:#fff;padding:6px 10px;border-radius:0 0 10px 10px}
+nav{display:flex;gap:6px 18px;flex-wrap:wrap;justify-content:flex-end}
+nav a{color:#fff;text-decoration:none;font-weight:600;font-size:15px}
+nav a:hover{color:var(--jaune)}
+.contenu{max-width:1180px;margin:0 auto;padding:40px 16px}
+.centre{text-align:center;margin-top:24px}
+.bouton{display:inline-block;background:var(--bleu);color:#fff;font-weight:700;text-decoration:none;padding:12px 22px;border-radius:30px;border:0;font:inherit;font-weight:700;cursor:pointer}
+.bouton:hover{background:var(--bleu-f)}
+.bouton.jaune{background:var(--jaune);color:var(--encre)}
+/* accueil */
+.hero{background:var(--bleu);color:#fff;clip-path:polygon(0 0,100% 0,100% 88%,0 100%);padding:40px 16px 90px}
+.hero-in{max-width:880px;margin:0 auto;text-align:center}
+.hero h1{font-size:clamp(2rem,7vw,3.6rem);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
+.hero h1 span{color:var(--jaune);text-transform:none;letter-spacing:0;font-weight:800}
+.hero p{font-size:1.1rem;max-width:640px;margin:0 auto 24px}
+.cherche{display:flex;gap:8px;max-width:620px;margin:0 auto;background:#fff;border-radius:40px;padding:6px}
+.cherche input{flex:1;min-width:0;border:0;font:inherit;padding:8px 14px;border-radius:30px;outline:none}
+.cherche button{background:var(--jaune);border:0;border-radius:30px;font:inherit;font-weight:700;padding:8px 18px;cursor:pointer}
+.bande-jaune{background:var(--jaune);clip-path:polygon(0 6%,100% 0,100% 94%,0 100%);margin-top:-40px}
+.bande-bleue{background:var(--bleu);color:#fff;clip-path:polygon(0 0,100% 8%,100% 100%,0 92%)}
+.bande-bleue .contenu{text-align:center;padding:70px 16px}
+.bande-bleue p{max-width:620px;margin:0 auto 20px}
+.tuiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.tuile{background:#fff;border:0;border-radius:14px;padding:16px 12px;text-align:center;text-decoration:none;color:var(--encre);font:inherit;font-weight:600;font-size:15px;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;box-shadow:0 2px 0 rgba(0,0,0,.06)}
+.tuile span{font-size:28px}
+.tuile small{color:var(--gris);font-weight:400;font-size:12px}
+.tuile.sel{background:var(--bleu);color:#fff}.tuile.sel small{color:#e6f3f5}
+#fonctions .tuile{border:2px solid var(--ligne)}
+.infos-prat{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px}
+.infos-prat div{background:var(--clair);border-radius:14px;padding:16px}
+/* cartes */
+.grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+@media(min-width:700px){.grille{grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}}
+.carte{display:flex;flex-direction:column;background:#fff;border:1px solid var(--ligne);border-radius:14px;overflow:hidden;text-decoration:none;color:var(--encre)}
+.carte:hover{border-color:var(--bleu)}
+.carte .img{position:relative;aspect-ratio:4/3;background:var(--clair)}
+.carte .img img{width:100%;height:100%;object-fit:cover}
+.eco{position:absolute;left:8px;top:8px;background:var(--jaune);color:var(--encre);font-weight:700;font-size:12px;padding:3px 8px;border-radius:20px}
+.carte .txt{padding:10px 12px 14px}
+.carte h3{font-size:15px;font-weight:600;margin:0 0 6px}
+.prix{font-weight:800;color:var(--bleu-f);margin:0}
+.neuf{font-size:13px;color:var(--gris);margin:2px 0 0;text-decoration:line-through;text-decoration-color:rgba(0,0,0,.25)}
+.mini-idees{margin:6px 0 0;padding-left:18px;font-size:13px;color:var(--gris)}
+/* catalogue */
+.filtres{display:grid;gap:10px;margin-bottom:12px;grid-template-columns:1fr}
+@media(min-width:700px){.filtres{grid-template-columns:2fr 1fr}.filtres details{grid-column:1/-1}}
+.filtres input,.filtres select{font:inherit;padding:10px 12px;border:2px solid var(--ligne);border-radius:10px;background:#fff;width:100%}
+.filtres details{background:var(--clair);border-radius:12px;padding:10px 14px}
+.filtres summary{font-weight:600;cursor:pointer}
+.plus{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px 18px;margin-top:10px}
+.plus label{font-size:14px;font-weight:600;display:flex;flex-direction:column;gap:4px}
+.plus label span{display:flex;align-items:center;gap:6px}
+.plus label span input{width:100%}
+.nb{color:var(--gris);font-size:14px}
+/* article */
+.article{max-width:1180px;margin:0 auto;padding:24px 16px 48px}
+.fil{font-size:14px;color:var(--gris)}
+.art-grille{display:grid;gap:24px}
+@media(min-width:860px){.art-grille{grid-template-columns:1.1fr 1fr}}
+.galerie{display:grid;gap:8px;grid-template-columns:1fr 1fr}
+.galerie img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:12px;background:var(--clair)}
+.galerie img:first-child{grid-column:1/-1;aspect-ratio:auto;max-height:520px;object-fit:contain}
+.accroche{font-size:1.1rem;color:var(--gris)}
+.prix-gros{font-size:2rem;font-weight:800;color:var(--bleu-f);margin:.2em 0}
+.neuf-gros{margin:0 0 6px}.neuf-gros small{color:var(--gris)}
+.eco-grand{display:inline-block;background:var(--jaune);font-weight:700;padding:4px 12px;border-radius:20px;margin:0 0 16px}
+.partage{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin:16px 0;font-size:14px}
+.partage button{font:inherit;background:none;border:0;color:var(--bleu-f);text-decoration:underline;cursor:pointer;padding:0}
+.carac{width:100%;border-collapse:collapse;margin-top:16px;font-size:15px}
+.carac th,.carac td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--ligne);vertical-align:top}
+.carac th{width:40%;color:var(--gris);font-weight:500}
+.idees{background:var(--clair);border-radius:16px;padding:20px;margin:32px 0}
+.idees ul{margin:0;padding-left:20px}
+.lie .pourquoi{font-size:13px;color:var(--gris);margin:4px 2px 0}
+/* pied */
+.pied{background:var(--violet);color:#fff;margin-top:40px}
+.pied a{color:#fff}
+.pied-in{max-width:1180px;margin:0 auto;padding:32px 16px;display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));align-items:start;font-size:14px}
+.pied-logo{height:70px;width:auto}

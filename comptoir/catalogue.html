@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Catalogue – Comptoir des Matériaux</title><meta name="description" content="Tous les matériaux de réemploi disponibles au Comptoir des Matériaux à Malmedy, avec recherche par dimensions.">
+<meta name="robots" content="noindex"><!-- maquette : à retirer à la mise en ligne réelle -->
+<meta property="og:title" content="Catalogue – Comptoir des Matériaux"><meta property="og:description" content="Tous les matériaux de réemploi disponibles au Comptoir des Matériaux à Malmedy, avec recherche par dimensions.">
+<link rel="canonical" href="https://encodage-comptoir.github.io/encodage-comptoir/comptoir/catalogue.html">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="style.css">
+</head><body>
+<div class="maquette">Maquette : catalogue de test, prix et textes à valider par l'équipe.</div>
+<header class="haut"><div class="haut-in">
+<a class="logo" href="index.html"><img src="https://www.la-pile.be/img/logo-main.svg" alt="La Pile"></a>
+<nav><a href="catalogue.html">Catalogue</a><a href="faire-avec.html">Faire avec</a><a href="index.html#infos">Infos pratiques</a></nav>
+</div></header>
+<main class="contenu"><h1>Catalogue</h1>
+<form class="filtres" id="filtres" onsubmit="return false">
+<input id="q" type="search" placeholder="Rechercher (mot, référence…)" aria-label="Rechercher">
+<select id="cat" aria-label="Rayon"><option value="">Tous les rayons</option><option value="sanitaire">Sanitaire</option><option value="portes">Portes</option><option value="gros-uvre">Gros œuvre</option><option value="chauffage">Chauffage</option><option value="electricite-et-eclairage">Électricité et éclairage</option><option value="carrelage">Carrelage</option><option value="chassis-et-fenetres">Châssis et fenêtres</option><option value="quincaillerie">Quincaillerie</option><option value="parquet-bardage-et-terrasse">Parquet, bardage et terrasse</option><option value="divers">Divers</option><option value="toiture">Toiture</option><option value="outillage">Outillage</option><option value="bois-et-panneaux">Bois et panneaux</option><option value="electromenager">Électroménager</option><option value="isolation">Isolation</option><option value="lambris-et-plafonds">Lambris et plafonds</option></select>
+<details><summary>Dimensions, matière, prix</summary><div class="plus">
+<label>Largeur (cm) <span><input id="Lmin" inputmode="numeric" placeholder="min"> – <input id="Lmax" inputmode="numeric" placeholder="max"></span></label>
+<label>Hauteur (cm) <span><input id="hmin" inputmode="numeric" placeholder="min"> – <input id="hmax" inputmode="numeric" placeholder="max"></span></label>
+<label>Profondeur (cm) <span><input id="lmin" inputmode="numeric" placeholder="min"> – <input id="lmax" inputmode="numeric" placeholder="max"></span></label>
+<label>Matière <select id="mat"><option value="">Toutes</option><option>Bois massif</option><option>Céramique</option><option>Métal</option><option>PVC / plastique</option><option>Panneau (multiplex, OSB, MDF)</option><option>Pierre / béton</option><option>Textile</option><option>Verre</option></select></label>
+<label>Couleur <select id="coul"><option value="">Toutes</option><option>Beige</option><option>Blanc</option><option>Brun</option><option>Couleur</option><option>Gris / métal</option><option>Naturel</option><option>Noir</option></select></label>
+<label>Prix max (€) <input id="pmax" inputmode="numeric"></label>
+<label>Trier <select id="tri"><option value="">Pertinence</option><option value="p">Prix croissant</option><option value="e">Plus grosse économie</option></select></label>
+</div></details></form>
+<p id="nb" class="nb"></p><div class="grille" id="liste"></div></main>
+<script>
+const CATS={"sanitaire": "Sanitaire", "portes": "Portes", "gros-uvre": "Gros œuvre", "chauffage": "Chauffage", "electricite-et-eclairage": "Électricité et éclairage", "carrelage": "Carrelage", "chassis-et-fenetres": "Châssis et fenêtres", "quincaillerie": "Quincaillerie", "parquet-bardage-et-terrasse": "Parquet, bardage et terrasse", "divers": "Divers", "toiture": "Toiture", "outillage": "Outillage", "bois-et-panneaux": "Bois et panneaux", "electromenager": "Électroménager", "isolation": "Isolation", "lambris-et-plafonds": "Lambris et plafonds"};
+const sans=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
+let D=[];const $=id=>document.getElementById(id);
+const P=new URLSearchParams(location.search),H=new URLSearchParams(location.hash.slice(1));
+if(P.get('q'))$('q').value=P.get('q');if(H.get('cat'))$('cat').value=H.get('cat');
+function num(id){const v=parseFloat($(id).value.replace(',','.'));return isNaN(v)?null:v}
+function dans(v,a,b){return (a===null||v>=a)&&(b===null||(v>0&&v<=b))&&(a===null||v>0)}
+function maj(){
+ const mots=sans($('q').value).split(/\s+/).filter(Boolean),c=CATS[$('cat').value],m=$('mat').value,co=$('coul').value,pm=num('pmax');
+ let r=D.filter(a=>(!c||a.c===c)&&(!m||a.m===m)&&(!co||a.co===co)&&(pm===null||(a.p>0&&a.p<=pm))
+  &&dans(a.L,num('Lmin'),num('Lmax'))&&dans(a.h,num('hmin'),num('hmax'))&&dans(a.l,num('lmin'),num('lmax'))
+  &&mots.every(w=>sans(a.k).includes(w)));
+ if($('tri').value==='p')r.sort((a,b)=>(a.p||1e9)-(b.p||1e9));if($('tri').value==='e')r.sort((a,b)=>b.e-a.e);
+ $('nb').textContent=r.length+' article'+(r.length>1?'s':'');
+ $('liste').innerHTML=r.slice(0,240).map(a=>`<a class="carte" href="article/${a.r}.html"><div class="img"><img loading="lazy" src="${a.v}" alt="${esc(a.t)}">${a.e>=20?`<span class="eco">−${a.e} % vs neuf</span>`:''}</div><div class="txt"><h3>${esc(a.t)}</h3><p class="prix">${esc(a.pt)}</p>${a.n?`<p class="neuf">Neuf : ${esc(a.n)}</p>`:''}</div></a>`).join('');
+ history.replaceState(null,'',$('cat').value?'#cat='+$('cat').value:location.pathname+location.search);
+}
+document.querySelectorAll('#filtres input,#filtres select').forEach(e=>e.addEventListener('input',maj));
+fetch('donnees.json').then(r=>r.json()).then(d=>{D=d;maj()});
+</script>
+<footer class="pied"><div class="pied-in">
+<img src="https://www.la-pile.be/img/footer-logo.svg" alt="La Pile" class="pied-logo">
+<div><b>Comptoir des Matériaux</b><br>Rue Frédéric Lang 3, 4960 Malmedy<br>Tél. <a href="tel:+32493049929">+32 (0)493 04 99 29</a><br><a href="mailto:info@la-pile.be">info@la-pile.be</a></div>
+<div>Un projet de <a href="https://www.la-pile.be">La Pile asbl</a><br><a href="https://www.instagram.com/lapile_malmedy/">Instagram</a> · <a href="https://www.facebook.com/LaPileMalmedy/">Facebook</a></div>
+</div></footer></body></html>
