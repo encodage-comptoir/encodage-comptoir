@@ -113,7 +113,7 @@ for a in pub:
 {f'<section><h2>Pour compléter</h2><div class="grille">{lies}</div></section>' if lies else ''}
 </main>'''
     open(f"{out}/{a['_url']}", 'w').write(page(f"{a['titre']} – Comptoir des Matériaux", a['accroche'] or a['description'][:150], corps, '../',
-                                              a['_photo'], a['_url'], f'<script type="application/ld+json">{json.dumps(ld, ensure_ascii=False)}</script>'))
+                                              a['_photo'], a['_url'], f'<script type="application/ld+json">{json.dumps(ld, ensure_ascii=False)}</script><script src="../zoom.js" defer></script>'))
 
 # Ordre de vitrine (« tous les rayons ») : on alterne les familles, grosses pièces d'abord, plutôt que la suite des références.
 GROS = {'Portes', 'Baignoires et douches', 'Châssis et fenêtres', 'Parois de douche', 'Meubles de salle de bain', 'Radiateurs et chauffage',
@@ -379,4 +379,5 @@ open(f'{out}/sitemap.xml', 'w').write('<?xml version="1.0" encoding="UTF-8"?>\n<
                                        + ''.join(f'<url><loc>{BASE}{u}</loc></url>\n' for u in urls) + '</urlset>\n')
 shutil.copy(os.path.join(os.path.dirname(__file__), 'site_comptoir.css'), f'{out}/style.css')
 shutil.copy(os.path.join(os.path.dirname(__file__), 'site_comptoir_panier.js'), f'{out}/panier.js')
+shutil.copy(os.path.join(os.path.dirname(__file__), 'site_comptoir_zoom.js'), f'{out}/zoom.js')
 print(len(pub), 'articles publiés,', len(FONCTIONS), 'fonctions,', len(choix), 'bonnes affaires')
