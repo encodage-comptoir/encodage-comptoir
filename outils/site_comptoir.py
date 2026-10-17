@@ -43,6 +43,11 @@ for a in pub:
     a['_photo'] = PILE + a['photos'][0]
     a['_vignette'] = PILE + a['photos'][0].replace('/gallery_images/', '/gallery_images/thumbs/')
     a['_url'] = f"article/{a['ref']}.html"
+    # stock connu (les « 100 » / « 99 » / vide de l'export veulent dire « non compté ») : sert de plafond dans les listes
+    a['_stock'] = int(a['stock']) if a['stock'].isdigit() and a['stock'] not in ('99', '100') else 0
+    # emplacement dans l'entrepôt (code zone + travée + niveau, ex. N2-1) : colonne à remplir plus tard, vide pour l'instant
+    a['_empl'] = a.get('emplacement_reel', '')
+    a['_ajout'] = {'r': a['ref'], 't': a['titre'], 'p': a['_prix'], 'pt': a['_prix_txt'], 'v': a['_vignette'], 's': a['_stock'], 'o': a['_empl']}
 par_ref = {a['ref']: a for a in pub}
 CATS = sorted({a['categorie'] for a in pub}, key=lambda c: -sum(1 for a in pub if a['categorie'] == c))
 ICONES = {'Sanitaire': '🛁', 'Portes': '🚪', 'Gros œuvre': '🧱', 'Chauffage': '🔥', 'Électricité et éclairage': '💡', 'Carrelage': '◻️',
@@ -90,7 +95,7 @@ os.makedirs(f'{out}/article', exist_ok=True)
 for a in pub:
     car = dims(a) + [(k, v) for k, v in [('Autres mesures', a['mesures']), ('Matière', a['matiere']), ('Couleur', a['couleur']),
                                           ('Marque', a['marque']), ('État', a['etat']), ('Usage', a['lieu']), ('Vendu par', a['unite']),
-                                          ('Disponible', a['stock'] if a['stock'] not in ('', '0', '100', '99') else ''), ('Référence', a['ref'])] if v]
+                                          ('Disponible', a['_stock'] or ''), ('Référence', a['ref'])] if v] + [('Emplacement au Comptoir', a['_empl'] or 'à compléter')]
     photos = ''.join(f'<img src="{esc(PILE + p)}" alt="{esc(a["titre"])} – photo {i + 1}" {"loading=lazy" if i else ""}>' for i, p in enumerate(a['photos']))
     lies = ''.join(f'<div class="lie">{carte(par_ref[l["ref"]], "../")}<p class="pourquoi">{esc(l["pourquoi"])}</p></div>' for l in a['_lies'])
     eco = f'<p class="eco-grand">Environ {a["_eco"]} % moins cher que le neuf</p>' if a['_eco'] >= 20 else ''
@@ -107,7 +112,7 @@ for a in pub:
 <div class="art-grille"><div class="galerie">{photos}</div>
 <div class="infos"><h1>{esc(a['titre'])}</h1><p class="accroche">{esc(a['accroche'])}</p>
 <p class="prix-gros">{esc(a['_prix_txt'])}</p>{neuf}{eco}
-<div class="actions"><button class="bouton" data-ajout="{esc(json.dumps({'r': a['ref'], 't': a['titre'], 'p': a['_prix'], 'pt': a['_prix_txt'], 'v': a['_vignette']}, ensure_ascii=False))}">Ajouter à ma liste</button>
+<div class="actions"><button class="bouton" data-ajout="{esc(json.dumps(a['_ajout'], ensure_ascii=False))}">Ajouter à ma liste</button>
 <a class="bouton clair" href="mailto:info@la-pile.be?subject={esc('Article ' + a['ref'])}&body={esc(msg)}">Poser une question</a></div>
 <div class="partage"><span>Partager :</span><a href="https://wa.me/?text={esc(a['titre'] + ' ' + lien)}">WhatsApp</a>
 <a href="https://www.facebook.com/sharer/sharer.php?u={esc(lien)}">Facebook</a><button onclick="navigator.clipboard.writeText('{esc(lien)}');this.textContent='Lien copié'">Copier le lien</button></div>
@@ -137,7 +142,7 @@ pub.sort(key=lambda a: a['_ordre'])
 # --- données pour le catalogue et « Faire avec » ---
 donnees = [{'r': a['ref'], 't': a['titre'], 'c': a['categorie'], 'f': a['famille'], 'p': a['_prix'], 'pt': a['_prix_txt'], 'n': a['_neuf_txt'],
             'e': a['_eco'], 'v': a['_vignette'], 'L': prix_num(a['L']), 'l': prix_num(a['l']), 'h': prix_num(a['h']), 'm': a['matiere'],
-            'co': a['couleur'], 'fo': a['fonctions'], 'i': a['idees'], 'k': ' '.join(a['mots_cles'] + [a['titre'], a['famille'], a['ref']]).lower()}
+            'co': a['couleur'], 's': a['_stock'], 'o': a['_empl'], 'fo': a['fonctions'], 'i': a['idees'], 'k': ' '.join(a['mots_cles'] + [a['titre'], a['famille'], a['ref']]).lower()}
            for a in pub]
 json.dump(donnees, open(f'{out}/donnees.json', 'w'), ensure_ascii=False, separators=(',', ':'))
 
@@ -156,8 +161,12 @@ corps = f'''<section class="hero"><div class="hero-in"><h1>Comptoir des<br><span
 <p class="centre"><a class="bouton" href="catalogue.html">Voir les {len(pub)} articles</a></p></section>
 <section class="bande-bleue"><div class="contenu"><h2>Faire avec</h2><p>Un projet en tête ? Une cloison, un potager, une cabane… Choisissez ce que vous voulez faire, on vous montre ce qui peut servir.</p>
 <a class="bouton jaune" href="faire-avec.html">Trouver des idées</a></div></section>
-<section class="contenu" id="infos"><h2>Infos pratiques</h2><div class="infos-prat">
-<div><h3>Où ?</h3><p>Rue Frédéric Lang 3, 4960 Malmedy</p></div><div><h3>Quand ?</h3><p>Horaires à compléter par l’équipe.</p></div>
+<section class="contenu" id="infos"><h2>Où nous trouver</h2><div class="trouver">
+<div class="encart"><iframe title="Plan : Rue Frédéric Lang 3, 4960 Malmedy" loading="lazy" src="https://maps.google.com/maps?q=Rue%20Fr%C3%A9d%C3%A9ric%20Lang%203%2C%204960%20Malmedy&z=16&output=embed"></iframe>
+<p><b>Rue Frédéric Lang 3, 4960 Malmedy</b> · <a href="https://www.google.com/maps/dir/?api=1&destination=Rue%20Fr%C3%A9d%C3%A9ric%20Lang%203%2C%204960%20Malmedy">Itinéraire</a></p></div>
+<div class="encart photo-lieu"><div class="a-venir">Photo de l’entrée du Comptoir<br><small>à fournir par l’équipe</small></div><p>Légende à compléter (par où entrer, où se garer).</p></div></div>
+<h2 style="margin-top:32px">Infos pratiques</h2><div class="infos-prat">
+<div><h3>Quand ?</h3><p>Horaires à compléter par l’équipe.</p></div>
 <div><h3>Comment ?</h3><p>Repérez l’article en ligne, notez sa référence, réservez par mail ou téléphone, payez au comptoir.</p></div>
 <div><h3>Donner ?</h3><p>Vous avez des matériaux en bon état ? Contactez-nous avant de les apporter.</p></div></div></section>'''
 open(f'{out}/index.html', 'w').write(page('Comptoir des Matériaux – matériaux de réemploi à Malmedy', 'Sanitaires, portes, châssis, carrelage et bois de réemploi à prix doux, à Malmedy. Un projet de La Pile asbl.', corps, '', '', 'index.html'))
@@ -193,7 +202,7 @@ function maj(){{
   &&mots.every(w=>sans(a.k).includes(w)));
  if($('tri').value==='p')r.sort((a,b)=>(a.p||1e9)-(b.p||1e9));if($('tri').value==='e')r.sort((a,b)=>b.e-a.e);
  $('nb').textContent=r.length+' article'+(r.length>1?'s':'');
- $('liste').innerHTML=r.slice(0,240).map(a=>`<div class="carte-w"><a class="carte" href="article/${{a.r}}.html"><div class="img"><img loading="lazy" src="${{a.v}}" alt="${{esc(a.t)}}">${{a.e>=20?`<span class="eco">−${{a.e}} % vs neuf</span>`:''}}</div><div class="txt"><h3>${{esc(a.t)}}</h3><p class="prix">${{esc(a.pt)}}</p>${{a.n?`<p class="neuf">Neuf : ${{esc(a.n)}}</p>`:''}}</div></a><button class="ajout-mini" data-ajout="${{esc(JSON.stringify({{r:a.r,t:a.t,p:a.p,pt:a.pt,v:a.v}}))}}">+ Ma liste</button></div>`).join('');
+ $('liste').innerHTML=r.slice(0,240).map(a=>`<div class="carte-w"><a class="carte" href="article/${{a.r}}.html"><div class="img"><img loading="lazy" src="${{a.v}}" alt="${{esc(a.t)}}">${{a.e>=20?`<span class="eco">−${{a.e}} % vs neuf</span>`:''}}</div><div class="txt"><h3>${{esc(a.t)}}</h3><p class="prix">${{esc(a.pt)}}</p>${{a.n?`<p class="neuf">Neuf : ${{esc(a.n)}}</p>`:''}}</div></a><button class="ajout-mini" data-ajout="${{esc(JSON.stringify({{r:a.r,t:a.t,p:a.p,pt:a.pt,v:a.v,s:a.s,o:a.o}}))}}">+ Ma liste</button></div>`).join('');
  history.replaceState(null,'',$('cat').value?'#cat='+$('cat').value:location.pathname+location.search);
 }}
 document.querySelectorAll('#filtres input,#filtres select').forEach(e=>e.addEventListener('input',maj));
@@ -266,7 +275,14 @@ def pour_poste(po):
     return sorted(res, key=lambda a: (a['statut'] != 'ok', a['_prix'] <= 0, -a['_eco']))
 
 def ajout(a, q=1):
-    return {'r': a['ref'], 't': a['titre'], 'p': a['_prix'], 'pt': a['_prix_txt'], 'v': a['_vignette'], 'q': q}
+    return {**a['_ajout'], 'q': min(q, a['_stock']) if a['_stock'] else q}
+def deplier(reste):
+    if not reste:
+        return ''
+    n = len(reste)
+    return (f'<details class="deplier"><summary><span class="ouvrir">Voir les {n} autres possibilités</span><span class="fermer">Refermer la liste</span></summary>'
+            f'<div class="grille">{"".join(carte_w(a, "../") for a in reste)}</div>'
+            f'<button type="button" class="lien" onclick="const d=this.closest(\'details\');d.open=false;d.scrollIntoView({{block:\'center\'}})">Refermer la liste</button></details>')
 def carte_w(a, prof=''):
     return f'<div class="carte-w">{carte(a, prof)}<button class="ajout-mini" data-ajout="{esc(json.dumps(ajout(a), ensure_ascii=False))}">+ Ma liste</button></div>'
 
@@ -301,7 +317,7 @@ for p in PROJ.values():
 <button class="bouton jaune" id="ex-tout" data-liste-projet="{esc(p['nom'])}" data-vers="../panier.html" data-tout="{esc(json.dumps(tout, ensure_ascii=False))}">Tout mettre dans ma liste « {esc(p['nom'])} »</button>
 <p class="petit">Les quantités au m² sont des estimations (10 % de chutes compris) : l'équipe vérifie avec vous ce qui reste en stock.</p></section>'''
     postes = ''.join(f'''<div class="poste"><h3>{esc(po['nom'])}{f' <small>· {esc(po["qte"])}</small>' if po['qte'] else ''}</h3>{f'<p class="conseil">{esc(po["conseil"])}</p>' if po['conseil'] else ''}
-{f'<div class="grille">{"".join(carte_w(a, "../") for a in its[:8])}</div>{f"<p class=petit>… et {len(its) - 8} autres possibilités au Comptoir.</p>" if len(its) > 8 else ""}' if its else '<p class="petit">Rien en stock aujourd’hui pour ce poste : demandez à l’équipe s’il en arrive bientôt.</p>'}</div>''' for po, its in p['_postes'])
+{f'<div class="grille">{"".join(carte_w(a, "../") for a in its[:4])}</div>{deplier(its[4:])}' if its else '<p class="petit">Rien en stock aujourd’hui pour ce poste : demandez à l’équipe s’il en arrive bientôt.</p>'}</div>''' for po, its in p['_postes'])
     n_ok = sum(1 for _, its in p['_postes'] if its)
     fonctions = sorted({po['fonction'] for po in p['postes'] if po['fonction']})
     mail = f"Bonjour, je voudrais être guidé·e pour mon projet « {p['nom']} ». Mes disponibilités : … Mon téléphone : …"
@@ -352,7 +368,7 @@ corps = f'''<main class="contenu"><h1>Faire avec</h1><p class="intro">Chaque mat
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}})[c]);let D=[];
 function voir(f){{document.querySelectorAll('[data-f]').forEach(b=>b.classList.toggle('sel',b.dataset.f===f));
  document.getElementById('titre-f').textContent=f;
- document.getElementById('liste').innerHTML=D.filter(a=>a.fo.includes(f)).map(a=>`<div class="carte-w"><a class="carte" href="article/${{a.r}}.html"><div class="img"><img loading="lazy" src="${{a.v}}" alt=""></div><div class="txt"><h3>${{esc(a.t)}}</h3><p class="prix">${{esc(a.pt)}}</p><ul class="mini-idees">${{a.i.map(i=>`<li>${{esc(i)}}</li>`).join('')}}</ul></div></a><button class="ajout-mini" data-ajout="${{esc(JSON.stringify({{r:a.r,t:a.t,p:a.p,pt:a.pt,v:a.v}}))}}">+ Ma liste</button></div>`).join('');
+ document.getElementById('liste').innerHTML=D.filter(a=>a.fo.includes(f)).map(a=>`<div class="carte-w"><a class="carte" href="article/${{a.r}}.html"><div class="img"><img loading="lazy" src="${{a.v}}" alt=""></div><div class="txt"><h3>${{esc(a.t)}}</h3><p class="prix">${{esc(a.pt)}}</p><ul class="mini-idees">${{a.i.map(i=>`<li>${{esc(i)}}</li>`).join('')}}</ul></div></a><button class="ajout-mini" data-ajout="${{esc(JSON.stringify({{r:a.r,t:a.t,p:a.p,pt:a.pt,v:a.v,s:a.s,o:a.o}}))}}">+ Ma liste</button></div>`).join('');
  history.replaceState(null,'','#'+encodeURIComponent(f));document.getElementById('titre-f').scrollIntoView({{behavior:'smooth'}})}}
 document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>voir(b.dataset.f));
 fetch('donnees.json').then(r=>r.json()).then(d=>{{D=d;const h=decodeURIComponent(location.hash.slice(1));if(h)voir(h)}});
