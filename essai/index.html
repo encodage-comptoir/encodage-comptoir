@@ -125,7 +125,7 @@ pre.txt{white-space:pre-wrap;font-family:var(--body);font-size:16px;background:v
 <div class="toast" id="toast" hidden></div>
 <script>
 "use strict";
-const VERSION="6.2 (essai : annonces + emplacement)";
+const VERSION="6.3 (essai : photo importée)";
 // ---------- Données de référence ----------
 // Préfixes et catégories : les noms doivent être identiques aux catégories du back-office Impulsion (vérifiés le 14/10/2026).
 const CATS=[
@@ -213,9 +213,10 @@ const today=()=>new Date().toISOString().slice(0,10);
 const photoName=(f,i)=>`${f.code}-${i+1}.jpg`;
 
 // Fichier d'import Impulsion : séparateur « ; », encodage Windows-1252 comme leur export.
-const HEAD=["Référence","Nom","Catégories","Stock","Prix de vente TTC","Description"];
+// Image : nom de la première photo ; Impulsion la demande à l'étape « Importer les images associées ».
+const HEAD=["Référence","Nom","Catégories","Stock","Prix de vente TTC","Description","Image"];
 function csvText(list){const q=v=>{v=String(v??"");return /[;"\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
- return [HEAD].concat(list.map(f=>[f.code,f.nom,siteCat(f.cat),f.qte,String(f.prix||"").replace(".",","),descr(f)])).map(r=>r.map(q).join(";")).join("\r\n")+"\r\n"}
+ return [HEAD].concat(list.map(f=>[f.code,f.nom,siteCat(f.cat),f.qte,String(f.prix||"").replace(".",","),descr(f),f.photos.length?photoName(f,0):""])).map(r=>r.map(q).join(";")).join("\r\n")+"\r\n"}
 // Fichier des caractéristiques pour l'outil « Faire avec » (onglet Fiches) : UTF-8, séparateur « ; ».
 const HEAD_FICHES=["Référence","Nom","Catégorie","Largeur (cm)","Profondeur (cm)","Hauteur (cm)","Matière","Couleur","Intérieur / extérieur","État","Forme","Transport","Quantité","Unité","Arrivée","Photos","Emplacement"];
 function fichesCsv(list){const q=v=>{v=String(v??"");return /[;"\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
@@ -255,8 +256,9 @@ section,.top{background:#fff;border:1px solid #d9d7d0;border-radius:12px;padding
 button{font:inherit;font-weight:700;background:#f2b705;border:0;border-radius:10px;padding:12px 18px;margin-top:10px;cursor:pointer}
 ol{padding-left:20px}</style></head><body>
 <h1>Envoi du comptoir – ${new Date().toLocaleDateString("fr-BE")}</h1>
-<div class="top">${neufs.length?`<p><b>Nouveaux produits (${neufs.length})</b></p><ol><li>Téléchargez le fichier d'import, puis importez-le dans Impulsion (Gestion des produits › Importation).</li>
-<li>Pour chaque produit, téléchargez ses photos, puis dans Impulsion : crayon › onglet Images › + Ajouter.</li>
+<div class="top">${neufs.length?`<p><b>Nouveaux produits (${neufs.length})</b></p><ol><li>Téléchargez le fichier d'import et toutes les photos (boutons 1 et 2), puis importez le fichier dans Impulsion (Gestion des produits › Importation).</li>
+<li>À l'étape « Importer les images associées », touchez + Ajouter, choisissez les photos téléchargées (celles qui finissent par -1.jpg suffisent), puis « Traiter les photos ».</li>
+<li>S'il y a d'autres photos (-2.jpg, -3.jpg), ajoutez-les dans Impulsion : crayon › onglet Images › + Ajouter.</li>
 <li>Vérifiez le prix, puis mettez en ligne.</li></ol>
 <button id="csv">1. Télécharger le fichier d'import (${neufs.length} produit${neufs.length>1?"s":""})</button><br>`:""}
 ${maj.length?`<p><b>Annonces existantes vérifiées (${maj.length})</b> : le tableau des mises à jour donne, par référence, le titre et la description proposés, le stock compté et les articles introuvables. Rien n'est changé dans Impulsion : à reporter à la main quand vous le décidez.</p>
