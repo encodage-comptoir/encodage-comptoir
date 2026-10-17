@@ -62,7 +62,7 @@ def page(titre, desc, corps, prof='', image='', canon='', extra_head=''):
 <div class="maquette">Maquette : catalogue de test, prix et textes à valider par l'équipe.</div>
 <header class="haut"><div class="haut-in">
 <a class="logo" href="{prof}index.html"><img src="{PILE}/img/logo-main.svg" alt="La Pile"></a>
-<nav><a href="{prof}catalogue.html">Catalogue</a><a href="{prof}faire-avec.html">Faire avec</a><a href="{prof}index.html#infos">Infos pratiques</a><a href="{prof}panier.html" class="lien-panier">Mes listes <span class="nb-panier" hidden>0</span></a></nav>
+<nav><a href="{prof}index.html">Accueil</a><a href="{prof}catalogue.html">Catalogue</a><a href="{prof}faire-avec.html">Faire avec</a><a href="{prof}index.html#infos">Infos pratiques</a><a href="{prof}panier.html" class="lien-panier">Mes listes <span class="nb-panier" hidden>0</span></a></nav>
 </div></header>
 {corps}
 <footer class="pied"><div class="pied-in">
