@@ -123,9 +123,10 @@ pre.txt{white-space:pre-wrap;font-family:var(--body);font-size:16px;background:v
 <div class="bar" id="bar"><div class="in" id="barIn"></div></div>
 <input type="file" id="cam" accept="image/*" capture="environment" multiple hidden>
 <div class="toast" id="toast" hidden></div>
+<script src="poids.js"></script>
 <script>
 "use strict";
-const VERSION="6.2 (essai : annonces + emplacement)";
+const VERSION="6.3 (essai : annonces + emplacement + poids)";
 // ---------- Données de référence ----------
 // Préfixes et catégories : les noms doivent être identiques aux catégories du back-office Impulsion (vérifiés le 14/10/2026).
 const CATS=[
@@ -217,10 +218,10 @@ const HEAD=["Référence","Nom","Catégories","Stock","Prix de vente TTC","Descr
 function csvText(list){const q=v=>{v=String(v??"");return /[;"\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
  return [HEAD].concat(list.map(f=>[f.code,f.nom,siteCat(f.cat),f.qte,String(f.prix||"").replace(".",","),descr(f)])).map(r=>r.map(q).join(";")).join("\r\n")+"\r\n"}
 // Fichier des caractéristiques pour l'outil « Faire avec » (onglet Fiches) : UTF-8, séparateur « ; ».
-const HEAD_FICHES=["Référence","Nom","Catégorie","Largeur (cm)","Profondeur (cm)","Hauteur (cm)","Matière","Couleur","Intérieur / extérieur","État","Forme","Transport","Quantité","Unité","Arrivée","Photos","Emplacement"];
+const HEAD_FICHES=["Référence","Nom","Catégorie","Largeur (cm)","Profondeur (cm)","Hauteur (cm)","Matière","Couleur","Intérieur / extérieur","État","Forme","Transport","Quantité","Unité","Arrivée","Photos","Emplacement","Poids (kg)","Poids estimé"];
 function fichesCsv(list){const q=v=>{v=String(v??"");return /[;"\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
  return "﻿"+[HEAD_FICHES].concat(list.map(f=>[f.code,f.nom,siteCat(f.cat),f.L,f.l,f.h,f.matiere,f.couleur,f.lieu,f.etat,formeNom(f.cat,f.nom),transport(f),f.qte,f.unite,
-  new Date(f.cree).toISOString().slice(0,10),f.photos.map((_,i)=>photoName(f,i)).join(" "),f.empl||""])).map(r=>r.map(q).join(";")).join("\r\n")+"\r\n"}
+  new Date(f.cree).toISOString().slice(0,10),f.photos.map((_,i)=>photoName(f,i)).join(" "),f.empl||"",f.poids||"",f.poids&&f.poidsEst?"oui":""])).map(r=>r.map(q).join(";")).join("\r\n")+"\r\n"}
 // Tableau des annonces existantes vérifiées au comptoir (rien n'est importé automatiquement).
 const HEAD_MAJ=["Référence","Statut","Titre actuel","Titre proposé","Catégorie","Stock compté","Description proposée","Photos","Emplacement"];
 // Titre pour le site : le titre nettoyé (ou le nom), avec les mesures si le titre n'en a pas.
@@ -525,7 +526,7 @@ function wiz(a){
    <div><input class="t" id="h" inputmode="decimal" value="${esc(cur.h)}" aria-label="Hauteur"><small>Hauteur</small></div></div>
    <label class="f" for="qte">Combien ?</label>
    <div class="qty"><button id="minus" aria-label="Moins">−</button><input class="t" id="qte" inputmode="numeric" value="${esc(cur.qte)}"><button id="plus" aria-label="Plus">+</button></div>
-   <div class="chips">${UNITS.map(u=>`<button class="chip ${cur.unite===u?"sel":""}" data-unit="${u}">${u}</button>`).join("")}</div>${emplHtml()}`;
+   <div class="chips">${UNITS.map(u=>`<button class="chip ${cur.unite===u?"sel":""}" data-unit="${u}">${u}</button>`).join("")}</div>${poidsHtml()}${emplHtml()}`;
  } else {
   if(!(cur.type==="maj"&&cur.code)&&(!cur.code||!cur.code.startsWith(cur.cat)||!/^\d+$/.test(cur.code.slice(cur.cat.length))))cur.code=nextCode(cur.cat);
   const nPh=cur.slots.filter(Boolean).length;
@@ -533,7 +534,7 @@ function wiz(a){
    <div class="card recap"><dl><dt>Référence</dt><dd><span class="code">${esc(cur.code)}</span></dd><dt>Nom</dt><dd>${esc(cur.nom)}</dd>
    <dt>Catégorie</dt><dd>${esc(label(cur.cat))}</dd><dt>État</dt><dd>${esc(cur.etat||"-")}</dd>
    <dt>Matière</dt><dd>${esc(cur.matiere||"-")}</dd><dt>Couleur</dt><dd>${esc(cur.couleur||"-")}</dd><dt>Usage</dt><dd>${esc(cur.lieu||"-")}</dd>
-   <dt>Mesures</dt><dd>${dimTxt(cur)||"-"}</dd>${transport(cur)?`<dt>Transport</dt><dd>${transport(cur)}</dd>`:""}
+   <dt>Mesures</dt><dd>${dimTxt(cur)||"-"}</dd><dt>Poids</dt><dd>${cur.poids?esc(cur.poids)+" kg"+(cur.poidsEst?" (estimé)":""):"-"}</dd>${transport(cur)?`<dt>Transport</dt><dd>${transport(cur)}</dd>`:""}
    <dt>Stock</dt><dd>${esc(cur.qte)} ${esc(cur.unite)}</dd><dt>Rangé en</dt><dd>${esc(cur.empl==="R"?"R (pas encore rangé)":cur.empl||"-")}</dd><dt>Photos</dt><dd>${nPh}</dd></dl></div>
    ${cur.type==="maj"?`<p class="hint" style="margin-top:12px">Titre proposé pour le site : <b>${esc(titrePropose(cur))}</b></p>`:""}
    <p class="hint" style="margin-top:12px">${cur.type==="maj"&&!cur.codeNouveau?"Vérifiez que":"Écrivez"} <b>${esc(cur.code)}</b> ${cur.type==="maj"&&!cur.codeNouveau?"est bien écrit":""} sur le matériau (craie, scotch ou étiquette).</p>
@@ -548,6 +549,9 @@ function wiz(a){
   cur.photos=cur.slots.filter(Boolean);const f={...cur};delete f.slots;delete f.qual;await dbPut(f);await load();toast("Matériau enregistré : "+cur.code);screen=cur.type==="maj"?"annonces":"home";render()}};
  const bind=k=>{const el=$("#"+k);if(el)el.oninput=()=>{cur[k]=el.value;if(k==="nom"){delete cur.propose.nom;$("#next").disabled=!el.value.trim();a.querySelectorAll("[data-nom]").forEach(c=>c.classList.toggle("sel",c.dataset.nom===el.value))}}};
  ["nom","L","l","h","qte","note","prix"].forEach(bind);
+ ["L","l","h"].forEach(k=>{const el=$("#"+k);if(el)el.addEventListener("input",majPoids)});
+ if($("#poids")){$("#poids").oninput=e=>{cur.poids=e.target.value;cur.poidsEst=false;$("#poidsInfo").textContent=cur.poids?"Poids pesé.":poidsInfo(poidsEstime())};
+  $("#poidsEst").onclick=()=>{const e=poidsEstime();if(e){cur.poids=String(e.kg).replace(".",",");cur.poidsEst=true;render()}}}
  a.querySelectorAll("[data-shot]").forEach(b=>b.onclick=()=>{slotCible=+b.dataset.shot;$("#cam").click()});
  a.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{const i=+b.dataset.rm;if(i<3){cur.slots[i]=null;cur.qual[i]=""}else cur.slots.splice(i,1);if(i<2)cur.reco=null;render()});
  a.querySelectorAll("[data-cat]").forEach(b=>b.onclick=()=>{if(cur.cat!==b.dataset.cat){cur.cat=b.dataset.cat;cur.nom="";cur.code="";delete cur.propose.nom}delete cur.propose.cat;step++;render()});
@@ -559,6 +563,17 @@ function wiz(a){
  if($("#plus")){$("#plus").onclick=()=>{cur.qte=(+cur.qte||0)+1;render()};$("#minus").onclick=()=>{cur.qte=Math.max(1,(+cur.qte||1)-1);render()}}
 }
 
+// Poids : pesé si possible, sinon estimé d'après la matière et les mesures (poids.js, même calcul que la caisse).
+const poidsEstime=()=>Poids.estimer({nom:cur.nom,titre:cur.titreBase,cat:cur.cat,matiere:cur.matiere,unite:cur.unite,L:cur.L,l:cur.l,h:cur.h});
+const parUnite=()=>cur.unite==="pièce"?"par pièce":"par "+cur.unite;
+function poidsInfo(e){return e?`Estimé d'après ${e.base} : environ ${String(e.kg).replace(".",",")} kg.`:"Pesez si possible, ou laissez vide."}
+function poidsHtml(){const e=poidsEstime();if(cur.poidsEst&&e)cur.poids=String(e.kg).replace(".",",");
+ return `<label class="f" for="poids">Poids en kg ${parUnite()} (facultatif)</label>
+ <input class="t" id="poids" inputmode="decimal" value="${esc(cur.poids||"")}" placeholder="${e?String(e.kg).replace(".",","):""}">
+ <p class="hint" id="poidsInfo" style="margin:6px 0 0">${cur.poids&&!cur.poidsEst?"Poids pesé.":poidsInfo(e)}</p>
+ <div class="chips" style="margin-top:0"><button class="chip" id="poidsEst" ${e?"":"hidden"}>Prendre l'estimation</button></div>`}
+function majPoids(){const e=poidsEstime(),i=$("#poids");if(!i)return;i.placeholder=e?String(e.kg).replace(".",","):"";$("#poidsEst").hidden=!e;
+ if(cur.poidsEst&&e){cur.poids=String(e.kg).replace(".",",");i.value=cur.poids}if(!cur.poids||cur.poidsEst)$("#poidsInfo").textContent=poidsInfo(e)}
 function emplHtml(){const e=emplParts(cur.empl),conseil=ZONE_CAT[cur.cat];
  const c=(z,t)=>`<button class="chip zone ${e.z===z?"sel":""}" data-ez="${z}" style="--zc:${ZONE_COUL[z]}">${t}</button>`;
  let h=`<label class="f">Où est-il rangé ? <small class="ia">${esc(cur.empl||"pas encore choisi")}</small></label>
