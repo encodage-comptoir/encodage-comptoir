@@ -33,6 +33,40 @@ def unite_site(u):
         return u.rstrip('x') if u != 'rouleaux' else 'rouleau'
     return ''
 
+def pluriel(n, u):
+    if u == 'm courant':
+        return 'm'
+    if u == 'rouleau':
+        return 'rouleaux' if n > 1 else u
+    if u == 'carreau':
+        return 'carreaux' if n > 1 else u
+    return u + ('s' if n > 1 and u in ('pièce', 'lot', 'sac', 'lame') else '')
+
+def nombre(v):
+    return f'{v:.2f}'.rstrip('0').rstrip('.').replace('.', ',')
+
+def stock_vente(a):
+    """Stock exprimé dans l'unité de vente (celle du prix) + texte affiché.
+    Dans Impulsion, le carrelage et le parquet sont vendus au m² mais comptés en carreaux ou en lames :
+    on le reconnaît quand le texte compte les carreaux ou quand stock × surface d'une pièce = m² annoncés."""
+    st = a['stock']
+    if not st.isdigit() or st in ('99', '100') or st == '0':
+        return 0, ''
+    n, u = int(st), a['_unite']
+    if u == 'm²':
+        L, l = prix_num(a['L']), prix_num(a['l']) or prix_num(a['h'])
+        texte = a['titre'] + ' ' + a['description']
+        compte = re.search(r'(\d+) (carreaux|lames|plaques|dalles|panneaux)', texte)
+        m2 = re.search(r'(\d+(?:,\d+)?) ?m²', texte)
+        aire = n * L * l / 1e4 if L and l else 0
+        if aire and ((compte and int(compte.group(1)) == n) or (m2 and abs(prix_num(m2.group(1)) - aire) <= 0.15 * aire + 0.05)):
+            nom = {'Carrelage': 'carreau'}.get(a['famille'], 'lame' if a['famille'] == 'Parquet et lambris' else 'pièce')
+            return round(aire, 2), f"{n} {pluriel(n, nom)}, soit ≈ {nombre(aire)} m²"
+        if m2 and abs(prix_num(m2.group(1)) - n) < 0.5:
+            return n, f'{n} m²'
+        return 0, f'{n} (en pièces ou en m² ? à vérifier au Comptoir)'
+    return n, f'{n} {pluriel(n, u)}'
+
 def euros(v):
     return (f'{v:.2f}'.replace('.', ',').replace(',00', '')) + ' €'
 
@@ -49,19 +83,20 @@ for a in pub:
     a['_neuf_txt'] = ''
     a['_eco'] = 0
     if n and n.get('neuf_max'):
-        a['_neuf_txt'] = (f"{n['neuf_min']} à {n['neuf_max']} €" if n['neuf_min'] != n['neuf_max'] else f"{n['neuf_min']} €") + f" / {a['unite']}"
-        # économie seulement si le prix actuel est déjà dans la même unité
-        if p > 0 and n['neuf_min'] > p and unite_act.get(a['ref'], a['unite']) == a['unite']:
+        # prix du neuf estimé dans l'unité proposée : on ne l'affiche que s'il est dans la même unité que le prix du Comptoir
+        if a['_unite'] == a['unite']:
+            a['_neuf_txt'] = (f"{n['neuf_min']} à {n['neuf_max']} €" if n['neuf_min'] != n['neuf_max'] else f"{n['neuf_min']} €") + f" / {a['unite']}"
+        if a['_neuf_txt'] and p > 0 and n['neuf_min'] > p:
             a['_eco'] = round(100 * (1 - p / n['neuf_min']) / 5) * 5
     a['_lies'] = [l for l in a['lies'] if l['ref'] in refs]
     a['_photo'] = PILE + a['photos'][0]
     a['_vignette'] = PILE + a['photos'][0].replace('/gallery_images/', '/gallery_images/thumbs/')
     a['_url'] = f"article/{a['ref']}.html"
     # stock connu (les « 100 » / « 99 » / vide de l'export veulent dire « non compté ») : sert de plafond dans les listes
-    a['_stock'] = int(a['stock']) if a['stock'].isdigit() and a['stock'] not in ('99', '100') else 0
+    a['_stock'], a['_stock_txt'] = stock_vente(a)
     # emplacement dans l'entrepôt (code zone + travée + niveau, ex. N2-1) : colonne à remplir plus tard, vide pour l'instant
     a['_empl'] = a.get('emplacement_reel', '')
-    a['_ajout'] = {'r': a['ref'], 't': a['titre'], 'p': a['_prix'], 'pt': a['_prix_txt'], 'v': a['_vignette'], 's': a['_stock'], 'o': a['_empl']}
+    a['_ajout'] = {'r': a['ref'], 't': a['titre'], 'p': a['_prix'], 'pt': a['_prix_txt'], 'v': a['_vignette'], 's': a['_stock'], 'st': a['_stock_txt'], 'o': a['_empl']}
 par_ref = {a['ref']: a for a in pub}
 CATS = sorted({a['categorie'] for a in pub}, key=lambda c: -sum(1 for a in pub if a['categorie'] == c))
 ICONES = {'Sanitaire': '🛁', 'Portes': '🚪', 'Gros œuvre': '🧱', 'Chauffage': '🔥', 'Électricité et éclairage': '💡', 'Carrelage': '◻️',
@@ -110,7 +145,7 @@ os.makedirs(f'{out}/article', exist_ok=True)
 for a in pub:
     car = dims(a) + [(k, v) for k, v in [('Autres mesures', a['mesures']), ('Matière', a['matiere']), ('Couleur', a['couleur']),
                                           ('Marque', a['marque']), ('État', a['etat']), ('Usage', a['lieu']), ('Vendu par', a['_unite']),
-                                          ('Disponible', f"{a['_stock']} {a['_unite'] if a['_unite'] != 'pièce' else 'pièce'}{'s' if a['_stock'] > 1 and a['_unite'] in ('pièce', 'lot', 'sac', 'rouleau') else ''}" if a['_stock'] else ''), ('Référence', a['ref'])] if v] + [('Emplacement au Comptoir', a['_empl'] or 'à compléter')]
+                                          ('Disponible', a['_stock_txt']), ('Référence', a['ref'])] if v] + [('Emplacement au Comptoir', a['_empl'] or 'à compléter')]
     photos = ''.join(f'<img src="{esc(PILE + p)}" alt="{esc(a["titre"])} – photo {i + 1}" {"loading=lazy" if i else ""}>' for i, p in enumerate(a['photos']))
     lies = ''.join(f'<div class="lie">{carte(par_ref[l["ref"]], "../")}<p class="pourquoi">{esc(l["pourquoi"])}</p></div>' for l in a['_lies'])
     eco = f'<p class="eco-grand">Environ {a["_eco"]} % moins cher que le neuf</p>' if a['_eco'] >= 20 else ''
@@ -161,7 +196,7 @@ pub.sort(key=lambda a: a['_ordre'])
 # --- données pour le catalogue et « Faire avec » ---
 donnees = [{'r': a['ref'], 't': a['titre'], 'c': a['categorie'], 'f': a['famille'], 'p': a['_prix'], 'pt': a['_prix_txt'], 'n': a['_neuf_txt'],
             'e': a['_eco'], 'v': a['_vignette'], 'L': prix_num(a['L']), 'l': prix_num(a['l']), 'h': prix_num(a['h']), 'm': a['matiere'],
-            'co': a['couleur'], 's': a['_stock'], 'o': a['_empl'], 'fo': a['fonctions'], 'i': a['idees'], 'k': ' '.join(a['mots_cles'] + [a['titre'], a['famille'], a['ref']]).lower()}
+            'co': a['couleur'], 's': a['_stock'], 'st': a['_stock_txt'], 'o': a['_empl'], 'fo': a['fonctions'], 'i': a['idees'], 'k': ' '.join(a['mots_cles'] + [a['titre'], a['famille'], a['ref']]).lower()}
            for a in pub]
 json.dump(donnees, open(f'{out}/donnees.json', 'w'), ensure_ascii=False, separators=(',', ':'))
 
@@ -221,7 +256,7 @@ function maj(){{
   &&mots.every(w=>sans(a.k).includes(w)));
  if($('tri').value==='p')r.sort((a,b)=>(a.p||1e9)-(b.p||1e9));if($('tri').value==='e')r.sort((a,b)=>b.e-a.e);
  $('nb').textContent=r.length+' article'+(r.length>1?'s':'');
- $('liste').innerHTML=r.slice(0,240).map(a=>`<div class="carte-w"><a class="carte" href="article/${{a.r}}.html"><div class="img"><img loading="lazy" src="${{a.v}}" alt="${{esc(a.t)}}">${{a.e>=20?`<span class="eco">−${{a.e}} % vs neuf</span>`:''}}</div><div class="txt"><h3>${{esc(a.t)}}</h3><p class="prix">${{esc(a.pt)}}</p>${{a.n?`<p class="neuf">Neuf : ${{esc(a.n)}}</p>`:''}}</div></a><button class="ajout-mini" data-ajout="${{esc(JSON.stringify({{r:a.r,t:a.t,p:a.p,pt:a.pt,v:a.v,s:a.s,o:a.o}}))}}">+ Ma liste</button></div>`).join('');
+ $('liste').innerHTML=r.slice(0,240).map(a=>`<div class="carte-w"><a class="carte" href="article/${{a.r}}.html"><div class="img"><img loading="lazy" src="${{a.v}}" alt="${{esc(a.t)}}">${{a.e>=20?`<span class="eco">−${{a.e}} % vs neuf</span>`:''}}</div><div class="txt"><h3>${{esc(a.t)}}</h3><p class="prix">${{esc(a.pt)}}</p>${{a.n?`<p class="neuf">Neuf : ${{esc(a.n)}}</p>`:''}}</div></a><button class="ajout-mini" data-ajout="${{esc(JSON.stringify({{r:a.r,t:a.t,p:a.p,pt:a.pt,v:a.v,s:a.s,st:a.st,o:a.o}}))}}">+ Ma liste</button></div>`).join('');
  history.replaceState(null,'',$('cat').value?'#cat='+$('cat').value:location.pathname+location.search);
 }}
 document.querySelectorAll('#filtres input,#filtres select').forEach(e=>e.addEventListener('input',maj));
@@ -333,7 +368,7 @@ for p in PROJ.values():
                 else:
                     cp = l['couv'] if l['couv'] != 1 else 0
                 src = 'direct' if cp == 1 and not taille and a['_unite'] in ('m²', 'm courant') else 'taille' if taille else 'hyp'
-                att += f' data-cp="{cp:g}" data-src="{src}" data-u="{esc(a["_unite"])}" data-s="{a["_stock"]}"'
+                att += f' data-cp="{cp:g}" data-src="{src}" data-u="{esc(a["_unite"])}" data-s="{a["_stock"]}" data-stt="{esc(a["_stock_txt"])}"'
             if a:
                 lignes += f'''<div class="ex-ligne"{att} data-r="{esc(a['ref'])}" data-p="{a['_prix']}"><img src="{esc(a['_vignette'])}" alt="" loading="lazy">
 <div><small>{esc(l['role'])}{' · proposé à la place d’un article vendu' if l['rempl'] else ''}</small><a href="../{a['_url']}">{esc(a['titre'])}</a>{f'<small>{esc(l["note"])}</small>' if l['note'] else ''}<small class="besoin"></small></div>
@@ -381,8 +416,8 @@ function calc(){let L=3,l=3,h=2.5;if(F){const v=k=>parseFloat(F[k].value.replace
    else{ok=false;q=1;txt+=' : quantité à voir avec l’équipe (unité de vente : '+u+')'}}
   else if(q>1)txt=`${q} ${pl(q,u)}`;
   let prendre=q;
-  if(d.dataset.r&&st>0&&q>st){prendre=st;txt+=` · ${st} ${pl(st,u)} en stock, il en manque ${f1(q-st)}`}
-  else if(d.dataset.r&&st>0&&ok)txt+=` · ${st} ${pl(st,u)} en stock`;
+  if(d.dataset.r&&st>0&&q>st){prendre=st;txt+=` · ${d.dataset.stt} en stock, il en manque ${f1(q-st)} ${pl(2,u)}`}
+  else if(d.dataset.r&&st>0&&ok)txt+=` · ${d.dataset.stt} en stock`;
   d.querySelector('.besoin').textContent=txt.replace(/^ · /,'');
   if(d.dataset.r){const p=+d.dataset.p;if(p>0&&ok)tot+=p*prendre;d.querySelector('.ex-prix').textContent=!ok?'à voir':p>0?eur(p*prendre):'prix au comptoir';tout.push(d.dataset.r+':'+prendre)}});
  document.getElementById('ex-total').textContent=eur(tot);
@@ -409,7 +444,7 @@ corps = f'''<main class="contenu"><h1>Faire avec</h1><p class="intro">Chaque mat
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}})[c]);let D=[];
 function voir(f){{document.querySelectorAll('[data-f]').forEach(b=>b.classList.toggle('sel',b.dataset.f===f));
  document.getElementById('titre-f').textContent=f;
- document.getElementById('liste').innerHTML=D.filter(a=>a.fo.includes(f)).map(a=>`<div class="carte-w"><a class="carte" href="article/${{a.r}}.html"><div class="img"><img loading="lazy" src="${{a.v}}" alt=""></div><div class="txt"><h3>${{esc(a.t)}}</h3><p class="prix">${{esc(a.pt)}}</p><ul class="mini-idees">${{a.i.map(i=>`<li>${{esc(i)}}</li>`).join('')}}</ul></div></a><button class="ajout-mini" data-ajout="${{esc(JSON.stringify({{r:a.r,t:a.t,p:a.p,pt:a.pt,v:a.v,s:a.s,o:a.o}}))}}">+ Ma liste</button></div>`).join('');
+ document.getElementById('liste').innerHTML=D.filter(a=>a.fo.includes(f)).map(a=>`<div class="carte-w"><a class="carte" href="article/${{a.r}}.html"><div class="img"><img loading="lazy" src="${{a.v}}" alt=""></div><div class="txt"><h3>${{esc(a.t)}}</h3><p class="prix">${{esc(a.pt)}}</p><ul class="mini-idees">${{a.i.map(i=>`<li>${{esc(i)}}</li>`).join('')}}</ul></div></a><button class="ajout-mini" data-ajout="${{esc(JSON.stringify({{r:a.r,t:a.t,p:a.p,pt:a.pt,v:a.v,s:a.s,st:a.st,o:a.o}}))}}">+ Ma liste</button></div>`).join('');
  history.replaceState(null,'','#'+encodeURIComponent(f));document.getElementById('titre-f').scrollIntoView({{behavior:'smooth'}})}}
 document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>voir(b.dataset.f));
 fetch('donnees.json').then(r=>r.json()).then(d=>{{D=d;const h=decodeURIComponent(location.hash.slice(1));if(h)voir(h)}});

@@ -5,7 +5,7 @@
 <meta property="og:title" content="Catalogue – Comptoir des Matériaux"><meta property="og:description" content="Tous les matériaux de réemploi disponibles au Comptoir des Matériaux à Malmedy, avec recherche par dimensions.">
 <link rel="canonical" href="https://encodage-comptoir.github.io/encodage-comptoir/comptoir/catalogue.html">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=a2104ca4"><script src="panier.js?v=a2104ca4" defer></script>
+<link rel="stylesheet" href="style.css?v=1f0a7081"><script src="panier.js?v=1f0a7081" defer></script>
 </head><body>
 <div class="maquette">Maquette : catalogue de test, prix et textes à valider par l'équipe.</div>
 <header class="haut"><div class="haut-in">
@@ -15,7 +15,7 @@
 <main class="contenu"><h1>Catalogue</h1>
 <form class="filtres" id="filtres" onsubmit="return false">
 <input id="q" type="search" placeholder="Rechercher (mot, référence…)" aria-label="Rechercher">
-<select id="cat" aria-label="Rayon"><option value="">Tous les rayons</option><option value="sanitaire">Sanitaire</option><option value="portes">Portes</option><option value="gros-uvre">Gros œuvre</option><option value="chauffage">Chauffage</option><option value="electricite-et-eclairage">Électricité et éclairage</option><option value="carrelage">Carrelage</option><option value="chassis-et-fenetres">Châssis et fenêtres</option><option value="quincaillerie">Quincaillerie</option><option value="parquet-bardage-et-terrasse">Parquet, bardage et terrasse</option><option value="divers">Divers</option><option value="toiture">Toiture</option><option value="outillage">Outillage</option><option value="bois-et-panneaux">Bois et panneaux</option><option value="isolation">Isolation</option><option value="electromenager">Électroménager</option><option value="lambris-et-plafonds">Lambris et plafonds</option></select>
+<select id="cat" aria-label="Rayon"><option value="">Tous les rayons</option><option value="sanitaire">Sanitaire</option><option value="portes">Portes</option><option value="gros-uvre">Gros œuvre</option><option value="chauffage">Chauffage</option><option value="electricite-et-eclairage">Électricité et éclairage</option><option value="carrelage">Carrelage</option><option value="chassis-et-fenetres">Châssis et fenêtres</option><option value="quincaillerie">Quincaillerie</option><option value="parquet-bardage-et-terrasse">Parquet, bardage et terrasse</option><option value="divers">Divers</option><option value="outillage">Outillage</option><option value="toiture">Toiture</option><option value="bois-et-panneaux">Bois et panneaux</option><option value="electromenager">Électroménager</option><option value="isolation">Isolation</option><option value="lambris-et-plafonds">Lambris et plafonds</option></select>
 <details open><summary>Dimensions, matière, prix</summary><div class="plus">
 <label>Largeur (cm) <span><input id="Lmin" inputmode="numeric" placeholder="min"> – <input id="Lmax" inputmode="numeric" placeholder="max"></span></label>
 <label>Hauteur (cm) <span><input id="hmin" inputmode="numeric" placeholder="min"> – <input id="hmax" inputmode="numeric" placeholder="max"></span></label>
@@ -27,7 +27,7 @@
 </div></details></form>
 <p id="nb" class="nb"></p><div class="grille" id="liste"></div></main>
 <script>
-const CATS={"sanitaire": "Sanitaire", "portes": "Portes", "gros-uvre": "Gros œuvre", "chauffage": "Chauffage", "electricite-et-eclairage": "Électricité et éclairage", "carrelage": "Carrelage", "chassis-et-fenetres": "Châssis et fenêtres", "quincaillerie": "Quincaillerie", "parquet-bardage-et-terrasse": "Parquet, bardage et terrasse", "divers": "Divers", "toiture": "Toiture", "outillage": "Outillage", "bois-et-panneaux": "Bois et panneaux", "isolation": "Isolation", "electromenager": "Électroménager", "lambris-et-plafonds": "Lambris et plafonds"};
+const CATS={"sanitaire": "Sanitaire", "portes": "Portes", "gros-uvre": "Gros œuvre", "chauffage": "Chauffage", "electricite-et-eclairage": "Électricité et éclairage", "carrelage": "Carrelage", "chassis-et-fenetres": "Châssis et fenêtres", "quincaillerie": "Quincaillerie", "parquet-bardage-et-terrasse": "Parquet, bardage et terrasse", "divers": "Divers", "outillage": "Outillage", "toiture": "Toiture", "bois-et-panneaux": "Bois et panneaux", "electromenager": "Électroménager", "isolation": "Isolation", "lambris-et-plafonds": "Lambris et plafonds"};
 const sans=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
 let D=[];const $=id=>document.getElementById(id);
@@ -42,7 +42,7 @@ function maj(){
   &&mots.every(w=>sans(a.k).includes(w)));
  if($('tri').value==='p')r.sort((a,b)=>(a.p||1e9)-(b.p||1e9));if($('tri').value==='e')r.sort((a,b)=>b.e-a.e);
  $('nb').textContent=r.length+' article'+(r.length>1?'s':'');
- $('liste').innerHTML=r.slice(0,240).map(a=>`<div class="carte-w"><a class="carte" href="article/${a.r}.html"><div class="img"><img loading="lazy" src="${a.v}" alt="${esc(a.t)}">${a.e>=20?`<span class="eco">−${a.e} % vs neuf</span>`:''}</div><div class="txt"><h3>${esc(a.t)}</h3><p class="prix">${esc(a.pt)}</p>${a.n?`<p class="neuf">Neuf : ${esc(a.n)}</p>`:''}</div></a><button class="ajout-mini" data-ajout="${esc(JSON.stringify({r:a.r,t:a.t,p:a.p,pt:a.pt,v:a.v,s:a.s,o:a.o}))}">+ Ma liste</button></div>`).join('');
+ $('liste').innerHTML=r.slice(0,240).map(a=>`<div class="carte-w"><a class="carte" href="article/${a.r}.html"><div class="img"><img loading="lazy" src="${a.v}" alt="${esc(a.t)}">${a.e>=20?`<span class="eco">−${a.e} % vs neuf</span>`:''}</div><div class="txt"><h3>${esc(a.t)}</h3><p class="prix">${esc(a.pt)}</p>${a.n?`<p class="neuf">Neuf : ${esc(a.n)}</p>`:''}</div></a><button class="ajout-mini" data-ajout="${esc(JSON.stringify({r:a.r,t:a.t,p:a.p,pt:a.pt,v:a.v,s:a.s,st:a.st,o:a.o}))}">+ Ma liste</button></div>`).join('');
  history.replaceState(null,'',$('cat').value?'#cat='+$('cat').value:location.pathname+location.search);
 }
 document.querySelectorAll('#filtres input,#filtres select').forEach(e=>e.addEventListener('input',maj));
