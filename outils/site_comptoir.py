@@ -1,6 +1,6 @@
 # Génère la maquette du site du Comptoir des Matériaux (pages statiques) à partir du catalogue harmonisé.
 # Usage : python3 outils/site_comptoir.py catalogue.json catalogue.csv comptoir/
-import sys, os, json, csv, html, re, shutil, unicodedata
+import sys, os, json, csv, html, re, shutil, unicodedata, math
 from collections import defaultdict
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from site_co2 import co2, NOTE as CO2_NOTE
@@ -246,18 +246,33 @@ for a in pub:
     open(f"{out}/{a['_url']}", 'w').write(page(f"{a['titre']} – Comptoir des Matériaux", a['accroche'] or a['description'][:150], corps, '../',
                                               a['_photo'], a['_url'], f'<script type="application/ld+json">{json.dumps(ld, ensure_ascii=False)}</script><script src="../zoom.js?v={VER}" defer></script>'))
 
-# Ordre de vitrine (« tous les rayons ») : on alterne les familles, grosses pièces d'abord, plutôt que la suite des références.
-GROS = {'Portes', 'Baignoires et douches', 'Châssis et fenêtres', 'Parois de douche', 'Meubles de salle de bain', 'Radiateurs et chauffage',
-        'Électroménager', 'Bois et panneaux', 'Jardin et extérieur', 'Parquet et lambris', 'Carrelage', 'Gros œuvre et pierre', 'WC', 'Toiture et gouttières'}
-MOYENS = {'Éviers et lavabos', 'Luminaires', 'Outils'}
-poids = lambda a: 2 if a['famille'] in GROS else 1 if a['famille'] in MOYENS else 0
-taille = lambda a: prix_num(a['L']) * max(prix_num(a['h']), prix_num(a['l']), 1)
-rang_fam = defaultdict(int)
-for a in sorted(pub, key=lambda a: (a['statut'] != 'ok', -len(a['photos']), -taille(a), -a['_prix'])):
-    a['_tour'] = rang_fam[a['famille']]
-    rang_fam[a['famille']] += 1
-FAMS = sorted({a['famille'] for a in pub})
-for i, a in enumerate(sorted(pub, key=lambda a: (a['_tour'] + (2 - poids(a)) * 2, -poids(a), (FAMS.index(a['famille']) * 7 + a['_tour'] * 5) % len(FAMS)))):
+# Ordre « pertinence » (catalogue et accueil) : d'abord les produits phares du Comptoir, génériques et en quantité
+# (briques, éviers, portes, châssis…), en alternant les rayons ; les articles très spécifiques viennent après.
+PHARE = {'Portes': 10, 'Éviers et lavabos': 10, 'Gros œuvre et pierre': 10, 'Châssis et fenêtres': 9, 'Carrelage': 9,
+         'Radiateurs et chauffage': 8, 'WC': 8, 'Parquet et lambris': 7, 'Bois et panneaux': 7, 'Baignoires et douches': 6,
+         'Parois de douche': 6, 'Jardin et extérieur': 5, 'Toiture et gouttières': 5, 'Robinetterie': 5, 'Meubles de salle de bain': 5,
+         'Luminaires': 4, 'Électroménager': 3, 'Isolation': 3, 'Outils': 2}
+GENERIQUE = re.compile(r'^(lot de |\d+ )?(briques?|pavés?|klinkers?|blocs?|dalles?|bordures?|tuiles?|éviers?|lavabos?|vasques?|portes?|double porte|châssis|fenêtres?|'
+                       r'carrelage|faïence|radiateurs?|wc|cuvette|parquet|lambris|planches?|poutres?|madriers?|chevrons?|panneaux?|baignoires?|receveur|'
+                       r'paroi|mitigeur|robinet|meuble|plaques?|pierre|tôles?|gouttières?)\b', re.I)
+SPECIFIQUE = re.compile(r'sous-couche|drain|dôme|coupole|croisillon|plots?|joint|kit |bouchon|siphon|charnière|poignée|serrure|cache|'
+                        r'raccord|vanne|thermostat|tête|vis|cheville|colle|ensemble|cheminée|escalier|hotte|bidet|armoire|table|garage|enfant', re.I)
+def score(a):
+    sc = 4 if GENERIQUE.search(a['titre']) else 0
+    sc -= 4 if SPECIFIQUE.search(a['titre']) else 0
+    sc += min(5, math.log2(a['_stock'] + 1)) if a['_stock'] else 0.5 if a['_stock_txt'] else 0
+    sc += (len(a['photos']) > 1) + (a['statut'] == 'ok') + (a['_eco'] >= 40)
+    return sc
+for a in pub:
+    a['_score'] = score(a)
+par_fam = defaultdict(list)
+for a in sorted(pub, key=lambda a: -a['_score']):
+    par_fam[a['famille']].append(a)
+for f, l in par_fam.items():
+    # les rayons moins demandés n'entrent dans la ronde que plus tard ; un article spécifique recule encore
+    for k, a in enumerate(l):
+        a['_tour'] = k + (10 - PHARE.get(f, 0)) / 2 + (2 if a['_score'] < 3 else 0)
+for i, a in enumerate(sorted(pub, key=lambda a: (a['_tour'], -PHARE.get(a['famille'], 0), -a['_score']))):
     a['_ordre'] = i
 pub.sort(key=lambda a: a['_ordre'])
 
@@ -269,9 +284,9 @@ donnees = [{'r': a['ref'], 't': a['titre'], 'c': a['categorie'], 'f': a['famille
 json.dump(donnees, open(f'{out}/donnees.json', 'w'), ensure_ascii=False, separators=(',', ':'))
 
 # --- accueil ---
-# bonnes affaires : une par famille, grosses pièces d'abord
+# bonnes affaires : les produits phares, un par rayon, dans l'ordre de pertinence
 choix, vues = [], set()
-for a in sorted([a for a in pub if a['statut'] == 'ok' and a['_eco'] >= 40 and len(a['photos']) > 1], key=lambda a: (-poids(a), -a['_eco'])):
+for a in sorted([a for a in pub if a['statut'] == 'ok' and a['_score'] >= 5], key=lambda a: a['_ordre']):
     if a['famille'] not in vues and len(choix) < 8:
         choix.append(a); vues.add(a['famille'])
 corps = f'''<section class="hero"><div class="hero-in"><h1>Comptoir des<br><span>Matériaux</span></h1>
@@ -302,7 +317,6 @@ corps = f'''<main class="contenu"><h1>Catalogue</h1>
 <label>L2 (cm) <span><input id="d2min" inputmode="numeric" placeholder="min"> – <input id="d2max" inputmode="numeric" placeholder="max"></span></label>
 <label>L3, la plus petite (cm) <span><input id="d3min" inputmode="numeric" placeholder="min"> – <input id="d3max" inputmode="numeric" placeholder="max"></span></label>
 <label>Matière <select id="mat"><option value="">Toutes</option>{''.join(f'<option>{esc(m)}</option>' for m in sorted({a["matiere"] for a in pub if a["matiere"]}))}</select></label>
-<label>Couleur <select id="coul"><option value="">Toutes</option>{''.join(f'<option>{esc(m)}</option>' for m in sorted({a["couleur"] for a in pub if a["couleur"]}))}</select></label>
 <label>Prix max (€) <input id="pmax" inputmode="numeric"></label>
 <label>Trier <select id="tri"><option value="">Pertinence</option><option value="p">Prix croissant</option><option value="e">Plus grosse économie</option></select></label>
 </div></details></form>
@@ -317,8 +331,8 @@ if(P.get('q'))$('q').value=P.get('q');if(H.get('cat'))$('cat').value=H.get('cat'
 function num(id){{const v=parseFloat($(id).value.replace(',','.'));return isNaN(v)?null:v}}
 function dans(v,a,b){{return (a===null||v>=a)&&(b===null||(v>0&&v<=b))&&(a===null||v>0)}}
 function maj(){{
- const mots=sans($('q').value).split(/\\s+/).filter(Boolean),c=CATS[$('cat').value],m=$('mat').value,co=$('coul').value,pm=num('pmax');
- let r=D.filter(a=>(!c||a.c===c)&&(!m||a.m===m)&&(!co||a.co===co)&&(pm===null||(a.p>0&&a.p<=pm))
+ const mots=sans($('q').value).split(/\\s+/).filter(Boolean),c=CATS[$('cat').value],m=$('mat').value,pm=num('pmax');
+ let r=D.filter(a=>(!c||a.c===c)&&(!m||a.m===m)&&(pm===null||(a.p>0&&a.p<=pm))
   &&dans(a.d1,num('d1min'),num('d1max'))&&dans(a.d2,num('d2min'),num('d2max'))&&dans(a.d3,num('d3min'),num('d3max'))
   &&mots.every(w=>sans(a.k).includes(w)));
  if($('tri').value==='p')r.sort((a,b)=>(a.p||1e9)-(b.p||1e9));if($('tri').value==='e')r.sort((a,b)=>b.e-a.e);

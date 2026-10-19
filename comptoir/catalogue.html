@@ -22,7 +22,6 @@
 <label>L2 (cm) <span><input id="d2min" inputmode="numeric" placeholder="min"> – <input id="d2max" inputmode="numeric" placeholder="max"></span></label>
 <label>L3, la plus petite (cm) <span><input id="d3min" inputmode="numeric" placeholder="min"> – <input id="d3max" inputmode="numeric" placeholder="max"></span></label>
 <label>Matière <select id="mat"><option value="">Toutes</option><option>Bois massif</option><option>Céramique</option><option>Métal</option><option>PVC / plastique</option><option>Panneau (multiplex, OSB, MDF)</option><option>Pierre / béton</option><option>Textile</option><option>Verre</option></select></label>
-<label>Couleur <select id="coul"><option value="">Toutes</option><option>Beige</option><option>Blanc</option><option>Brun</option><option>Couleur</option><option>Gris / métal</option><option>Naturel</option><option>Noir</option></select></label>
 <label>Prix max (€) <input id="pmax" inputmode="numeric"></label>
 <label>Trier <select id="tri"><option value="">Pertinence</option><option value="p">Prix croissant</option><option value="e">Plus grosse économie</option></select></label>
 </div></details></form>
@@ -37,8 +36,8 @@ if(P.get('q'))$('q').value=P.get('q');if(H.get('cat'))$('cat').value=H.get('cat'
 function num(id){const v=parseFloat($(id).value.replace(',','.'));return isNaN(v)?null:v}
 function dans(v,a,b){return (a===null||v>=a)&&(b===null||(v>0&&v<=b))&&(a===null||v>0)}
 function maj(){
- const mots=sans($('q').value).split(/\s+/).filter(Boolean),c=CATS[$('cat').value],m=$('mat').value,co=$('coul').value,pm=num('pmax');
- let r=D.filter(a=>(!c||a.c===c)&&(!m||a.m===m)&&(!co||a.co===co)&&(pm===null||(a.p>0&&a.p<=pm))
+ const mots=sans($('q').value).split(/\s+/).filter(Boolean),c=CATS[$('cat').value],m=$('mat').value,pm=num('pmax');
+ let r=D.filter(a=>(!c||a.c===c)&&(!m||a.m===m)&&(pm===null||(a.p>0&&a.p<=pm))
   &&dans(a.d1,num('d1min'),num('d1max'))&&dans(a.d2,num('d2min'),num('d2max'))&&dans(a.d3,num('d3min'),num('d3max'))
   &&mots.every(w=>sans(a.k).includes(w)));
  if($('tri').value==='p')r.sort((a,b)=>(a.p||1e9)-(b.p||1e9));if($('tri').value==='e')r.sort((a,b)=>b.e-a.e);
