@@ -125,7 +125,7 @@ pre.txt{white-space:pre-wrap;font-family:var(--body);font-size:16px;background:v
 <div class="toast" id="toast" hidden></div>
 <script>
 "use strict";
-const VERSION="6.3 (essai : photo importée)";
+const VERSION="6.4 (essai : L1 L2 L3)";
 // ---------- Données de référence ----------
 // Préfixes et catégories : les noms doivent être identiques aux catégories du back-office Impulsion (vérifiés le 14/10/2026).
 const CATS=[
@@ -204,7 +204,9 @@ let screen="home", cur=null, step=0, openId=null;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function nextCode(cat){let n=LAST[cat]||0;fiches.forEach(f=>{if(f.cat===cat&&f.id!==cur?.id){const m=+f.code.slice(cat.length);if(m>n)n=m}});return cat+(n+1)}
-function dimTxt(f){const d=[["larg.",f.L],["prof.",f.l],["haut.",f.h]].filter(x=>x[1]).map(x=>x[0]+" "+x[1]);return d.length?d.join(" × ")+" cm":""}
+function dimTxt(f){const d=[f.L,f.l,f.h].filter(Boolean);return d.length?d.join(" × ")+" cm":""}
+// L1 ≥ L2 ≥ L3 : les mesures sont toujours rangées de la plus grande à la plus petite (cm)
+function trierDims(f){const v=[f.L,f.l,f.h].map(x=>String(x??"").trim()).filter(Boolean).sort((a,b)=>(parseFloat(b.replace(",","."))||0)-(parseFloat(a.replace(",","."))||0));[f.L,f.l,f.h]=[v[0]||"",v[1]||"",v[2]||""]}
 function descr(f){return [f.etat,dimTxt(f)?"Dimensions : "+dimTxt(f):"",f.matiere?"Matière : "+f.matiere:"",f.couleur?"Couleur : "+f.couleur:"",
  f.lieu==="Les deux"?"Intérieur ou extérieur":f.lieu,"Vendu par "+f.unite,f.note].filter(Boolean).join(" · ")}
 function toast(t){const el=$("#toast");el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2200)}
@@ -218,7 +220,7 @@ const HEAD=["Référence","Nom","Catégories","Stock","Prix de vente TTC","Descr
 function csvText(list){const q=v=>{v=String(v??"");return /[;"\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
  return [HEAD].concat(list.map(f=>[f.code,f.nom,siteCat(f.cat),f.qte,String(f.prix||"").replace(".",","),descr(f),f.photos.length?photoName(f,0):""])).map(r=>r.map(q).join(";")).join("\r\n")+"\r\n"}
 // Fichier des caractéristiques pour l'outil « Faire avec » (onglet Fiches) : UTF-8, séparateur « ; ».
-const HEAD_FICHES=["Référence","Nom","Catégorie","Largeur (cm)","Profondeur (cm)","Hauteur (cm)","Matière","Couleur","Intérieur / extérieur","État","Forme","Transport","Quantité","Unité","Arrivée","Photos","Emplacement"];
+const HEAD_FICHES=["Référence","Nom","Catégorie","L1 (cm)","L2 (cm)","L3 (cm)","Matière","Couleur","Intérieur / extérieur","État","Forme","Transport","Quantité","Unité","Arrivée","Photos","Emplacement"];
 function fichesCsv(list){const q=v=>{v=String(v??"");return /[;"\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
  return "﻿"+[HEAD_FICHES].concat(list.map(f=>[f.code,f.nom,siteCat(f.cat),f.L,f.l,f.h,f.matiere,f.couleur,f.lieu,f.etat,formeNom(f.cat,f.nom),transport(f),f.qte,f.unite,
   new Date(f.cree).toISOString().slice(0,10),f.photos.map((_,i)=>photoName(f,i)).join(" "),f.empl||""])).map(r=>r.map(q).join(";")).join("\r\n")+"\r\n"}
@@ -521,10 +523,10 @@ function wiz(a){
   body=`<h2>Quelques détails</h2><p class="hint">Les réponses « proposé » viennent de la photo et du nom. Corrigez si besoin, sinon touchez Suivant.</p>
    ${row("matiere","Matière",MATIERES)}${row("couleur","Couleur",COULEURS)}${row("lieu","Pour l'intérieur ou l'extérieur ?",LIEUX)}`;
  } else if(step===4){
-  body=`<h2>Mesures et quantité</h2><p class="hint">En centimètres. Laissez vide ce qui ne se mesure pas.</p>
-   <div class="dims"><div><input class="t" id="L" inputmode="decimal" value="${esc(cur.L)}" aria-label="Largeur"><small>Largeur</small></div>
-   <div><input class="t" id="l" inputmode="decimal" value="${esc(cur.l)}" aria-label="Profondeur"><small>Profondeur</small></div>
-   <div><input class="t" id="h" inputmode="decimal" value="${esc(cur.h)}" aria-label="Hauteur"><small>Hauteur</small></div></div>
+  body=`<h2>Mesures et quantité</h2><p class="hint">En centimètres, de la plus grande mesure (L1) à la plus petite (L3). Peu importe l'ordre : l'app les range. Laissez vide ce qui ne se mesure pas.</p>
+   <div class="dims"><div><input class="t" id="L" inputmode="decimal" value="${esc(cur.L)}" aria-label="L1, la plus grande"><small>L1 (plus grande)</small></div>
+   <div><input class="t" id="l" inputmode="decimal" value="${esc(cur.l)}" aria-label="L2"><small>L2</small></div>
+   <div><input class="t" id="h" inputmode="decimal" value="${esc(cur.h)}" aria-label="L3, la plus petite"><small>L3 (plus petite)</small></div></div>
    <label class="f" for="qte">Combien ?</label>
    <div class="qty"><button id="minus" aria-label="Moins">−</button><input class="t" id="qte" inputmode="numeric" value="${esc(cur.qte)}"><button id="plus" aria-label="Plus">+</button></div>
    <div class="chips">${UNITS.map(u=>`<button class="chip ${cur.unite===u?"sel":""}" data-unit="${u}">${u}</button>`).join("")}</div>${emplHtml()}`;
@@ -546,7 +548,7 @@ function wiz(a){
  bar((step>0?`<button class="big ghost back" id="prev">Retour</button>`:"")+`<button class="big" id="next" ${ok?"":"disabled"}>${step===last?"Enregistrer":"Suivant"}</button>`);
  $("#cancel").onclick=()=>{screen=cur.type==="maj"?"annonce":"home";render()};
  if($("#prev"))$("#prev").onclick=()=>{step--;render()};
- $("#next").onclick=async()=>{if(step<last){step++;render()}else{cur.qte=Math.max(1,parseInt(cur.qte)||1);
+ $("#next").onclick=async()=>{trierDims(cur);if(step<last){step++;render()}else{cur.qte=Math.max(1,parseInt(cur.qte)||1);
   cur.photos=cur.slots.filter(Boolean);const f={...cur};delete f.slots;delete f.qual;await dbPut(f);await load();toast("Matériau enregistré : "+cur.code);screen=cur.type==="maj"?"annonces":"home";render()}};
  const bind=k=>{const el=$("#"+k);if(el)el.oninput=()=>{cur[k]=el.value;if(k==="nom"){delete cur.propose.nom;$("#next").disabled=!el.value.trim();a.querySelectorAll("[data-nom]").forEach(c=>c.classList.toggle("sel",c.dataset.nom===el.value))}}};
  ["nom","L","l","h","qte","note","prix"].forEach(bind);

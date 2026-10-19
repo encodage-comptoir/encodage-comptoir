@@ -45,6 +45,14 @@ def pluriel(n, u):
 def nombre(v):
     return f'{v:.2f}'.rstrip('0').rstrip('.').replace('.', ',')
 
+def trois(a):
+    """L1 ≥ L2 ≥ L3 : les mesures rangées de la plus grande à la plus petite (cm), comme dans l'app d'encodage."""
+    v = [x for x in (a['L'], a['l'], a['h']) if prix_num(x)]
+    if len(v) < 3 and prix_num(a['epaisseur']) and a['epaisseur'] not in v:
+        v.append(a['epaisseur'])
+    v = sorted(v, key=lambda x: -prix_num(x))
+    return v + [''] * (3 - len(v))
+
 def stock_vente(a):
     """Stock exprimé dans l'unité de vente (celle du prix) + texte affiché.
     Dans Impulsion, le carrelage et le parquet sont vendus au m² mais comptés en carreaux ou en lames :
@@ -54,7 +62,7 @@ def stock_vente(a):
         return 0, ''
     n, u = int(st), a['_unite']
     if u == 'm²':
-        L, l = prix_num(a['L']), prix_num(a['l']) or prix_num(a['h'])
+        L, l = map(prix_num, trois(a)[:2])
         texte = a['titre'] + ' ' + a['description']
         compte = re.search(r'(\d+) (carreaux|lames|plaques|dalles|panneaux)', texte)
         m2 = re.search(r'(\d+(?:,\d+)?) ?m²', texte)
@@ -135,8 +143,9 @@ def carte(a, prof=''):
 <div class="txt"><h3>{esc(a['titre'])}</h3><p class="prix">{esc(a['_prix_txt'])}</p>{f'<p class="neuf">Neuf : {esc(a["_neuf_txt"])}</p>' if a['_neuf_txt'] else ''}</div></a>'''
 
 def dims(a):
-    d = [('Largeur', a['L']), ('Profondeur', a['l']), ('Hauteur', a['h']), ('Diamètre', a['diametre']), ('Épaisseur', a['epaisseur'])]
-    return [(k, v + ' cm') for k, v in d if v]
+    v = [x for x in trois(a) if x]
+    d = [('Dimensions (L1 × L2 × L3)' if len(v) == 3 else 'Dimensions (L1 × L2)' if len(v) == 2 else 'Dimension (L1)', ' × '.join(v) + ' cm')] if v else []
+    return d + ([('Diamètre', a['diametre'] + ' cm')] if a['diametre'] else [])
 
 CO2_EXEMPLES = {'CH75', 'SA43', 'PO141'}
 os.makedirs(f'{out}/article', exist_ok=True)
@@ -195,7 +204,7 @@ pub.sort(key=lambda a: a['_ordre'])
 
 # --- données pour le catalogue et « Faire avec » ---
 donnees = [{'r': a['ref'], 't': a['titre'], 'c': a['categorie'], 'f': a['famille'], 'p': a['_prix'], 'pt': a['_prix_txt'], 'n': a['_neuf_txt'],
-            'e': a['_eco'], 'v': a['_vignette'], 'L': prix_num(a['L']), 'l': prix_num(a['l']), 'h': prix_num(a['h']), 'm': a['matiere'],
+            'e': a['_eco'], 'v': a['_vignette'], **dict(zip(('d1', 'd2', 'd3'), map(prix_num, trois(a)))), 'm': a['matiere'],
             'co': a['couleur'], 's': a['_stock'], 'st': a['_stock_txt'], 'o': a['_empl'], 'fo': a['fonctions'], 'i': a['idees'], 'k': ' '.join(a['mots_cles'] + [a['titre'], a['famille'], a['ref']]).lower()}
            for a in pub]
 json.dump(donnees, open(f'{out}/donnees.json', 'w'), ensure_ascii=False, separators=(',', ':'))
@@ -231,9 +240,10 @@ corps = f'''<main class="contenu"><h1>Catalogue</h1>
 <input id="q" type="search" placeholder="Rechercher (mot, référence…)" aria-label="Rechercher">
 <select id="cat" aria-label="Rayon"><option value="">Tous les rayons</option>{''.join(f'<option value="{slug(c)}">{esc(c)}</option>' for c in CATS)}</select>
 <details open><summary>Dimensions, matière, prix</summary><div class="plus">
-<label>Largeur (cm) <span><input id="Lmin" inputmode="numeric" placeholder="min"> – <input id="Lmax" inputmode="numeric" placeholder="max"></span></label>
-<label>Hauteur (cm) <span><input id="hmin" inputmode="numeric" placeholder="min"> – <input id="hmax" inputmode="numeric" placeholder="max"></span></label>
-<label>Profondeur (cm) <span><input id="lmin" inputmode="numeric" placeholder="min"> – <input id="lmax" inputmode="numeric" placeholder="max"></span></label>
+<p class="petit" style="grid-column:1/-1;margin:0">Mesures en cm, de la plus grande (L1) à la plus petite (L3) : une porte de 201 × 83 × 4 cm a L1 = 201, L2 = 83, L3 = 4.</p>
+<label>L1, la plus grande (cm) <span><input id="d1min" inputmode="numeric" placeholder="min"> – <input id="d1max" inputmode="numeric" placeholder="max"></span></label>
+<label>L2 (cm) <span><input id="d2min" inputmode="numeric" placeholder="min"> – <input id="d2max" inputmode="numeric" placeholder="max"></span></label>
+<label>L3, la plus petite (cm) <span><input id="d3min" inputmode="numeric" placeholder="min"> – <input id="d3max" inputmode="numeric" placeholder="max"></span></label>
 <label>Matière <select id="mat"><option value="">Toutes</option>{''.join(f'<option>{esc(m)}</option>' for m in sorted({a["matiere"] for a in pub if a["matiere"]}))}</select></label>
 <label>Couleur <select id="coul"><option value="">Toutes</option>{''.join(f'<option>{esc(m)}</option>' for m in sorted({a["couleur"] for a in pub if a["couleur"]}))}</select></label>
 <label>Prix max (€) <input id="pmax" inputmode="numeric"></label>
@@ -252,7 +262,7 @@ function dans(v,a,b){{return (a===null||v>=a)&&(b===null||(v>0&&v<=b))&&(a===nul
 function maj(){{
  const mots=sans($('q').value).split(/\\s+/).filter(Boolean),c=CATS[$('cat').value],m=$('mat').value,co=$('coul').value,pm=num('pmax');
  let r=D.filter(a=>(!c||a.c===c)&&(!m||a.m===m)&&(!co||a.co===co)&&(pm===null||(a.p>0&&a.p<=pm))
-  &&dans(a.L,num('Lmin'),num('Lmax'))&&dans(a.h,num('hmin'),num('hmax'))&&dans(a.l,num('lmin'),num('lmax'))
+  &&dans(a.d1,num('d1min'),num('d1max'))&&dans(a.d2,num('d2min'),num('d2max'))&&dans(a.d3,num('d3min'),num('d3max'))
   &&mots.every(w=>sans(a.k).includes(w)));
  if($('tri').value==='p')r.sort((a,b)=>(a.p||1e9)-(b.p||1e9));if($('tri').value==='e')r.sort((a,b)=>b.e-a.e);
  $('nb').textContent=r.length+' article'+(r.length>1?'s':'');
@@ -361,10 +371,10 @@ for p in PROJ.values():
                 taille = False
                 if a['_unite'] == ('m²' if surf_calc else 'm courant'):
                     cp = 1
-                elif a['_unite'] == 'pièce' and surf_calc and prix_num(a['L']) and prix_num(a['l'] or a['h']):
-                    cp, taille = prix_num(a['L']) * prix_num(a['l'] or a['h']) / 10000, True
-                elif a['_unite'] == 'pièce' and not surf_calc and prix_num(a['L']):
-                    cp, taille = prix_num(a['L']) / 100, True
+                elif a['_unite'] == 'pièce' and surf_calc and prix_num(trois(a)[1]):
+                    cp, taille = prix_num(trois(a)[0]) * prix_num(trois(a)[1]) / 10000, True
+                elif a['_unite'] == 'pièce' and not surf_calc and prix_num(trois(a)[0]):
+                    cp, taille = prix_num(trois(a)[0]) / 100, True
                 else:
                     cp = l['couv'] if l['couv'] != 1 else 0
                 src = 'direct' if cp == 1 and not taille and a['_unite'] in ('m²', 'm courant') else 'taille' if taille else 'hyp'

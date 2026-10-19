@@ -104,7 +104,7 @@ pre.txt{white-space:pre-wrap;font-family:var(--body);font-size:16px;background:v
 <div class="toast" id="toast" hidden></div>
 <script>
 "use strict";
-const VERSION="5.1 (photo importée)";
+const VERSION="5.2 (L1 L2 L3)";
 // ---------- Données de référence ----------
 // Préfixes et catégories : les noms doivent être identiques aux catégories du back-office Impulsion (vérifiés le 14/10/2026).
 const CATS=[
@@ -148,7 +148,9 @@ let screen="home", cur=null, step=0, openId=null;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function nextCode(cat){let n=LAST[cat]||0;fiches.forEach(f=>{if(f.cat===cat&&f.id!==cur?.id){const m=+f.code.slice(cat.length);if(m>n)n=m}});return cat+(n+1)}
-function dimTxt(f){const d=[["larg.",f.L],["prof.",f.l],["haut.",f.h]].filter(x=>x[1]).map(x=>x[0]+" "+x[1]);return d.length?d.join(" × ")+" cm":""}
+function dimTxt(f){const d=[f.L,f.l,f.h].filter(Boolean);return d.length?d.join(" × ")+" cm":""}
+// L1 ≥ L2 ≥ L3 : les mesures sont toujours rangées de la plus grande à la plus petite (cm)
+function trierDims(f){const v=[f.L,f.l,f.h].map(x=>String(x??"").trim()).filter(Boolean).sort((a,b)=>(parseFloat(b.replace(",","."))||0)-(parseFloat(a.replace(",","."))||0));[f.L,f.l,f.h]=[v[0]||"",v[1]||"",v[2]||""]}
 function descr(f){return [f.etat,dimTxt(f)?"Dimensions : "+dimTxt(f):"","Vendu par "+f.unite,f.note].filter(Boolean).join(" · ")}
 function toast(t){const el=$("#toast");el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2200)}
 function bar(html){$("#barIn").innerHTML=html}
@@ -289,10 +291,10 @@ function wiz(a){
    <label class="f">État</label><div class="chips">${ETATS.map(s=>`<button class="chip ${cur.etat===s?"sel":""}" data-etat="${s}">${s}</button>`).join("")}</div>`;
   ok=!!cur.nom.trim();
  } else if(step===3){
-  body=`<h2>Mesures et quantité</h2><p class="hint">En centimètres. Laissez vide ce qui ne se mesure pas.</p>
-   <div class="dims"><div><input class="t" id="L" inputmode="decimal" value="${esc(cur.L)}" aria-label="Largeur"><small>Largeur</small></div>
-   <div><input class="t" id="l" inputmode="decimal" value="${esc(cur.l)}" aria-label="Profondeur"><small>Profondeur</small></div>
-   <div><input class="t" id="h" inputmode="decimal" value="${esc(cur.h)}" aria-label="Hauteur"><small>Hauteur</small></div></div>
+  body=`<h2>Mesures et quantité</h2><p class="hint">En centimètres, de la plus grande mesure (L1) à la plus petite (L3). Peu importe l'ordre : l'app les range. Laissez vide ce qui ne se mesure pas.</p>
+   <div class="dims"><div><input class="t" id="L" inputmode="decimal" value="${esc(cur.L)}" aria-label="L1, la plus grande"><small>L1 (plus grande)</small></div>
+   <div><input class="t" id="l" inputmode="decimal" value="${esc(cur.l)}" aria-label="L2"><small>L2</small></div>
+   <div><input class="t" id="h" inputmode="decimal" value="${esc(cur.h)}" aria-label="L3, la plus petite"><small>L3 (plus petite)</small></div></div>
    <label class="f" for="qte">Combien ?</label>
    <div class="qty"><button id="minus" aria-label="Moins">−</button><input class="t" id="qte" inputmode="numeric" value="${esc(cur.qte)}"><button id="plus" aria-label="Plus">+</button></div>
    <div class="chips">${UNITS.map(u=>`<button class="chip ${cur.unite===u?"sel":""}" data-unit="${u}">${u}</button>`).join("")}</div>`;
@@ -310,7 +312,7 @@ function wiz(a){
  bar((step>0?`<button class="big ghost back" id="prev">Retour</button>`:"")+`<button class="big" id="next" ${ok?"":"disabled"}>${step===4?"Enregistrer":"Suivant"}</button>`);
  $("#cancel").onclick=()=>{screen="home";render()};
  if($("#prev"))$("#prev").onclick=()=>{step--;render()};
- $("#next").onclick=async()=>{if(step<4){step++;render()}else{cur.qte=Math.max(1,parseInt(cur.qte)||1);await dbPut(cur);await load();toast("Matériau enregistré : "+cur.code);screen="home";render()}};
+ $("#next").onclick=async()=>{trierDims(cur);if(step<4){step++;render()}else{cur.qte=Math.max(1,parseInt(cur.qte)||1);await dbPut(cur);await load();toast("Matériau enregistré : "+cur.code);screen="home";render()}};
  const bind=k=>{const el=$("#"+k);if(el)el.oninput=()=>{cur[k]=el.value;if(k==="nom"){$("#next").disabled=!el.value.trim();a.querySelectorAll("[data-nom]").forEach(c=>c.classList.toggle("sel",c.dataset.nom===el.value))}}};
  ["nom","L","l","h","qte","note","prix"].forEach(bind);
  if($("#shoot"))$("#shoot").onclick=()=>$("#cam").click();

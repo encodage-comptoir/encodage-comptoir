@@ -15,11 +15,12 @@
 <main class="contenu"><h1>Catalogue</h1>
 <form class="filtres" id="filtres" onsubmit="return false">
 <input id="q" type="search" placeholder="Rechercher (mot, référence…)" aria-label="Rechercher">
-<select id="cat" aria-label="Rayon"><option value="">Tous les rayons</option><option value="sanitaire">Sanitaire</option><option value="portes">Portes</option><option value="gros-uvre">Gros œuvre</option><option value="chauffage">Chauffage</option><option value="electricite-et-eclairage">Électricité et éclairage</option><option value="carrelage">Carrelage</option><option value="chassis-et-fenetres">Châssis et fenêtres</option><option value="quincaillerie">Quincaillerie</option><option value="parquet-bardage-et-terrasse">Parquet, bardage et terrasse</option><option value="divers">Divers</option><option value="outillage">Outillage</option><option value="toiture">Toiture</option><option value="bois-et-panneaux">Bois et panneaux</option><option value="electromenager">Électroménager</option><option value="isolation">Isolation</option><option value="lambris-et-plafonds">Lambris et plafonds</option></select>
+<select id="cat" aria-label="Rayon"><option value="">Tous les rayons</option><option value="sanitaire">Sanitaire</option><option value="portes">Portes</option><option value="gros-uvre">Gros œuvre</option><option value="chauffage">Chauffage</option><option value="electricite-et-eclairage">Électricité et éclairage</option><option value="carrelage">Carrelage</option><option value="chassis-et-fenetres">Châssis et fenêtres</option><option value="quincaillerie">Quincaillerie</option><option value="parquet-bardage-et-terrasse">Parquet, bardage et terrasse</option><option value="divers">Divers</option><option value="toiture">Toiture</option><option value="outillage">Outillage</option><option value="bois-et-panneaux">Bois et panneaux</option><option value="electromenager">Électroménager</option><option value="isolation">Isolation</option><option value="lambris-et-plafonds">Lambris et plafonds</option></select>
 <details open><summary>Dimensions, matière, prix</summary><div class="plus">
-<label>Largeur (cm) <span><input id="Lmin" inputmode="numeric" placeholder="min"> – <input id="Lmax" inputmode="numeric" placeholder="max"></span></label>
-<label>Hauteur (cm) <span><input id="hmin" inputmode="numeric" placeholder="min"> – <input id="hmax" inputmode="numeric" placeholder="max"></span></label>
-<label>Profondeur (cm) <span><input id="lmin" inputmode="numeric" placeholder="min"> – <input id="lmax" inputmode="numeric" placeholder="max"></span></label>
+<p class="petit" style="grid-column:1/-1;margin:0">Mesures en cm, de la plus grande (L1) à la plus petite (L3) : une porte de 201 × 83 × 4 cm a L1 = 201, L2 = 83, L3 = 4.</p>
+<label>L1, la plus grande (cm) <span><input id="d1min" inputmode="numeric" placeholder="min"> – <input id="d1max" inputmode="numeric" placeholder="max"></span></label>
+<label>L2 (cm) <span><input id="d2min" inputmode="numeric" placeholder="min"> – <input id="d2max" inputmode="numeric" placeholder="max"></span></label>
+<label>L3, la plus petite (cm) <span><input id="d3min" inputmode="numeric" placeholder="min"> – <input id="d3max" inputmode="numeric" placeholder="max"></span></label>
 <label>Matière <select id="mat"><option value="">Toutes</option><option>Bois massif</option><option>Céramique</option><option>Métal</option><option>PVC / plastique</option><option>Panneau (multiplex, OSB, MDF)</option><option>Pierre / béton</option><option>Textile</option><option>Verre</option></select></label>
 <label>Couleur <select id="coul"><option value="">Toutes</option><option>Beige</option><option>Blanc</option><option>Brun</option><option>Couleur</option><option>Gris / métal</option><option>Naturel</option><option>Noir</option></select></label>
 <label>Prix max (€) <input id="pmax" inputmode="numeric"></label>
@@ -27,7 +28,7 @@
 </div></details></form>
 <p id="nb" class="nb"></p><div class="grille" id="liste"></div></main>
 <script>
-const CATS={"sanitaire": "Sanitaire", "portes": "Portes", "gros-uvre": "Gros œuvre", "chauffage": "Chauffage", "electricite-et-eclairage": "Électricité et éclairage", "carrelage": "Carrelage", "chassis-et-fenetres": "Châssis et fenêtres", "quincaillerie": "Quincaillerie", "parquet-bardage-et-terrasse": "Parquet, bardage et terrasse", "divers": "Divers", "outillage": "Outillage", "toiture": "Toiture", "bois-et-panneaux": "Bois et panneaux", "electromenager": "Électroménager", "isolation": "Isolation", "lambris-et-plafonds": "Lambris et plafonds"};
+const CATS={"sanitaire": "Sanitaire", "portes": "Portes", "gros-uvre": "Gros œuvre", "chauffage": "Chauffage", "electricite-et-eclairage": "Électricité et éclairage", "carrelage": "Carrelage", "chassis-et-fenetres": "Châssis et fenêtres", "quincaillerie": "Quincaillerie", "parquet-bardage-et-terrasse": "Parquet, bardage et terrasse", "divers": "Divers", "toiture": "Toiture", "outillage": "Outillage", "bois-et-panneaux": "Bois et panneaux", "electromenager": "Électroménager", "isolation": "Isolation", "lambris-et-plafonds": "Lambris et plafonds"};
 const sans=s=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
 let D=[];const $=id=>document.getElementById(id);
@@ -38,7 +39,7 @@ function dans(v,a,b){return (a===null||v>=a)&&(b===null||(v>0&&v<=b))&&(a===null
 function maj(){
  const mots=sans($('q').value).split(/\s+/).filter(Boolean),c=CATS[$('cat').value],m=$('mat').value,co=$('coul').value,pm=num('pmax');
  let r=D.filter(a=>(!c||a.c===c)&&(!m||a.m===m)&&(!co||a.co===co)&&(pm===null||(a.p>0&&a.p<=pm))
-  &&dans(a.L,num('Lmin'),num('Lmax'))&&dans(a.h,num('hmin'),num('hmax'))&&dans(a.l,num('lmin'),num('lmax'))
+  &&dans(a.d1,num('d1min'),num('d1max'))&&dans(a.d2,num('d2min'),num('d2max'))&&dans(a.d3,num('d3min'),num('d3max'))
   &&mots.every(w=>sans(a.k).includes(w)));
  if($('tri').value==='p')r.sort((a,b)=>(a.p||1e9)-(b.p||1e9));if($('tri').value==='e')r.sort((a,b)=>b.e-a.e);
  $('nb').textContent=r.length+' article'+(r.length>1?'s':'');
