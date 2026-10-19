@@ -76,6 +76,27 @@ def stock_vente(a):
         return 0, f'{n} (en pièces ou en m² ? à vérifier au Comptoir)'
     return n, f'{n} {pluriel(n, u)}'
 
+def surface_realisable(a):
+    """Briques et pavés comptés à la pièce : surface qu'on peut réaliser avec le stock (texte court, hypothèse)."""
+    t = a['titre'].lower()
+    if a['_unite'] != 'pièce' or not a['_stock'] or not re.search(r'brique|pavé|klinker', t) or re.search(r'bloc|thermoplan|poutrain', t):
+        return None
+    L1, L2, L3 = map(prix_num, trois(a))
+    if not (L1 and L2 and L3):
+        return None
+    n = a['_stock']
+    if 'brique' in t:
+        # mur d'une demi-brique : face vue L1 × L3, joints de 1 cm
+        par_m2 = 1e4 / ((L1 + 1) * (L3 + 1))
+        quoi, hyp = 'de mur', f'mur d’une brique d’épaisseur ({nombre(L2)} cm), face {nombre(L1)} × {nombre(L3)} cm + joints de 1 cm, soit ≈ {round(par_m2)} briques par m²'
+    else:
+        # pavés posés à plat : face L1 × L2, joints de 3 mm
+        par_m2 = 1e4 / ((L1 + 0.3) * (L2 + 0.3))
+        quoi, hyp = 'de pavage', f'pavés posés à plat, face {nombre(L1)} × {nombre(L2)} cm + joints de 3 mm, soit ≈ {round(par_m2)} pavés par m²'
+    m2 = n / par_m2
+    m2 = round(m2, 1) if m2 < 10 else round(m2)
+    return f'≈ {nombre(m2)} m² {quoi}', hyp
+
 def euros(v):
     return (f'{v:.2f}'.replace('.', ',').replace(',00', '')) + ' €'
 
@@ -103,6 +124,7 @@ for a in pub:
     a['_url'] = f"article/{a['ref']}.html"
     # stock connu (les « 100 » / « 99 » / vide de l'export veulent dire « non compté ») : sert de plafond dans les listes
     a['_stock'], a['_stock_txt'] = stock_vente(a)
+    a['_surf'] = surface_realisable(a)
     a['_co2'] = co2(a, trois(a), a['_unite'])
     # emplacement dans l'entrepôt (code zone + travée + niveau, ex. N2-1) : colonne à remplir plus tard, vide pour l'instant
     a['_empl'] = a.get('emplacement_reel', '')
@@ -151,7 +173,7 @@ def carte(a, prof=''):
     bas = f'<span class="stock-pastille">{stock_court(a)}</span>' if stock_court(a) else ''
     co2 = f'<p class="co2-mini">−{nombre(a["_co2"][0])} kg CO₂{"/m²" if a["_co2"][1] == "m²" else ""} évités vs neuf</p>' if a['_co2'] else ''
     return f'''<a class="carte" href="{prof}{a['_url']}"><div class="img"><img loading="lazy" src="{esc(a['_vignette'])}" alt="{esc(a['titre'])}">{eco}</div>
-<div class="txt"><h3>{esc(a['titre'])}</h3><p class="prix">{esc(a['_prix_txt'])}</p>{f'<p class="neuf">Neuf : {esc(a["_neuf_txt"])}</p>' if a['_neuf_txt'] else ''}{co2}{f'<p class="dispo">{bas}</p>' if bas else ''}</div></a>'''
+<div class="txt"><h3>{esc(a['titre'])}</h3><p class="prix">{esc(a['_prix_txt'])}</p>{f'<p class="neuf">Neuf : {esc(a["_neuf_txt"])}</p>' if a['_neuf_txt'] else ''}{co2}{f'<p class="dispo">{bas}</p>' if bas else ''}{f'<p class="surf">{a["_surf"][0]} réalisables</p>' if a['_surf'] else ''}</div></a>'''
 
 def dims(a):
     v = [x for x in trois(a) if x]
@@ -164,7 +186,7 @@ os.makedirs(f'{out}/article', exist_ok=True)
 for a in pub:
     car = dims(a) + [(k, v) for k, v in [('Autres mesures', a['mesures']), ('Matière', a['matiere']), ('Couleur', a['couleur']),
                                           ('Marque', a['marque']), ('État', a['etat']), ('Usage', a['lieu']), ('Vendu par', a['_unite']),
-                                          ('Disponible', a['_stock_txt']), ('Référence', a['ref'])] if v] + [('Emplacement au Comptoir', a['_empl'] or 'à compléter')]
+                                          ('Disponible', a['_stock_txt'] + (f' : {a["_surf"][0]} réalisables' if a['_surf'] else '')), ('Calcul de la surface', a['_surf'][1] if a['_surf'] else ''), ('Référence', a['ref'])] if v] + [('Emplacement au Comptoir', a['_empl'] or 'à compléter')]
     photos = ''.join(f'<img src="{esc(PILE + p)}" alt="{esc(a["titre"])} – photo {i + 1}" {"loading=lazy" if i else ""}>' for i, p in enumerate(a['photos']))
     lies = ''.join(f'<div class="lie">{carte(par_ref[l["ref"]], "../")}<p class="pourquoi">{esc(l["pourquoi"])}</p></div>' for l in a['_lies'])
     eco = f'<p class="eco-grand">Environ {a["_eco"]} % moins cher que le neuf</p>' if a['_eco'] >= 20 else ''
@@ -217,7 +239,7 @@ pub.sort(key=lambda a: a['_ordre'])
 # --- données pour le catalogue et « Faire avec » ---
 donnees = [{'r': a['ref'], 't': a['titre'], 'c': a['categorie'], 'f': a['famille'], 'p': a['_prix'], 'pt': a['_prix_txt'], 'n': a['_neuf_txt'],
             'e': a['_eco'], 'v': a['_vignette'], **dict(zip(('d1', 'd2', 'd3'), map(prix_num, trois(a)))), 'm': a['matiere'],
-            'co': a['couleur'], 's': a['_stock'], 'st': a['_stock_txt'], 'o': a['_empl'], 'sc': stock_court(a), 'c2': (nombre(a['_co2'][0]) + (' kg CO₂/m²' if a['_co2'][1] == 'm²' else ' kg CO₂')) if a['_co2'] else '', 'fo': a['fonctions'], 'i': a['idees'], 'k': ' '.join(a['mots_cles'] + [a['titre'], a['famille'], a['ref']]).lower()}
+            'co': a['couleur'], 's': a['_stock'], 'st': a['_stock_txt'], 'o': a['_empl'], 'sc': stock_court(a), 'sf': a['_surf'][0] + ' réalisables' if a['_surf'] else '', 'c2': (nombre(a['_co2'][0]) + (' kg CO₂/m²' if a['_co2'][1] == 'm²' else ' kg CO₂')) if a['_co2'] else '', 'fo': a['fonctions'], 'i': a['idees'], 'k': ' '.join(a['mots_cles'] + [a['titre'], a['famille'], a['ref']]).lower()}
            for a in pub]
 json.dump(donnees, open(f'{out}/donnees.json', 'w'), ensure_ascii=False, separators=(',', ':'))
 
@@ -276,7 +298,7 @@ function maj(){{
   &&mots.every(w=>sans(a.k).includes(w)));
  if($('tri').value==='p')r.sort((a,b)=>(a.p||1e9)-(b.p||1e9));if($('tri').value==='e')r.sort((a,b)=>b.e-a.e);
  $('nb').textContent=r.length+' article'+(r.length>1?'s':'');
- $('liste').innerHTML=r.slice(0,240).map(a=>`<div class="carte-w"><a class="carte" href="article/${{a.r}}.html"><div class="img"><img loading="lazy" src="${{a.v}}" alt="${{esc(a.t)}}">${{a.e>=20?`<span class="eco">−${{a.e}} % vs neuf</span>`:''}}</div><div class="txt"><h3>${{esc(a.t)}}</h3><p class="prix">${{esc(a.pt)}}</p>${{a.n?`<p class="neuf">Neuf : ${{esc(a.n)}}</p>`:''}}${{a.c2?`<p class="co2-mini">−${{esc(a.c2)}} évités vs neuf</p>`:''}}${{a.sc?`<p class="dispo"><span class="stock-pastille">${{esc(a.sc)}}</span></p>`:''}}</div></a><button class="ajout-mini" data-ajout="${{esc(JSON.stringify({{r:a.r,t:a.t,p:a.p,pt:a.pt,v:a.v,s:a.s,st:a.st,o:a.o}}))}}">+ Ma liste</button></div>`).join('');
+ $('liste').innerHTML=r.slice(0,240).map(a=>`<div class="carte-w"><a class="carte" href="article/${{a.r}}.html"><div class="img"><img loading="lazy" src="${{a.v}}" alt="${{esc(a.t)}}">${{a.e>=20?`<span class="eco">−${{a.e}} % vs neuf</span>`:''}}</div><div class="txt"><h3>${{esc(a.t)}}</h3><p class="prix">${{esc(a.pt)}}</p>${{a.n?`<p class="neuf">Neuf : ${{esc(a.n)}}</p>`:''}}${{a.c2?`<p class="co2-mini">−${{esc(a.c2)}} évités vs neuf</p>`:''}}${{a.sc?`<p class="dispo"><span class="stock-pastille">${{esc(a.sc)}}</span></p>`:''}}${{a.sf?`<p class="surf">${{esc(a.sf)}}</p>`:''}}</div></a><button class="ajout-mini" data-ajout="${{esc(JSON.stringify({{r:a.r,t:a.t,p:a.p,pt:a.pt,v:a.v,s:a.s,st:a.st,o:a.o}}))}}">+ Ma liste</button></div>`).join('');
  history.replaceState(null,'',$('cat').value?'#cat='+$('cat').value:location.pathname+location.search);
 }}
 document.querySelectorAll('#filtres input,#filtres select').forEach(e=>e.addEventListener('input',maj));
