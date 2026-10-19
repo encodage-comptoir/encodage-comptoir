@@ -99,9 +99,11 @@ def euros(v):
     return (f'{v:.2f}'.replace('.', ',').replace(',00', '')) + ' €'
 
 # Articles publiés : pas vendus, avec au moins une photo (le site actuel n'en montre pas d'autres).
-pub = [a for a in cat if a['statut'] != 'à retirer' and a['photos']]
+# Les articles en stock sans photo ne sont pas publiés, mais servent quand même aux exemples de « Faire avec ».
+stock_tous = [a for a in cat if a['statut'] != 'à retirer']
+pub = [a for a in stock_tous if a['photos']]
 refs = {a['ref'] for a in pub}
-for a in pub:
+for a in stock_tous:
     p = prix_num(a['prix'])
     a['_prix'] = p
     # le prix et le stock d'Impulsion sont dans l'unité actuelle : on l'affiche telle quelle (l'unité proposée reste une proposition dans le classeur)
@@ -135,8 +137,8 @@ for a in pub:
         if a['_neuf_txt'] and p > 0 and n['neuf_min'] > p:
             a['_eco'] = round(100 * (1 - p / n['neuf_min']) / 5) * 5
     a['_lies'] = [l for l in a['lies'] if l['ref'] in refs]
-    a['_photo'] = PILE + a['photos'][0]
-    a['_vignette'] = PILE + a['photos'][0].replace('/gallery_images/', '/gallery_images/thumbs/')
+    a['_photo'] = PILE + a['photos'][0] if a['photos'] else ''
+    a['_vignette'] = PILE + a['photos'][0].replace('/gallery_images/', '/gallery_images/thumbs/') if a['photos'] else ''
     a['_url'] = f"article/{a['ref']}.html"
     # stock connu (les « 100 » / « 99 » / vide de l'export veulent dire « non compté ») : sert de plafond dans les listes
     a['_stock'], a['_stock_txt'] = stock_vente(a)
@@ -362,8 +364,9 @@ def a_le_mot(t, mot):
     return bool(w) and any(t[i:i + len(w)] == w for i in range(len(t) - len(w) + 1))
 liste_ = lambda s: [x.strip() for x in (s or '').split(',') if x.strip()]
 num_ = lambda s: prix_num(s) if (s or '').strip() else None
-for a in pub:
+for a in stock_tous:
     a['_toks'] = toks(' '.join([a['titre'], a['famille']] + a['mots_cles']))
+en_stock = {a['ref']: a for a in stock_tous}
 
 PROJ = {}
 def projet(nom):
@@ -385,10 +388,16 @@ for r in lire_csv('ambiances.csv'):
         p['desc'] = p['desc'] if p['nom'] in DESC else r['Description']
         p['piece'] = [prix_num(x) for x in r['Pièce (L x l x h, m)'].split('x')]
     cle = r['Référence'].replace(' ', '').upper()
-    cands = [par_ref[x] for x in ancienne.get(cle, []) if x in par_ref] if cle else []
+    cands = [en_stock[x] for x in ancienne.get(cle, []) if x in en_stock] if cle else []
+    cands.sort(key=lambda a: not a['photos'])
     indice = set(toks(r['Rôle'] + ' ' + r['Note']))
-    it = max(cands, key=lambda a: len(indice & set(a['_toks']))) if cands else None
+    it = max(cands, key=lambda a: (len(indice & set(a['_toks'])), bool(a['photos']))) if cands else None
     rempl = False
+    if not it and not r['Référence'].strip():
+        # pas de référence dans l'exemple : on cherche dans tout le stock un article dont le titre commence par le rôle (« Plinthes »)
+        mot = toks(r['Rôle'])[:1]
+        alt = sorted([a for a in stock_tous if mot and toks(a['titre'])[:1] == mot], key=lambda a: (not a['photos'], a['statut'] != 'ok'))
+        it, rempl = (alt[0], False) if alt else (None, False)
     if not it and r['Référence'].strip():
         # l'article de l'exemple est vendu ou sans photo : on propose un équivalent de la même famille
         fam = next((c['famille'] for c in cat if c['ref'] in ancienne.get(r['Référence'].replace(' ', '').upper(), [])), '')
@@ -451,8 +460,10 @@ for p in PROJ.values():
                 src = 'direct' if cp == 1 and not taille and a['_unite'] in ('m²', 'm courant') else 'taille' if taille else 'hyp'
                 att += f' data-cp="{cp:g}" data-src="{src}" data-u="{esc(a["_unite"])}" data-s="{a["_stock"]}" data-stt="{esc(a["_stock_txt"])}"'
             if a:
-                lignes += f'''<div class="ex-ligne"{att} data-r="{esc(a['ref'])}" data-p="{a['_prix']}"><img src="{esc(a['_vignette'])}" alt="" loading="lazy">
-<div><small>{esc(l['role'])}{' · proposé à la place d’un article vendu' if l['rempl'] else ''}</small><a href="../{a['_url']}">{esc(a['titre'])}</a>{f'<small>{esc(l["note"])}</small>' if l['note'] else ''}<small class="besoin"></small></div>
+                vue = (f'<img src="{esc(a["_vignette"])}" alt="" loading="lazy">' if a['photos'] else '<span class="vide">📷</span>')
+                nom = (f'<a href="../{a["_url"]}">{esc(a["titre"])}</a>' if a['photos'] else f'<span>{esc(a["titre"])} <small>(réf. {esc(a["ref"])}, en stock au Comptoir, photo à venir)</small></span>')
+                lignes += f'''<div class="ex-ligne"{att} data-r="{esc(a['ref'])}" data-p="{a['_prix']}">{vue}
+<div><small>{esc(l['role'])}{' · proposé à la place d’un article vendu' if l['rempl'] else ''}</small>{nom}{f'<small>{esc(l["note"])}</small>' if l['note'] and 'trouver ailleurs' not in l['note'].lower() else ''}<small class="besoin"></small></div>
 <b class="ex-prix">{esc(a['_prix_txt'])}</b></div>'''
             else:
                 lignes += f'<div class="ex-ligne manque"{att}><span class="vide">?</span><div><small>{esc(l["role"])}</small><span>{esc(l["note"] or "À trouver")}</span><small class="besoin"></small></div><b class="ex-prix">vendu ou à trouver ailleurs</b></div>'
@@ -500,7 +511,12 @@ function calc(){let L=3,l=3,h=2.5;if(F){const v=k=>parseFloat(F[k].value.replace
   if(d.dataset.r&&st>0&&q>st){prendre=st;txt+=` · ${d.dataset.stt} en stock, il en manque ${f1(q-st)} ${pl(2,u)}`}
   else if(d.dataset.r&&st>0&&ok)txt+=` · ${d.dataset.stt} en stock`;
   d.querySelector('.besoin').textContent=txt.replace(/^ · /,'');
+  d.dataset.rang=!d.dataset.r?2:(!ok||(st>0&&q>st))?1:0;
   if(d.dataset.r){const p=+d.dataset.p;if(p>0&&ok)tot+=p*prendre;d.querySelector('.ex-prix').textContent=!ok?'à voir':p>0?eur(p*prendre):'prix au comptoir';tout.push(d.dataset.r+':'+prendre)}});
+ // complet en tête, puis à compléter, puis à trouver ailleurs
+ const Z=document.getElementById('ex-lignes');Z.querySelectorAll('.ex-groupe').forEach(h=>h.remove());
+ const G=['Complet en stock','À compléter (stock insuffisant ou quantité à voir)','À trouver ailleurs'];
+ [...Z.querySelectorAll('.ex-ligne')].sort((x,y)=>x.dataset.rang-y.dataset.rang).forEach((d,i,T)=>{if(!i||T[i-1].dataset.rang!==d.dataset.rang){const h=document.createElement('h3');h.className='ex-groupe';h.textContent=G[d.dataset.rang];Z.append(h)}Z.append(d)});
  document.getElementById('ex-total').textContent=eur(tot);
  const b=document.getElementById('ex-tout'),T=JSON.parse(b.dataset.tout);T.forEach(a=>{const x=tout.find(s=>s.startsWith(a.r+':'));if(x)a.q=+x.split(':')[1]});b.dataset.tout=JSON.stringify(T)}
 if(F)F.addEventListener('input',calc);calc();
