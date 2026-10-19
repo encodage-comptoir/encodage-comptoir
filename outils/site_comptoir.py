@@ -139,9 +139,18 @@ def page(titre, desc, corps, prof='', image='', canon='', extra_head=''):
 <div>Un projet de <a href="{PILE}">La Pile asbl</a><br><a href="https://www.instagram.com/lapile_malmedy/">Instagram</a> · <a href="https://www.facebook.com/LaPileMalmedy/">Facebook</a></div>
 </div></footer></body></html>'''
 
+def stock_court(a):
+    # pastille sur la photo : le stock dans l'unité de vente, rien si non compté ou ambigu
+    n, u = a['_stock'], a['_unite']
+    if not n:
+        return ''
+    return f'{"≈ " if u == "m²" and "soit" in a["_stock_txt"] else ""}{nombre(n)} {u if u == "m²" else pluriel(n, u)} en stock'
+
 def carte(a, prof=''):
     eco = f'<span class="eco">−{a["_eco"]} % vs neuf</span>' if a['_eco'] >= 20 else ''
-    eco += f'<span class="co2-pastille">−{nombre(a["_co2"][0])} kg CO₂{"/m²" if a["_co2"][1] == "m²" else ""}</span>' if a['_co2'] else ''
+    bas = f'<span class="co2-pastille">−{nombre(a["_co2"][0])} kg CO₂{"/m²" if a["_co2"][1] == "m²" else ""}</span>' if a['_co2'] else ''
+    bas += f'<span class="stock-pastille">{stock_court(a)}</span>' if stock_court(a) else ''
+    eco += f'<div class="bas">{bas}</div>' if bas else ''
     return f'''<a class="carte" href="{prof}{a['_url']}"><div class="img"><img loading="lazy" src="{esc(a['_vignette'])}" alt="{esc(a['titre'])}">{eco}</div>
 <div class="txt"><h3>{esc(a['titre'])}</h3><p class="prix">{esc(a['_prix_txt'])}</p>{f'<p class="neuf">Neuf : {esc(a["_neuf_txt"])}</p>' if a['_neuf_txt'] else ''}</div></a>'''
 
@@ -167,7 +176,8 @@ for a in pub:
     neuf = (f'<p class="neuf-gros">Prix du neuf équivalent : <b>{esc(a["_neuf_txt"])}</b> <small>(indicatif : {esc(a["neuf"]["base"])})</small></p>'
             if a['_neuf_txt'] else '')
     pastilles = ((f'<span class="eco">−{a["_eco"]} % vs neuf</span>' if a['_eco'] >= 20 else '')
-                 + (f'<span class="co2-pastille">−{nombre(a["_co2"][0])} kg CO₂{"/m²" if a["_co2"][1] == "m²" else ""}</span>' if a['_co2'] else ''))
+                 + (f'<span class="co2-pastille">−{nombre(a["_co2"][0])} kg CO₂{"/m²" if a["_co2"][1] == "m²" else ""}</span>' if a['_co2'] else '')
+                 + (f'<span class="stock-pastille">{stock_court(a)}</span>' if stock_court(a) else ''))
     pastilles = f'<div class="pastilles">{pastilles}</div>' if pastilles else ''
     lien = BASE + a['_url']
     msg = f"Bonjour, je suis intéressé·e par l'article {a['ref']} ({a['titre']}). Est-il toujours disponible ?"
@@ -210,7 +220,7 @@ pub.sort(key=lambda a: a['_ordre'])
 # --- données pour le catalogue et « Faire avec » ---
 donnees = [{'r': a['ref'], 't': a['titre'], 'c': a['categorie'], 'f': a['famille'], 'p': a['_prix'], 'pt': a['_prix_txt'], 'n': a['_neuf_txt'],
             'e': a['_eco'], 'v': a['_vignette'], **dict(zip(('d1', 'd2', 'd3'), map(prix_num, trois(a)))), 'm': a['matiere'],
-            'co': a['couleur'], 's': a['_stock'], 'st': a['_stock_txt'], 'o': a['_empl'], 'c2': (nombre(a['_co2'][0]) + (' kg CO₂/m²' if a['_co2'][1] == 'm²' else ' kg CO₂')) if a['_co2'] else '', 'fo': a['fonctions'], 'i': a['idees'], 'k': ' '.join(a['mots_cles'] + [a['titre'], a['famille'], a['ref']]).lower()}
+            'co': a['couleur'], 's': a['_stock'], 'st': a['_stock_txt'], 'o': a['_empl'], 'sc': stock_court(a), 'c2': (nombre(a['_co2'][0]) + (' kg CO₂/m²' if a['_co2'][1] == 'm²' else ' kg CO₂')) if a['_co2'] else '', 'fo': a['fonctions'], 'i': a['idees'], 'k': ' '.join(a['mots_cles'] + [a['titre'], a['famille'], a['ref']]).lower()}
            for a in pub]
 json.dump(donnees, open(f'{out}/donnees.json', 'w'), ensure_ascii=False, separators=(',', ':'))
 
@@ -269,7 +279,7 @@ function maj(){{
   &&mots.every(w=>sans(a.k).includes(w)));
  if($('tri').value==='p')r.sort((a,b)=>(a.p||1e9)-(b.p||1e9));if($('tri').value==='e')r.sort((a,b)=>b.e-a.e);
  $('nb').textContent=r.length+' article'+(r.length>1?'s':'');
- $('liste').innerHTML=r.slice(0,240).map(a=>`<div class="carte-w"><a class="carte" href="article/${{a.r}}.html"><div class="img"><img loading="lazy" src="${{a.v}}" alt="${{esc(a.t)}}">${{a.e>=20?`<span class="eco">−${{a.e}} % vs neuf</span>`:''}}${{a.c2?`<span class="co2-pastille">−${{esc(a.c2)}}</span>`:''}}</div><div class="txt"><h3>${{esc(a.t)}}</h3><p class="prix">${{esc(a.pt)}}</p>${{a.n?`<p class="neuf">Neuf : ${{esc(a.n)}}</p>`:''}}</div></a><button class="ajout-mini" data-ajout="${{esc(JSON.stringify({{r:a.r,t:a.t,p:a.p,pt:a.pt,v:a.v,s:a.s,st:a.st,o:a.o}}))}}">+ Ma liste</button></div>`).join('');
+ $('liste').innerHTML=r.slice(0,240).map(a=>`<div class="carte-w"><a class="carte" href="article/${{a.r}}.html"><div class="img"><img loading="lazy" src="${{a.v}}" alt="${{esc(a.t)}}">${{a.e>=20?`<span class="eco">−${{a.e}} % vs neuf</span>`:''}}${{a.c2||a.sc?`<div class="bas">${{a.c2?`<span class="co2-pastille">−${{esc(a.c2)}}</span>`:''}}${{a.sc?`<span class="stock-pastille">${{esc(a.sc)}}</span>`:''}}</div>`:''}}</div><div class="txt"><h3>${{esc(a.t)}}</h3><p class="prix">${{esc(a.pt)}}</p>${{a.n?`<p class="neuf">Neuf : ${{esc(a.n)}}</p>`:''}}</div></a><button class="ajout-mini" data-ajout="${{esc(JSON.stringify({{r:a.r,t:a.t,p:a.p,pt:a.pt,v:a.v,s:a.s,st:a.st,o:a.o}}))}}">+ Ma liste</button></div>`).join('');
  history.replaceState(null,'',$('cat').value?'#cat='+$('cat').value:location.pathname+location.search);
 }}
 document.querySelectorAll('#filtres input,#filtres select').forEach(e=>e.addEventListener('input',maj));
