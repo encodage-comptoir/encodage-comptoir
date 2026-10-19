@@ -281,7 +281,9 @@ function prepare(){
     it.couleur = fv("Couleur");
     it.etat = fv("État");
     it.inout = fv("Intérieur / extérieur", "Intérieur/extérieur") || f["Intérieur/extérieur"] || "";
-    it.L = num(fv("Largeur (cm)", "Largeur")); it.H = num(fv("Hauteur (cm)", "Hauteur")); it.P = num(fv("Profondeur (cm)", "Profondeur"));
+    // Mesures L1 ≥ L2 ≥ L3 (de la plus grande à la plus petite) ; les anciennes colonnes largeur/hauteur/profondeur sont rangées de la même façon
+    const m = [fv("L1 (cm)", "L1", "Largeur (cm)", "Largeur"), fv("L2 (cm)", "L2", "Profondeur (cm)", "Profondeur"), fv("L3 (cm)", "L3", "Hauteur (cm)", "Hauteur")].map(num).filter(x => x != null).sort((a,b) => b - a);
+    [it.L1, it.L2, it.L3] = [m[0] ?? null, m[1] ?? null, m[2] ?? null];
     it.forme = fv("Forme");
     it.arrivee = fv("Arrivée");
     it.emplacement = fv("Emplacement");
@@ -291,7 +293,7 @@ function prepare(){
     it.usages = [...new Set([...list(fv("Usages détournés")), ...f.usages])];
     it.transport = fv("Transport"); it.bricolage = fv("Bricolage");
     it.exemple = !!fiche && norm(fiche["Mesuré"]) === "non";
-    it.detail = !!(fiche && (it.L || it.matiere));
+    it.detail = !!(fiche && (it.L1 || it.matiere));
     it.toks = t;
     it.search = norm([ref, nom, f.Famille, it.matiere, it.couleur].join(" "));
     D.items.push(it);
@@ -338,12 +340,12 @@ const SORTS = {
   prixDesc: { label: "Prix décroissant", fn: (a,b) => b.prix - a.prix },
   az: { label: "De A à Z", fn: (a,b) => a.nom.localeCompare(b.nom, "fr") },
   stock: { label: "Plus grande quantité", fn: (a,b) => b.stock - a.stock },
-  taille: { label: "Plus grandes dimensions", fn: (a,b) => ((b.L || 0) * (b.H || 0)) - ((a.L || 0) * (a.H || 0)) },
+  taille: { label: "Plus grandes dimensions", fn: (a,b) => ((b.L1 || 0) * (b.L2 || 1)) - ((a.L1 || 0) * (a.L2 || 1)) },
   arrivee: { label: "Arrivées récentes", fn: (a,b) => (b.arrivee || "").localeCompare(a.arrivee || "") },
 };
 
 // ---------- Rendu commun ----------
-function dims(it){ if(!it.L && !it.H) return ""; return [it.L, it.H, it.P].filter(x => x != null).map(x => String(x).replace(".", ",")).join(" × ") + " cm"; }
+function dims(it){ if(!it.L1) return ""; return [it.L1, it.L2, it.L3].filter(x => x != null).map(x => String(x).replace(".", ",")).join(" × ") + " cm"; }
 function tile(it, big){
   const img = it.photos.length ? `<img src="${esc(photoUrl(it.photos[0]))}" alt="" loading="lazy" onerror="this.remove()">` : "";
   return `<div class="tile" style="background:${it.famille.color}">${it.famille.Pictogramme || "📦"}${img}${big ? "" : `<span class="ref">${esc(it.ref || "sans réf.")}</span>`}</div>`;
@@ -435,7 +437,7 @@ function pageQuestion(app, q){
 }
 
 // Porte 1 : filtres
-const F = { q:"", fam:"", mat:"", inout:"", etat:"", Lmin:"", Lmax:"", Hmin:"", Hmax:"", tol:"5", prix:"", detail:false, tri:"pertinence" };
+const F = { q:"", fam:"", mat:"", inout:"", etat:"", L1min:"", L1max:"", L2min:"", L2max:"", L3min:"", L3max:"", tol:"5", prix:"", detail:false, tri:"pertinence" };
 let shown = 48;
 function pageChercher(app, arg){
   if(arg) { Object.assign(F, { q:"", fam:"", mat:"", inout:"", etat:"" }); F.fam = arg; }
@@ -443,15 +445,14 @@ function pageChercher(app, arg){
   const fams = [...new Set(D.items.map(i => i.famille.Famille))].sort((a,b) => a.localeCompare(b, "fr"));
   const mats = [...new Set(D.items.map(i => i.matiere).filter(Boolean))].sort((a,b) => a.localeCompare(b, "fr"));
   const etats = [...new Set(D.items.map(i => i.etat).filter(Boolean))];
-  app.innerHTML = crumbs("Je cherche un matériau") + `<h1>Je cherche un matériau</h1><p class="hint">Les dimensions sont en centimètres. La tolérance montre aussi ce qui est « presque » bon.</p>
+  app.innerHTML = crumbs("Je cherche un matériau") + `<h1>Je cherche un matériau</h1><p class="hint">Dimensions en centimètres, de la plus grande (L1) à la plus petite (L3), quel que soit le sens de l'objet. La tolérance montre aussi ce qui est « presque » bon.</p>
     <form class="filters" id="filt">
       <label>Mot-clé<input name="q" value="${esc(F.q)}" placeholder="porte, évier, chêne…"></label>
       <label>Famille<select name="fam">${opts(fams, F.fam, "Toutes")}</select></label>
       <label>Matière<select name="mat">${opts(mats, F.mat, "Toutes")}</select></label>
       <label>Intérieur / extérieur<select name="inout">${opts(["Intérieur","Extérieur"], F.inout, "Peu importe")}</select></label>
       <label>État<select name="etat">${opts(etats, F.etat, "Tous")}</select></label>
-      <label>Largeur (min – max)<span class="pair"><input name="Lmin" inputmode="numeric" value="${esc(F.Lmin)}" placeholder="min"><input name="Lmax" inputmode="numeric" value="${esc(F.Lmax)}" placeholder="max"></span></label>
-      <label>Hauteur (min – max)<span class="pair"><input name="Hmin" inputmode="numeric" value="${esc(F.Hmin)}" placeholder="min"><input name="Hmax" inputmode="numeric" value="${esc(F.Hmax)}" placeholder="max"></span></label>
+${["L1","L2","L3"].map((k, i) => `<label>${k} · ${["plus grande","moyenne","plus petite"][i]} (min – max)<span class="pair"><input name="${k}min" inputmode="numeric" value="${esc(F[k + "min"])}" placeholder="min"><input name="${k}max" inputmode="numeric" value="${esc(F[k + "max"])}" placeholder="max"></span></label>`).join("")}
       <label>Tolérance (± cm)<input name="tol" inputmode="numeric" value="${esc(F.tol)}"></label>
       <label>Prix max (€)<input name="prix" inputmode="numeric" value="${esc(F.prix)}"></label>
       <label class="check"><input type="checkbox" name="detail"${F.detail ? " checked" : ""}> Fiches détaillées seulement</label>
@@ -471,7 +472,7 @@ function filtered(){
     (!F.mat || it.matiere === F.mat) &&
     (!F.inout || it.inout === F.inout || it.inout === "Les deux") &&
     (!F.etat || it.etat === F.etat) &&
-    between(it.L, F.Lmin, F.Lmax) && between(it.H, F.Hmin, F.Hmax) &&
+    between(it.L1, F.L1min, F.L1max) && between(it.L2, F.L2min, F.L2max) && between(it.L3, F.L3min, F.L3max) &&
     (!num(F.prix) || (it.prix && it.prix <= num(F.prix))) &&
     (!F.detail || it.detail));
 }
@@ -484,7 +485,7 @@ function relevance(arr){
 function renderRes(){
   const s = SORTS[F.tri] || SORTS.pertinence;
   const base = filtered(), r = s.fn ? base.slice().sort((a,b) => s.fn(a,b) || a.nom.localeCompare(b.nom, "fr")) : relevance(base);
-  const withDims = r.filter(i => i.L).length, dimFilter = F.Lmin || F.Lmax || F.Hmin || F.Hmax;
+  const withDims = r.filter(i => i.L1).length, dimFilter = ["L1","L2","L3"].some(k => F[k + "min"] || F[k + "max"]);
   document.getElementById("res").innerHTML = `<p class="count">${r.length} article${r.length > 1 ? "s" : ""} · ${withDims} avec dimensions${dimFilter ? " (les articles sans dimensions sont masqués par ce filtre)" : ""}</p>
     ${r.length ? `<div class="grid">${cards(r.slice(0, shown))}</div>` : `<div class="empty">Rien ne correspond. Élargissez la tolérance ou retirez un filtre.</div>`}
     ${r.length > shown ? `<button class="btn ghost more" id="moreBtn" type="button">Afficher plus (${r.length - shown} restants)</button>` : ""}`;
@@ -674,7 +675,7 @@ function openItem(id){
   const ex = it.exemple ? ' <span class="badge ex">exemple</span>' : "";
   dlg.innerHTML = `<div class="dlg">${tile(it, true)}<h2>${esc(it.nom)}</h2>
     <table>${row("Référence", esc(it.ref || "sans référence"))}${row("Famille", esc(it.famille.Famille))}${row("Prix", euro(it.prix))}${row("En stock", it.stock)}
-    ${row("Dimensions", dims(it) && dims(it) + ex)}${row("Matière", it.matiere ? esc(it.matiere) + ex : (it.matiereFam ? esc(it.matiereFam) + " (selon la famille)" : ""))}
+    ${row("Dimensions (L1 × L2 × L3)", dims(it) && dims(it) + ex)}${row("Matière", it.matiere ? esc(it.matiere) + ex : (it.matiereFam ? esc(it.matiereFam) + " (selon la famille)" : ""))}
     ${row("Couleur", esc(it.couleur))}${row("État", it.etat && esc(it.etat) + ex)}${row("Intérieur / extérieur", esc(it.inout))}${row("Forme", esc(it.forme))}
     ${row("Emplacement au Comptoir", it.emplacement && (/^r$/i.test(it.emplacement) ? "Pas encore rangé (réception)" : esc(it.emplacement)))}${row("Transport", esc(it.transport))}${row("Bricolage", esc(it.bricolage))}</table>
     ${it.fonctions.length ? `<strong>Peut servir à</strong><div class="chips">${it.fonctions.map(f => `<a class="chip" href="#fonction/${encodeURIComponent(f)}">${esc(f)}</a>`).join("")}</div>` : ""}

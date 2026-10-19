@@ -11,7 +11,7 @@ Site statique, sans serveur ni IA : il lit les fichiers du dossier `donnees/`.
 | --- | --- | --- |
 | `stock.csv` | Export stock d'Impulsion (Référence ; Nom ; Stock ; PV particulier TVAc) | Remplacer par un nouvel export. Retirer d'abord les colonnes de prix d'achat : ce dépôt est public. |
 | `familles.csv` | Familles de matériaux, reconnues par mots du nom puis par préfixe de référence, avec leurs fonctions et usages détournés | Rarement |
-| `fiches.csv` | Détails par référence, mêmes colonnes que l'export « caractéristiques » de l'app d'encodage (Emplacement compris ; + Famille, Fonctions, Usages détournés, Bricolage, Mesuré). Les valeurs actuelles sont des exemples (`Mesuré` = non) | Coller les lignes de l'export de l'app |
+| `fiches.csv` | Détails par référence, mêmes colonnes que l'export « caractéristiques » (mesures L1 ≥ L2 ≥ L3 en cm) de l'app d'encodage (Emplacement compris ; + Famille, Fonctions, Usages détournés, Bricolage, Mesuré). Les valeurs actuelles sont des exemples (`Mesuré` = non) | Coller les lignes de l'export de l'app |
 | `fonctions.csv` | Fonctions et leurs synonymes | Rarement |
 | `projets.csv` | Une ligne par poste de projet : familles, fonction ou mots du nom à chercher | Après chaque atelier |
 | `ambiances.csv` | Pièces complètes : une ligne par rôle (référence, calcul `sol` / `murs` / `plinthes` / `perimetre` ou quantité fixe, couverture par unité de stock), dimensions de pièce par défaut | Quand le stock change |
