@@ -5,7 +5,7 @@
 <meta property="og:title" content="Faire avec – Comptoir des Matériaux"><meta property="og:description" content="Des projets et des idées pour réutiliser les matériaux du Comptoir : salle de bain, potager, abri, atelier…">
 <link rel="canonical" href="https://encodage-comptoir.github.io/encodage-comptoir/comptoir/faire-avec.html">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=0c08d713"><script src="panier.js?v=0c08d713" defer></script>
+<link rel="stylesheet" href="style.css?v=79077881"><script src="panier.js?v=79077881" defer></script>
 </head><body>
 <div class="maquette">Maquette : catalogue de test, prix et textes à valider par l'équipe.</div>
 <header class="haut"><div class="haut-in">
@@ -34,7 +34,7 @@
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);let D=[];
 function voir(f){document.querySelectorAll('[data-f]').forEach(b=>b.classList.toggle('sel',b.dataset.f===f));
  document.getElementById('titre-f').textContent=f;
- document.getElementById('liste').innerHTML=D.filter(a=>a.fo.includes(f)).map(a=>`<div class="carte-w"><a class="carte" href="article/${a.r}.html"><div class="img"><img loading="lazy" src="${a.v}" alt=""></div><div class="txt"><h3>${esc(a.t)}</h3><p class="prix">${esc(a.pt)}</p><ul class="mini-idees">${a.i.map(i=>`<li>${esc(i)}</li>`).join('')}</ul></div></a><button class="ajout-mini" data-ajout="${esc(JSON.stringify({r:a.r,t:a.t,p:a.p,pt:a.pt,v:a.v,s:a.s,st:a.st,o:a.o}))}">+ Ma liste</button></div>`).join('');
+ document.getElementById('liste').innerHTML=D.filter(a=>a.fo.includes(f)).map(a=>`<div class="carte-w"><a class="carte" href="article/${a.r}.html"><div class="img"><img loading="lazy" src="${a.v}" alt=""></div><div class="txt"><h3>${esc(a.t)}</h3><p class="prix">${esc(a.pt)}${a.pm?`<small class="prix-m2">${esc(a.pm)}</small>`:''}</p><ul class="mini-idees">${a.i.map(i=>`<li>${esc(i)}</li>`).join('')}</ul></div></a><button class="ajout-mini" data-ajout="${esc(JSON.stringify({r:a.r,t:a.t,p:a.p,pt:a.pt,v:a.v,s:a.s,st:a.st,o:a.o}))}">+ Ma liste</button></div>`).join('');
  history.replaceState(null,'','#'+encodeURIComponent(f));document.getElementById('titre-f').scrollIntoView({behavior:'smooth'})}
 document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>voir(b.dataset.f));
 fetch('donnees.json').then(r=>r.json()).then(d=>{D=d;const h=decodeURIComponent(location.hash.slice(1));if(h)voir(h)});
