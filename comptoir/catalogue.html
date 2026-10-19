@@ -5,7 +5,7 @@
 <meta property="og:title" content="Catalogue – Comptoir des Matériaux"><meta property="og:description" content="Tous les matériaux de réemploi disponibles au Comptoir des Matériaux à Malmedy, avec recherche par dimensions.">
 <link rel="canonical" href="https://encodage-comptoir.github.io/encodage-comptoir/comptoir/catalogue.html">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=744bc0ee"><script src="panier.js?v=744bc0ee" defer></script>
+<link rel="stylesheet" href="style.css?v=adfca646"><script src="panier.js?v=adfca646" defer></script>
 </head><body>
 <div class="maquette">Maquette : catalogue de test, prix et textes à valider par l'équipe.</div>
 <header class="haut"><div class="haut-in">
@@ -43,7 +43,7 @@ function maj(){
   &&mots.every(w=>sans(a.k).includes(w)));
  if($('tri').value==='p')r.sort((a,b)=>(a.p||1e9)-(b.p||1e9));if($('tri').value==='e')r.sort((a,b)=>b.e-a.e);
  $('nb').textContent=r.length+' article'+(r.length>1?'s':'');
- $('liste').innerHTML=r.slice(0,240).map(a=>`<div class="carte-w"><a class="carte" href="article/${a.r}.html"><div class="img"><img loading="lazy" src="${a.v}" alt="${esc(a.t)}">${a.e>=20?`<span class="eco">−${a.e} % vs neuf</span>`:''}</div><div class="txt"><h3>${esc(a.t)}</h3><p class="prix">${esc(a.pt)}</p>${a.n?`<p class="neuf">Neuf : ${esc(a.n)}</p>`:''}${a.c2?`<p class="co2-mini">≈ ${esc(a.c2)}</p>`:''}</div></a><button class="ajout-mini" data-ajout="${esc(JSON.stringify({r:a.r,t:a.t,p:a.p,pt:a.pt,v:a.v,s:a.s,st:a.st,o:a.o}))}">+ Ma liste</button></div>`).join('');
+ $('liste').innerHTML=r.slice(0,240).map(a=>`<div class="carte-w"><a class="carte" href="article/${a.r}.html"><div class="img"><img loading="lazy" src="${a.v}" alt="${esc(a.t)}">${a.e>=20?`<span class="eco">−${a.e} % vs neuf</span>`:''}${a.c2?`<span class="co2-pastille">−${esc(a.c2)}</span>`:''}</div><div class="txt"><h3>${esc(a.t)}</h3><p class="prix">${esc(a.pt)}</p>${a.n?`<p class="neuf">Neuf : ${esc(a.n)}</p>`:''}</div></a><button class="ajout-mini" data-ajout="${esc(JSON.stringify({r:a.r,t:a.t,p:a.p,pt:a.pt,v:a.v,s:a.s,st:a.st,o:a.o}))}">+ Ma liste</button></div>`).join('');
  history.replaceState(null,'',$('cat').value?'#cat='+$('cat').value:location.pathname+location.search);
 }
 document.querySelectorAll('#filtres input,#filtres select').forEach(e=>e.addEventListener('input',maj));

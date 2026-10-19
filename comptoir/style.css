@@ -171,3 +171,7 @@ nav a:hover{color:var(--jaune)}
 .co2 small{color:var(--gris);font-size:13px}
 .co2-mini{font-size:12px;color:#3f7d3a;margin:2px 0 0;font-weight:600}
 .co2 summary{font-size:13px;color:#3f7d3a;cursor:pointer}
+.co2-pastille{position:absolute;left:8px;bottom:8px;background:#3f7d3a;color:#fff;font-weight:700;font-size:12px;padding:3px 8px;border-radius:20px}
+.galerie{position:relative}
+.pastilles{position:absolute;left:10px;top:10px;display:flex;flex-direction:column;align-items:flex-start;gap:6px;pointer-events:none}
+.pastilles .eco,.pastilles .co2-pastille{position:static;font-size:14px;padding:4px 12px}
