@@ -148,11 +148,10 @@ def stock_court(a):
 
 def carte(a, prof=''):
     eco = f'<span class="eco">−{a["_eco"]} % vs neuf</span>' if a['_eco'] >= 20 else ''
-    bas = f'<span class="co2-pastille">−{nombre(a["_co2"][0])} kg CO₂{"/m²" if a["_co2"][1] == "m²" else ""}</span>' if a['_co2'] else ''
-    bas += f'<span class="stock-pastille">{stock_court(a)}</span>' if stock_court(a) else ''
-    eco += f'<div class="bas">{bas}</div>' if bas else ''
+    bas = f'<span class="stock-pastille">{stock_court(a)}</span>' if stock_court(a) else ''
+    co2 = f'<p class="co2-mini">−{nombre(a["_co2"][0])} kg CO₂{"/m²" if a["_co2"][1] == "m²" else ""} évités vs neuf</p>' if a['_co2'] else ''
     return f'''<a class="carte" href="{prof}{a['_url']}"><div class="img"><img loading="lazy" src="{esc(a['_vignette'])}" alt="{esc(a['titre'])}">{eco}</div>
-<div class="txt"><h3>{esc(a['titre'])}</h3><p class="prix">{esc(a['_prix_txt'])}</p>{f'<p class="neuf">Neuf : {esc(a["_neuf_txt"])}</p>' if a['_neuf_txt'] else ''}</div></a>'''
+<div class="txt"><h3>{esc(a['titre'])}</h3><p class="prix">{esc(a['_prix_txt'])}</p>{f'<p class="neuf">Neuf : {esc(a["_neuf_txt"])}</p>' if a['_neuf_txt'] else ''}{co2}{f'<p class="dispo">{bas}</p>' if bas else ''}</div></a>'''
 
 def dims(a):
     v = [x for x in trois(a) if x]
@@ -175,9 +174,7 @@ for a in pub:
                 f'<small>Calcul : {esc(calcul)}.</small><details><summary>Source et méthode</summary><small>{esc(CO2_NOTE)} Jeu de données : <a href="{esc(lien)}">{esc(jeu)}</a>.</small></details></div>')
     neuf = (f'<p class="neuf-gros">Prix du neuf équivalent : <b>{esc(a["_neuf_txt"])}</b> <small>(indicatif : {esc(a["neuf"]["base"])})</small></p>'
             if a['_neuf_txt'] else '')
-    pastilles = ((f'<span class="eco">−{a["_eco"]} % vs neuf</span>' if a['_eco'] >= 20 else '')
-                 + (f'<span class="co2-pastille">−{nombre(a["_co2"][0])} kg CO₂{"/m²" if a["_co2"][1] == "m²" else ""}</span>' if a['_co2'] else '')
-                 + (f'<span class="stock-pastille">{stock_court(a)}</span>' if stock_court(a) else ''))
+    pastilles = f'<span class="eco">−{a["_eco"]} % vs neuf</span>' if a['_eco'] >= 20 else ''
     pastilles = f'<div class="pastilles">{pastilles}</div>' if pastilles else ''
     lien = BASE + a['_url']
     msg = f"Bonjour, je suis intéressé·e par l'article {a['ref']} ({a['titre']}). Est-il toujours disponible ?"
@@ -279,7 +276,7 @@ function maj(){{
   &&mots.every(w=>sans(a.k).includes(w)));
  if($('tri').value==='p')r.sort((a,b)=>(a.p||1e9)-(b.p||1e9));if($('tri').value==='e')r.sort((a,b)=>b.e-a.e);
  $('nb').textContent=r.length+' article'+(r.length>1?'s':'');
- $('liste').innerHTML=r.slice(0,240).map(a=>`<div class="carte-w"><a class="carte" href="article/${{a.r}}.html"><div class="img"><img loading="lazy" src="${{a.v}}" alt="${{esc(a.t)}}">${{a.e>=20?`<span class="eco">−${{a.e}} % vs neuf</span>`:''}}${{a.c2||a.sc?`<div class="bas">${{a.c2?`<span class="co2-pastille">−${{esc(a.c2)}}</span>`:''}}${{a.sc?`<span class="stock-pastille">${{esc(a.sc)}}</span>`:''}}</div>`:''}}</div><div class="txt"><h3>${{esc(a.t)}}</h3><p class="prix">${{esc(a.pt)}}</p>${{a.n?`<p class="neuf">Neuf : ${{esc(a.n)}}</p>`:''}}</div></a><button class="ajout-mini" data-ajout="${{esc(JSON.stringify({{r:a.r,t:a.t,p:a.p,pt:a.pt,v:a.v,s:a.s,st:a.st,o:a.o}}))}}">+ Ma liste</button></div>`).join('');
+ $('liste').innerHTML=r.slice(0,240).map(a=>`<div class="carte-w"><a class="carte" href="article/${{a.r}}.html"><div class="img"><img loading="lazy" src="${{a.v}}" alt="${{esc(a.t)}}">${{a.e>=20?`<span class="eco">−${{a.e}} % vs neuf</span>`:''}}</div><div class="txt"><h3>${{esc(a.t)}}</h3><p class="prix">${{esc(a.pt)}}</p>${{a.n?`<p class="neuf">Neuf : ${{esc(a.n)}}</p>`:''}}${{a.c2?`<p class="co2-mini">−${{esc(a.c2)}} évités vs neuf</p>`:''}}${{a.sc?`<p class="dispo"><span class="stock-pastille">${{esc(a.sc)}}</span></p>`:''}}</div></a><button class="ajout-mini" data-ajout="${{esc(JSON.stringify({{r:a.r,t:a.t,p:a.p,pt:a.pt,v:a.v,s:a.s,st:a.st,o:a.o}}))}}">+ Ma liste</button></div>`).join('');
  history.replaceState(null,'',$('cat').value?'#cat='+$('cat').value:location.pathname+location.search);
 }}
 document.querySelectorAll('#filtres input,#filtres select').forEach(e=>e.addEventListener('input',maj));

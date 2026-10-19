@@ -176,5 +176,6 @@ nav a:hover{color:var(--jaune)}
 .pastilles{position:absolute;left:10px;top:10px;display:flex;flex-direction:column;align-items:flex-start;gap:6px;pointer-events:none}
 .carte .bas{position:absolute;left:8px;bottom:8px;display:flex;flex-direction:column;align-items:flex-start;gap:4px}
 .carte .bas span{position:static}
-.stock-pastille{background:var(--violet);color:#fff;font-weight:700;font-size:12px;padding:3px 8px;border-radius:20px;box-shadow:0 1px 3px rgba(0,0,0,.25)}
+.dispo{margin:6px 0 0}
+.stock-pastille{display:inline-block;background:var(--violet);color:#fff;font-weight:700;font-size:12px;padding:3px 8px;border-radius:20px;box-shadow:0 1px 3px rgba(0,0,0,.25)}
 .pastilles .eco,.pastilles .co2-pastille,.pastilles .stock-pastille{position:static;font-size:14px;padding:4px 12px}
