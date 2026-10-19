@@ -215,7 +215,6 @@ donnees = [{'r': a['ref'], 't': a['titre'], 'c': a['categorie'], 'f': a['famille
 json.dump(donnees, open(f'{out}/donnees.json', 'w'), ensure_ascii=False, separators=(',', ':'))
 
 # --- accueil ---
-tuiles = ''.join(f'<a class="tuile" href="catalogue.html#cat={slug(c)}"><span>{ICONES.get(c, "•")}</span>{esc(c)}<small>{sum(1 for a in pub if a["categorie"] == c)} articles</small></a>' for c in CATS)
 # bonnes affaires : une par famille, grosses pièces d'abord
 choix, vues = [], set()
 for a in sorted([a for a in pub if a['statut'] == 'ok' and a['_eco'] >= 40 and len(a['photos']) > 1], key=lambda a: (-poids(a), -a['_eco'])):
@@ -224,7 +223,6 @@ for a in sorted([a for a in pub if a['statut'] == 'ok' and a['_eco'] >= 40 and l
 corps = f'''<section class="hero"><div class="hero-in"><h1>Comptoir des<br><span>Matériaux</span></h1>
 <p>Matériaux de construction de réemploi à Malmedy : sanitaires, portes, châssis, carrelage, bois… jusqu’à 90 % moins chers que le neuf.</p>
 <form action="catalogue.html" class="cherche"><input name="q" placeholder="Que cherchez-vous ? évier, porte 83 cm, carrelage…" aria-label="Rechercher"><button>Chercher</button></form></div></section>
-<section class="bande-jaune"><div class="contenu"><h2>Par rayon</h2><div class="tuiles">{tuiles}</div></div></section>
 <section class="contenu"><h2>Bonnes affaires du moment</h2><div class="grille">{''.join(carte(a) for a in choix)}</div>
 <p class="centre"><a class="bouton" href="catalogue.html">Voir les {len(pub)} articles</a></p></section>
 <section class="bande-bleue"><div class="contenu"><h2>Faire avec</h2><p>Un projet en tête ? Une cloison, un potager, une cabane… Choisissez ce que vous voulez faire, on vous montre ce qui peut servir.</p>
