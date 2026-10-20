@@ -1,6 +1,6 @@
 "use strict";
 // Caisse & stock du Comptoir des Matériaux. Tout est gardé sur l'appareil (IndexedDB) ; rien n'est écrit dans Impulsion.
-const VERSION="2.2 (essai)";
+const VERSION="2.3 (essai)";
 const CATS=[["SA","Sanitaire"],["PA","Parois de douche"],["CH","Châssis"],["PO","Portes"],["CAR","Carrelage"],["GRO","Gros œuvre"],["RA","Chauffage"],
  ["ELEC","Électricité"],["LUM","Luminaires"],["BOI","Bois"],["PAR","Parquet & bardage"],["LAM","Lambris"],["TOI","Toiture"],["ISO","Isolant"],
  ["Q","Quincaillerie"],["OUT","Outillage"],["ELECTRO","Électroménager"],["DIV","Divers"]];
@@ -101,6 +101,12 @@ const reste=a=>(STK[a.r]||{}).reste??(a.s==null?null:a.s);
 const statut=a=>{const r=reste(a);if(a.horsLigne)return "hors";if(r!=null&&r<=0)return (STK[a.r]||{}).vendu?"vendu":"rupture";return "ok"};
 const STATUTS={ok:["En stock","ok"],vendu:["Vendu","violet"],rupture:["Plus en stock","bad"],hors:["Hors ligne","jaune"]};
 
+// Carrelage : vendu à la pièce, avec les m² que ça couvre (comme briques et pavés sur le site).
+// Impulsion le note au m² mais compte le stock en carreaux : prix ramené au carreau (m² = surface d'un carreau L1 × L2).
+function aLaPiece(a){if(a.c!=="CAR"||a.u!=="m²")return;const L=num(a.L),l=num(a.l);if(!(L>0&&l>0))return;
+ a.pm=1e4/(L*l);if(a.p)a.p=r2(a.p/a.pm);a.u="pièce"}
+const m2Txt=(a,n)=>a.pm&&n>0?` (≈ ${nb(n/a.pm).replace(/,00$/,"")} m²)`:"";
+
 // ---------- Navigation ----------
 const ONGLETS={caisse:"Caisse",stock:"Stock",mouv:"Mouvements",carnet:"Carnet",rapports:"Rapports",reglages:"Réglages"};
 let screen="caisse";
@@ -158,17 +164,17 @@ function resultats(){const mots=sans(q).split(/\s+/).filter(Boolean);
 const totalPanier=()=>r2(panier.reduce((t,l)=>t+(l.p||0)*(l.q||0),0));
 const qSaisie=l=>l.u&&l.u!=="pièce";
 function ajouterAuPanier(a){const l=panier.find(x=>x.id===a.r);
- if(l){if(!qSaisie(l))l.q++}else panier.push({id:a.r,r:refAff(a),n:a.n,t:a.t,p:a.p||null,q:qSaisie(a)?null:1,u:a.u,c:a.c,m:a.m,kg:a.kg,kgEst:a.kgEst,L:a.L,l:a.l,h:a.h});
+ if(l){if(!qSaisie(l))l.q++}else panier.push({id:a.r,r:refAff(a),n:a.n,t:a.t,p:a.p||null,q:qSaisie(a)?null:1,u:a.u,c:a.c,m:a.m,kg:a.kg,kgEst:a.kgEst,L:a.L,l:a.l,h:a.h,pm:a.pm});
  const r=reste(a);toast(a.n+" ajouté"+(r!=null&&r<=0?" (stock à 0 : à vérifier)":""),r!=null&&r<=0);render()}
 const vignette=a=>a.f?`<img src="${esc(a.f)}" alt="" loading="lazy" onerror="this.remove()">`:"";
 function ecranCaisse(){const res=resultats(),t=totalPanier();
  const cats=CATS.filter(c=>CAT.some(a=>a.c===c[0]));
  const cartes=res.slice(0,48).map(a=>{const r=reste(a),st=statut(a);
   return `<button class="art" data-add="${esc(a.r)}"><span class="ph">${esc(a.c||"")}${vignette(a)}${st!=="ok"?`<span class="st pill ${STATUTS[st][1]}">${STATUTS[st][0]}</span>`:""}</span>
-   <span class="tx"><span class="nm">${esc(a.n)}</span><span class="rf">${esc(refAff(a))||"sans réf."}${a.e?" · "+esc(a.e):""}${r!=null&&r>0?" · stock "+virg(r):""}</span>
+   <span class="tx"><span class="nm">${esc(a.n)}</span><span class="rf">${esc(refAff(a))||"sans réf."}${a.e?" · "+esc(a.e):""}${r!=null&&r>0?" · stock "+virg(r)+m2Txt(a,r):""}</span>
    <span class="px">${a.p?eur(a.p):'<span class="pill jaune">prix ?</span>'}${a.u&&a.u!=="pièce"?` <small class="muted">/ ${esc(a.u)}</small>`:""}</span></span></button>`}).join("");
  const lignes=panier.map((l,i)=>`<div class="tl">
-  <div class="n">${l.id||l.liv?esc(l.n)+` <small>${esc(l.r)}</small>`:`<input class="champ" data-nom="${i}" placeholder="Ce qui est vendu (ex. lot de planches)" value="${esc(l.n)}">`}</div>
+  <div class="n">${l.id||l.liv?esc(l.n)+` <small>${esc(l.r)}</small>`+(l.pm?` <small class="muted m2">${m2Txt(l,l.q)}</small>`:""):`<input class="champ" data-nom="${i}" placeholder="Ce qui est vendu (ex. lot de planches)" value="${esc(l.n)}">`}</div>
   <div class="tot">${l.p==null||!l.q?"":eur(l.p*l.q)}</div>
   <div class="ctl">${qSaisie(l)
    ?`<span class="qte"><input data-q="${i}" inputmode="decimal" value="${virg(l.q)}" aria-label="Quantité" class="${l.q>0?"":"need"}"></span><span class="muted">${esc(l.u)}</span>`
@@ -255,7 +261,7 @@ function brancherCaisse(){const i=$("#scanIn");
  $$("[data-suppr]").forEach(b=>b.onclick=()=>{panier.splice(b.dataset.suppr,1);render()});
  // Prix et quantité : mise à jour sur place, sans redessiner l'écran (sinon le clic suivant, sur un mode de paiement, se perd).
  const majLigne=i=>{const l=panier[i],el=$$(".tl")[i];if(el){el.querySelector(".tot").textContent=l.p==null||!l.q?"":eur(l.p*l.q);
-  const pr=el.querySelector("[data-prix]");if(pr)pr.classList.toggle("need",l.p==null);const qt=el.querySelector("[data-q]");if(qt&&qSaisie(l))qt.classList.toggle("need",!(l.q>0))}
+  const m2=el.querySelector(".m2");if(m2)m2.textContent=m2Txt(l,l.q);const pr=el.querySelector("[data-prix]");if(pr)pr.classList.toggle("need",l.p==null);const qt=el.querySelector("[data-q]");if(qt&&qSaisie(l))qt.classList.toggle("need",!(l.q>0))}
   majTot();const pp=$("#payPlus");if(pp&&pay.mode==="especes"){const r=$("#rendu");if(r)r.innerHTML=renduHtml(totalPanier(),num(pay.recu))}};
  $$("[data-prix]").forEach(x=>x.oninput=()=>{panier[x.dataset.prix].p=num(x.value);majLigne(+x.dataset.prix)});
  $$("[data-q]").forEach(x=>x.oninput=()=>{panier[x.dataset.q].q=num(x.value);majLigne(+x.dataset.q)});
@@ -338,7 +344,7 @@ function ecranStock(){const L=stockListe(),T=stockTotaux(),PAR=100,pages=Math.ce
  ${L.slice(stPage*PAR,(stPage+1)*PAR).map(a=>{const r=reste(a),st=statut(a);
   return `<tr class="cl" data-art="${esc(a.r)}"><td><span class="vig">${a.f?`<img src="${esc(a.f)}" alt="" loading="lazy" onerror="this.remove()">`:esc(a.c||"")}</span></td>
   <td><b>${esc(refAff(a))||'<span class="muted">sans réf.</span>'}</b></td><td>${esc(a.n)}${a.src?' <span class="pill violet">nouvelle fiche</span>':""}</td><td>${esc(catLabel(a.c)||a.c||"")}</td><td>${esc(a.e||"")}</td>
-  <td class="r"><b>${r==null?"?":virg(r)}</b></td><td>${esc(a.u||"pièce")}</td><td class="r">${a.p?eur(a.p):'<span class="pill jaune">?</span>'}</td>
+  <td class="r"><b>${r==null?"?":virg(r)}</b>${a.pm&&r>0?`<br><small class="muted">${m2Txt(a,r).trim()}</small>`:""}</td><td>${esc(a.u||"pièce")}</td><td class="r">${a.p?eur(a.p):'<span class="pill jaune">?</span>'}</td>
   <td class="r">${a.kg!=null?virg(a.kg)+" kg":""}</td><td>${esc(a.m||"")}</td><td><span class="pill ${STATUTS[st][1]}">${STATUTS[st][0]}</span></td></tr>`}).join("")||'<tr><td colspan="11" class="vide">Aucun article.</td></tr>'}
  </tbody></table></div>
  <div class="outils" style="margin-top:10px"><span class="muted">${L.length} article${L.length>1?"s":""}</span>${pages>1?`<span style="flex:1"></span><button class="btn clair petit" data-pg="-1" ${stPage?"":"disabled"}>‹ Précédents</button><span class="muted">page ${stPage+1} / ${pages}</span><button class="btn clair petit" data-pg="1" ${stPage<pages-1?"":"disabled"}>Suivants ›</button>`:""}</div>
@@ -365,7 +371,7 @@ function ouvrirPanneau(r,refresh,nouveau){
  <div class="ph-h"><h2>${nouveau?"Nouvel article":esc(refAff(a)||"sans réf.")+" · "+esc(a.n)}</h2><button class="x" data-fermep aria-label="Fermer">×</button></div>
  <div class="corps">
   ${nouveau?"":`<div style="display:flex;gap:14px;align-items:center">${a.f?`<img src="${esc(a.f)}" alt="" style="width:110px;height:82px;object-fit:cover;border-radius:10px">`:""}
-   <div><div class="stockbig">${rs==null?"?":virg(rs)} <small class="muted">${esc(a.u||"pièce")} en stock</small></div>
+   <div><div class="stockbig">${rs==null?"?":virg(rs)} <small class="muted">${esc(a.u||"pièce")} en stock${m2Txt(a,rs)}</small></div>
    <span class="pill ${STATUTS[statut(a)][1]}">${STATUTS[statut(a)][0]}</span> ${S.compte?`<span class="muted">compté le ${dateBe(jour(new Date(S.compte)))}</span>`:""}</div></div>
   <div class="mv"><button class="btn clair petit" data-mv="entree">+ Entrée</button><button class="btn clair petit" data-mv="sortie">− Sortie (casse, don…)</button><button class="btn clair petit" data-mv="correction">Comptage sur place</button></div>
   <div id="mvForm"></div>`}
@@ -709,8 +715,10 @@ const sansSecrets=r=>{const o={...r};delete o.ghJeton;delete o.ghPhrase;Object.k
  try{HIST=await (await fetch("historique.json")).json()}catch(e){HIST=[]}
  appliquerArticles();
  nbFiches=ajouterFiches(await lireFiches("comptoir"),"app")+ajouterFiches(await lireFiches("comptoir-essai"),"essai");
- CAT.forEach(a=>{indexer(a);if(!a.m)a.m=Poids.matiere({nom:a.t||a.n,titre:a.n,cat:a.c});
-  if(a.kg==null){const r=Poids.estimer({nom:a.t||a.n,titre:a.n,cat:a.c,matiere:a.m,unite:a.u,L:a.L,l:a.l,h:a.h});a.kg=r?r.kg:null;a.kgEst=!!r}});
+ CAT.forEach(a=>{aLaPiece(a);indexer(a);if(!a.m)a.m=Poids.matiere({nom:a.t||a.n,titre:a.n,cat:a.c});
+  if(a.kg==null){const r=Poids.estimer({nom:a.t||a.n,titre:a.n,cat:a.c,matiere:a.m,unite:a.u,L:a.L,l:a.l,h:a.h});a.kg=r?r.kg:null;a.kgEst=!!r;
+   // carreau : poids au m² estimé, ramené à un carreau
+   if(a.kg==null&&a.pm){const m=Poids.estimer({nom:a.t||a.n,titre:a.n,cat:a.c,matiere:a.m,unite:"m²",L:a.L,l:a.l,h:a.h});if(m){a.kg=r2(m.kg/a.pm);a.kgEst=true}}}});
  calcStock();render();demarrerSync();
  $("#modal").addEventListener("keydown",e=>{if(e.key==="Escape")fermerModal()});
  document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(!$("#modal").hidden)fermerModal();else if(!$("#panneau").hidden)fermerPanneau()}});
