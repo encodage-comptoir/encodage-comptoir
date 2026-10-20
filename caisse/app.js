@@ -1,6 +1,6 @@
 "use strict";
 // Caisse & stock du Comptoir des Matériaux. Tout est gardé sur l'appareil (IndexedDB) ; rien n'est écrit dans Impulsion.
-const VERSION="2.1 (essai)";
+const VERSION="2.2 (essai)";
 const CATS=[["SA","Sanitaire"],["PA","Parois de douche"],["CH","Châssis"],["PO","Portes"],["CAR","Carrelage"],["GRO","Gros œuvre"],["RA","Chauffage"],
  ["ELEC","Électricité"],["LUM","Luminaires"],["BOI","Bois"],["PAR","Parquet & bardage"],["LAM","Lambris"],["TOI","Toiture"],["ISO","Isolant"],
  ["Q","Quincaillerie"],["OUT","Outillage"],["ELECTRO","Électroménager"],["DIV","Divers"]];
@@ -197,10 +197,24 @@ function ecranCaisse(){const res=resultats(),t=totalPanier();
   <button class="btn gros" id="valider" style="margin-top:12px" ${peutValider()?"":"disabled"}>Valider la vente</button>
   <p class="muted" id="manque" style="text-align:center;margin:6px 0 0">${peutValider()?"":esc(manque())}</p>
  </aside></div>`}
+// QR de virement européen (EPC / « scan to pay ») : l'app bancaire du client le lit, montant et communication déjà remplis.
+const ibanNet=i=>String(i||"").replace(/\s/g,"").toUpperCase();
+function ibanOk(i){i=ibanNet(i);if(!/^[A-Z]{2}\d{2}[A-Z0-9]{8,30}$/.test(i))return false;
+ const n=(i.slice(4)+i.slice(0,4)).replace(/[A-Z]/g,c=>c.charCodeAt(0)-55);let r=0;for(const c of n)r=(r*10+ +c)%97;return r===1}
+const communication=()=>`Comptoir ${dateBe(jour()).slice(0,5)} ticket ${ventes.filter(v=>v.date===jour()).length+1}`;
+function qrEpc(montant){const d=["BCD","002","1","SCT",(REG.bic||"").replace(/\s/g,"").toUpperCase(),(REG.beneficiaire||"La Pile asbl").slice(0,70),ibanNet(REG.iban),
+  "EUR"+montant.toFixed(2),"","",communication().slice(0,140)].join("\n");
+ qrcode.stringToBytes=qrcode.stringToBytesFuncs["UTF-8"];const q=qrcode(0,"M");q.addData(d,"Byte");q.make();return q.createSvgTag({cellSize:5,margin:2,scalable:true})}
+function qrPaiementHtml(t){
+ if(!ibanOk(REG.iban))return `<p class="muted" style="margin-top:10px">Pour afficher un QR de paiement, indiquez l'IBAN de La Pile dans Réglages › Paiement par QR code.</p>`;
+ if(!(t>0))return "";
+ return `<div class="qr-pay"><div class="qr-img">${qrEpc(t)}</div><div><b>${eur(t)}</b><br><span class="muted">Le client scanne avec l'app de sa banque, vérifie et confirme. Validez la vente quand il vous montre le paiement.</span>
+  <br><span class="muted">Communication : ${esc(communication())}</span><br><button class="chip" id="qrGrand" style="margin-top:6px">Afficher en grand</button></div></div>`}
 function payPlus(t){
  if(pay.mode==="especes"){const sugg=[...new Set([t,...[5,10,20,50,100].map(b=>Math.ceil(t/b)*b)])].filter(x=>x>=t&&x>0).slice(0,4);
   return `<div style="display:flex;gap:8px;align-items:center;margin-top:10px"><input class="champ" id="recu" inputmode="decimal" placeholder="Argent reçu (facultatif)" value="${esc(pay.recu)}"></div>
   <div class="billets">${sugg.map(x=>`<button class="chip" data-recu="${x}">${x===t?"Compte juste":eur(x).replace(",00","")}</button>`).join("")}</div><div id="rendu">${renduHtml(t,num(pay.recu))}</div>`}
+ if(pay.mode==="carte")return qrPaiementHtml(t);
  if(pay.mode==="facture")return `<div class="grille-f" style="margin-top:10px"><label class="f">N° de facture<input class="champ" id="fnum" placeholder="${esc(prochaineFacture())}" value="${esc(pay.fnum)}" autocomplete="off"></label></div>
   <div class="chips" style="margin-top:8px"><button class="chip ${pay.fpaye==="banque"?"sel":""}" data-fp="banque">Payée par banque</button><button class="chip ${pay.fpaye==="especes"?"sel":""}" data-fp="especes">Payée en espèces</button><button class="chip ${pay.fpaye==="attente"?"sel":""}" data-fp="attente">En attente de paiement</button></div>`;
  return ""}
@@ -222,6 +236,9 @@ function majValider(){const b=$("#valider");if(!b)return;b.disabled=!peutValider
 function peutValider(){const m=pay.mode;if(!m||!panierPret())return false;
  if(m==="especes"){const r=num(pay.recu);return pay.recu===""||(r!=null&&r>=totalPanier())}
  if(m==="facture")return !!pay.fpaye;return true}
+function brancherQr(){const g=$("#qrGrand");if(g)g.onclick=()=>{const t=totalPanier();
+ modal(`<div style="text-align:center"><h2>${eur(t)}</h2><p class="muted">Scannez avec l'app de votre banque</p><div class="qr-grand">${qrEpc(t)}</div>
+  <p class="muted">${esc(REG.beneficiaire||"La Pile asbl")} · ${esc(ibanNet(REG.iban).replace(/(.{4})/g,"$1 ").trim())}<br>${esc(communication())}</p><button class="btn" data-ferme>Fermer</button></div>`)}}
 function brancherCaisse(){const i=$("#scanIn");
  i.oninput=()=>{q=i.value;const pos=i.selectionStart;render();const j=$("#scanIn");j.focus();j.setSelectionRange(pos,pos)};
  i.onkeydown=e=>{if(e.key==="Enter"&&q.trim()){const r=lireCode(q.trim());if(r){e.preventDefault();q="";ajouterAuPanier(parRef(r));$("#scanIn").focus()}
@@ -231,7 +248,8 @@ function brancherCaisse(){const i=$("#scanIn");
  $("#libre").onclick=()=>{panier.push({r:"",n:"",p:null,q:1});render();const n=$$("[data-nom]");if(n.length)n[n.length-1].focus()};
  const lv=$("#livraison");if(lv)lv.onclick=()=>{panier.push({r:"",n:"Livraison",liv:1,u:"km",p:PRIX_KM,q:null});render();$(`[data-q="${panier.length-1}"]`).focus()};
  const v=$("#vider");if(v)v.onclick=()=>{if(confirm("Vider le ticket en cours ?")){panier=[];pay={mode:"",recu:"",fnum:"",fpaye:""};render()}};
- const majTot=()=>{$("#total").textContent=eur(totalPanier());majValider()};
+ const majTot=()=>{$("#total").textContent=eur(totalPanier());majValider();if(pay.mode==="carte"){$("#payPlus").innerHTML=payPlus(totalPanier());brancherQr()}};
+ brancherQr();
  $$("[data-plus]").forEach(b=>b.onclick=()=>{panier[b.dataset.plus].q++;render()});
  $$("[data-moins]").forEach(b=>b.onclick=()=>{const l=panier[b.dataset.moins];l.q--;if(l.q<=0)panier.splice(b.dataset.moins,1);render()});
  $$("[data-suppr]").forEach(b=>b.onclick=()=>{panier.splice(b.dataset.suppr,1);render()});
@@ -660,6 +678,10 @@ function ecranReglages(){return `<div class="titre"><h2>Réglages</h2></div><div
   <p class="muted">Dernière sauvegarde : ${REG.derniereSauvegarde?dateBe(jour(new Date(REG.derniereSauvegarde))):"jamais"}.</p></div>
  <div class="carte"><h3>Douchette</h3><p class="muted">Scannez un QR d'étiquette ici pour tester :</p><input class="champ" id="testScan" placeholder="Cliquez puis scannez" autocomplete="off"><div id="testRes" class="muted" style="margin-top:8px"></div>
   <p class="muted">La douchette doit être réglée en clavier AZERTY (code dans son manuel). Si elle reste en QWERTY, la caisse corrige d'elle-même.</p></div>
+ <div class="carte"><h3>Paiement par QR code</h3><p class="muted">Avec le mode « QR code », la caisse affiche un QR de virement avec le montant déjà rempli (norme européenne, lue par les apps des banques belges).</p>
+  <label class="f">IBAN de La Pile<input class="champ" id="rIban" value="${esc(REG.iban||"")}" placeholder="BE00 0000 0000 0000" autocomplete="off"></label>
+  <label class="f">Bénéficiaire<input class="champ" id="rBenef" value="${esc(REG.beneficiaire||"La Pile asbl")}"></label>
+  <label class="f">BIC (facultatif)<input class="champ" id="rBic" value="${esc(REG.bic||"")}" placeholder="ex. GEBABEBB"></label><p class="muted" id="rIbanOk">${REG.iban?(ibanOk(REG.iban)?"IBAN valide.":"IBAN incorrect : vérifiez-le."):""}</p></div>
  ${carteSync()}
  <div class="carte"><h3>Factures</h3><label class="f">Dernier n° de facture utilisé<input class="champ" id="dFact" value="${esc(REG.derniereFacture||"")}" placeholder="ex. F49-26"></label></div>
  <div class="carte"><h3>À propos</h3><p class="muted">Caisse & stock ${VERSION} · ${CAT.length} articles (export Impulsion du 14/10/2026, annonces du site, fiches) · ${ventes.length} tickets · ${MVT.length} mouvements.</p></div></div>`}
@@ -672,7 +694,9 @@ function brancherReglages(){
   for(const v of d.ventes||[])await put("ventes",v);for(const s of d.sorties||[])await put("sorties",s);for(const m of d.mouvements||[])await put("mouvements",m);
   for(const a of d.articles||[])await put("articles",a);for(const i of d.inventaire||[])await put("inventaire",i);location.reload()};
  const t=$("#testScan");t.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();const r=lireCode(t.value);$("#testRes").innerHTML=r?`Reconnu : <b>${esc(r)}</b> · ${esc(parRef(r).n)}`:`Non reconnu : « ${esc(t.value)} »`;t.value=""}};
- $("#dFact").onchange=e=>putSet("derniereFacture",e.target.value.trim().toUpperCase());brancherSync()}
+ $("#dFact").onchange=e=>putSet("derniereFacture",e.target.value.trim().toUpperCase());brancherSync();
+ $("#rIban").onchange=async e=>{const v=ibanNet(e.target.value);await putSet("iban",v);$("#rIbanOk").textContent=v?(ibanOk(v)?"IBAN valide.":"IBAN incorrect : vérifiez-le."):""};
+ $("#rBenef").onchange=e=>putSet("beneficiaire",e.target.value.trim()||"La Pile asbl");$("#rBic").onchange=e=>putSet("bic",e.target.value.trim())}
 
 // Le jeton GitHub et la phrase secrète ne sortent jamais de cet appareil.
 const sansSecrets=r=>{const o={...r};delete o.ghJeton;delete o.ghPhrase;Object.keys(o).forEach(k=>{if(k.startsWith("sha:")||k.startsWith("empreinte"))delete o[k]});return o};

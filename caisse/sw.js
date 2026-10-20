@@ -1,5 +1,5 @@
 // Garde la caisse disponible même sans réseau au comptoir.
-const C="caisse-v8", FILES=["./","index.html","style.css","app.js","sync.js","poids.js","catalogue.json","historique.json","manifest.webmanifest","icon-192.png","icon-512.png"];
+const C="caisse-v9", FILES=["./","index.html","style.css","app.js","sync.js","qrcode.js","poids.js","catalogue.json","historique.json","manifest.webmanifest","icon-192.png","icon-512.png"];
 self.addEventListener("install",e=>{e.waitUntil(caches.open(C).then(c=>c.addAll(FILES)));self.skipWaiting()});
 self.addEventListener("activate",e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x.startsWith("caisse-")&&x!==C).map(x=>caches.delete(x)))));self.clients.claim()});
 self.addEventListener("fetch",e=>{if(e.request.method!=="GET")return;const u=new URL(e.request.url);
