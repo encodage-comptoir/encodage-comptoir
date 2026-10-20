@@ -1,6 +1,6 @@
 "use strict";
 // Caisse & stock du Comptoir des Matériaux. Tout est gardé sur l'appareil (IndexedDB) ; rien n'est écrit dans Impulsion.
-const VERSION="2.0 (essai)";
+const VERSION="2.1 (essai)";
 const CATS=[["SA","Sanitaire"],["PA","Parois de douche"],["CH","Châssis"],["PO","Portes"],["CAR","Carrelage"],["GRO","Gros œuvre"],["RA","Chauffage"],
  ["ELEC","Électricité"],["LUM","Luminaires"],["BOI","Bois"],["PAR","Parquet & bardage"],["LAM","Lambris"],["TOI","Toiture"],["ISO","Isolant"],
  ["Q","Quincaillerie"],["OUT","Outillage"],["ELECTRO","Électroménager"],["DIV","Divers"]];
@@ -195,6 +195,7 @@ function ecranCaisse(){const res=resultats(),t=totalPanier();
   <div class="modes">${Object.keys(MODES).map(m=>`<button class="mode ${pay.mode===m?"sel":""}" data-mode="${m}">${IC[m]}${MODES[m]}</button>`).join("")}</div>
   <div id="payPlus">${payPlus(t)}</div>
   <button class="btn gros" id="valider" style="margin-top:12px" ${peutValider()?"":"disabled"}>Valider la vente</button>
+  <p class="muted" id="manque" style="text-align:center;margin:6px 0 0">${peutValider()?"":esc(manque())}</p>
  </aside></div>`}
 function payPlus(t){
  if(pay.mode==="especes"){const sugg=[...new Set([t,...[5,10,20,50,100].map(b=>Math.ceil(t/b)*b)])].filter(x=>x>=t&&x>0).slice(0,4);
@@ -208,6 +209,16 @@ function prochaineFacture(){const d=REG.derniereFacture;const a=String(new Date(
  const m=d&&String(d).match(/^F?\s*(\d+)(.*)$/i);return m?"F"+(+m[1]+1)+(m[2]||"-"+a):"F1-"+a}
 function renduHtml(t,r){if(r==null)return"";return r<t?`<div class="rendu bad">Il manque ${eur(t-r)}</div>`:`<div class="rendu">À rendre : ${eur(r-t)}</div>`}
 const panierPret=()=>panier.length&&panier.every(l=>l.p!=null&&l.p>=0&&l.q>0&&(l.id||String(l.n).trim()));
+// Ce qui manque encore pour valider, dit en clair sous le bouton.
+function manque(){if(!panier.length)return "Ajoutez un article au ticket.";
+ const l=panier.find(l=>!(l.p!=null&&l.p>=0));if(l)return `Indiquez le prix de « ${l.n||"l'article sans fiche"} ».`;
+ const q=panier.find(l=>!(l.q>0));if(q)return `Indiquez la quantité de « ${q.n} »${q.u?" (en "+q.u+")":""}.`;
+ if(panier.some(l=>!l.id&&!l.liv&&!String(l.n).trim()))return "Décrivez l'article sans fiche.";
+ if(!pay.mode)return "Choisissez le mode de paiement.";
+ if(pay.mode==="especes"&&!peutValider())return "L'argent reçu est inférieur au total.";
+ if(pay.mode==="facture"&&!pay.fpaye)return "Indiquez si la facture est payée ou en attente.";
+ return ""}
+function majValider(){const b=$("#valider");if(!b)return;b.disabled=!peutValider();const m=$("#manque");if(m)m.textContent=b.disabled?manque():""}
 function peutValider(){const m=pay.mode;if(!m||!panierPret())return false;
  if(m==="especes"){const r=num(pay.recu);return pay.recu===""||(r!=null&&r>=totalPanier())}
  if(m==="facture")return !!pay.fpaye;return true}
@@ -220,21 +231,24 @@ function brancherCaisse(){const i=$("#scanIn");
  $("#libre").onclick=()=>{panier.push({r:"",n:"",p:null,q:1});render();const n=$$("[data-nom]");if(n.length)n[n.length-1].focus()};
  const lv=$("#livraison");if(lv)lv.onclick=()=>{panier.push({r:"",n:"Livraison",liv:1,u:"km",p:PRIX_KM,q:null});render();$(`[data-q="${panier.length-1}"]`).focus()};
  const v=$("#vider");if(v)v.onclick=()=>{if(confirm("Vider le ticket en cours ?")){panier=[];pay={mode:"",recu:"",fnum:"",fpaye:""};render()}};
- const majTot=()=>{$("#total").textContent=eur(totalPanier());$("#valider").disabled=!peutValider()};
+ const majTot=()=>{$("#total").textContent=eur(totalPanier());majValider()};
  $$("[data-plus]").forEach(b=>b.onclick=()=>{panier[b.dataset.plus].q++;render()});
  $$("[data-moins]").forEach(b=>b.onclick=()=>{const l=panier[b.dataset.moins];l.q--;if(l.q<=0)panier.splice(b.dataset.moins,1);render()});
  $$("[data-suppr]").forEach(b=>b.onclick=()=>{panier.splice(b.dataset.suppr,1);render()});
- $$("[data-prix]").forEach(x=>x.onchange=()=>{panier[x.dataset.prix].p=num(x.value);render()});
- $$("[data-prix]").forEach(x=>x.oninput=()=>{panier[x.dataset.prix].p=num(x.value);majTot()});
- $$("[data-q]").forEach(x=>{x.oninput=()=>{panier[x.dataset.q].q=num(x.value);majTot()};x.onchange=()=>render()});
+ // Prix et quantité : mise à jour sur place, sans redessiner l'écran (sinon le clic suivant, sur un mode de paiement, se perd).
+ const majLigne=i=>{const l=panier[i],el=$$(".tl")[i];if(el){el.querySelector(".tot").textContent=l.p==null||!l.q?"":eur(l.p*l.q);
+  const pr=el.querySelector("[data-prix]");if(pr)pr.classList.toggle("need",l.p==null);const qt=el.querySelector("[data-q]");if(qt&&qSaisie(l))qt.classList.toggle("need",!(l.q>0))}
+  majTot();const pp=$("#payPlus");if(pp&&pay.mode==="especes"){const r=$("#rendu");if(r)r.innerHTML=renduHtml(totalPanier(),num(pay.recu))}};
+ $$("[data-prix]").forEach(x=>x.oninput=()=>{panier[x.dataset.prix].p=num(x.value);majLigne(+x.dataset.prix)});
+ $$("[data-q]").forEach(x=>x.oninput=()=>{panier[x.dataset.q].q=num(x.value);majLigne(+x.dataset.q)});
  $$("[data-kg]").forEach(x=>x.oninput=()=>{const l=panier[x.dataset.kg];l.kg=num(x.value);l.kgEst=false});
  $$("[data-mat]").forEach(s=>s.onchange=()=>{const l=panier[s.dataset.mat];l.m=s.value;
   if(l.kgEst||l.kg==null){const r=Poids.estimer({nom:l.t||l.n,titre:l.n,cat:l.c,matiere:l.m,unite:l.u,L:l.L,l:l.l,h:l.h});if(r){l.kg=r.kg;l.kgEst=true;render()}}});
- $$("[data-nom]").forEach(x=>x.oninput=()=>{panier[x.dataset.nom].n=x.value;$("#valider").disabled=!peutValider()});
+ $$("[data-nom]").forEach(x=>x.oninput=()=>{panier[x.dataset.nom].n=x.value;majValider()});
  $$("[data-mode]").forEach(b=>b.onclick=()=>{pay.mode=b.dataset.mode;render();const r=$("#recu");if(r)r.focus()});
  $$("[data-recu]").forEach(b=>b.onclick=()=>{pay.recu=virg(b.dataset.recu);render()});
  $$("[data-fp]").forEach(b=>b.onclick=()=>{pay.fpaye=b.dataset.fp;render()});
- const r=$("#recu");if(r)r.oninput=()=>{pay.recu=r.value;$("#rendu").innerHTML=renduHtml(totalPanier(),num(pay.recu));$("#valider").disabled=!peutValider()};
+ const r=$("#recu");if(r)r.oninput=()=>{pay.recu=r.value;$("#rendu").innerHTML=renduHtml(totalPanier(),num(pay.recu));majValider()};
  const f=$("#fnum");if(f)f.oninput=()=>{pay.fnum=f.value};
  $("#valider").onclick=valider}
 async function valider(){const now=new Date(),d=jour(now),t=totalPanier();
