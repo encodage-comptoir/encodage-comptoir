@@ -26,7 +26,9 @@ Fichiers : `index.html` (coquille), `style.css` (charte), `app.js` (écrans), `s
 
 - **Caisse** : la douchette QR ajoute l'article au ticket où que soit le curseur (lien `…/a/REF`, `?r=REF` ou
   référence seule ; une douchette restée en QWERTY est corrigée). Recherche par nom, référence ou emplacement,
-  prix et poids modifiables, article sans fiche, livraison 0,50 €/km, espèces / QR code / virement / facture, ticket.
+  prix et poids modifiables, article sans fiche, livraison 0,50 €/km, espèces / QR code / virement / facture, ticket
+  envoyé par e-mail ou SMS. En mode QR code, la caisse affiche un QR de virement européen (EPC) avec le montant et la
+  communication (IBAN de La Pile à saisir dans Réglages ; `qrcode.js` : qrcode-generator 1.4.4, licence MIT).
 - **Stock** (comme Impulsion) : tableau triable et filtrable (statut, catégorie, sans prix, sans poids, sans
   emplacement), fiche article en panneau avec entrées, sorties (casse, don, usage interne, rendu) et comptages,
   création de fiches, import des fiches de l'app d'encodage. Stock = départ + entrées − ventes − sorties, remis à la

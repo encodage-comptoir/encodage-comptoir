@@ -199,3 +199,8 @@ table.t img{width:40px;height:40px;object-fit:cover;border-radius:6px;display:bl
  .page{padding:14px 16px 60px}
  .caisse,.caisse>*{min-width:0}
 }
+/* QR de paiement */
+.qr-pay{display:flex;gap:14px;align-items:center;margin-top:12px;background:var(--bleu-c);border-radius:12px;padding:12px}
+.qr-img{width:150px;flex:none;background:#fff;border-radius:8px;padding:4px}
+.qr-img svg,.qr-grand svg{display:block;width:100%;height:auto}
+.qr-grand{width:min(360px,80vw);margin:12px auto;background:#fff;padding:8px}
