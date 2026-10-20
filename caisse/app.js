@@ -270,17 +270,29 @@ function ticketHtml(v){return `<div class="tk"><div class="tete"><img src="https
  <div class="l muted"><span>Payé : ${esc(modeTxt(v))}</span><span>${v.recu!=null?"reçu "+eur(v.recu)+" · rendu "+eur(v.rendu):""}</span></div>
  ${v.annulee?'<div class="rendu bad" style="margin-top:10px">Vente annulée</div>':""}</div>`}
 function ticketTexte(v){return `Comptoir des Matériaux · La Pile asbl\nTicket n° ${v.num} · ${dateBe(v.date)} ${v.heure}\n\n`+
- v.lignes.map(l=>`${qTxt(l)} ${l.n}${l.r?" ("+l.r+")":""} : ${eur(l.p*l.q)}`).join("\n")+`\n\nTotal : ${eur(v.total)} (dont TVA 21 % : ${eur(dontTva(v.total))})\nPayé : ${modeTxt(v)}\nMerci pour le réemploi !`}
+ v.lignes.map(l=>`${qTxt(l)} ${l.n}${l.r?" ("+l.r+")":""} : ${eur(l.p*l.q)}`).join("\n")+`\n\nTotal : ${eur(v.total)} (dont TVA 21 % : ${eur(dontTva(v.total))})\nPayé : ${modeTxt(v)}\nMerci pour le réemploi !\nRue Frédéric Lang 3, 4960 Malmedy · 0493 04 99 29`}
 function modal(html){const m=$("#modal");m.innerHTML=`<div class="voile" data-ferme></div><div class="modal"><div class="boite">${html}</div></div>`;m.hidden=false;
  m.querySelectorAll("[data-ferme]").forEach(b=>b.onclick=fermerModal)}
 function fermerModal(){$("#modal").hidden=true;$("#modal").innerHTML="";const s=$("#scanIn");if(s)s.focus()}
 function montrerTicket(v,nouveau){
  modal(`${nouveau&&v.rendu?`<div class="rendu" style="margin:0 0 12px">À rendre : ${eur(v.rendu)}</div>`:""}${ticketHtml(v)}
- <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px"><button class="btn clair" id="tkPartager">Envoyer au client</button><button class="btn clair" id="tkImprimer">Imprimer</button>
+ <div class="no-print" style="margin-top:16px"><label class="f">Envoyer le ticket au client<input class="champ" id="tkContact" autocomplete="off" placeholder="E-mail ou GSM du client (ex. 0470 12 34 56)"></label>
+  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px"><button class="btn clair" id="tkMail">Par e-mail</button><button class="btn clair" id="tkSms">Par SMS</button><button class="btn clair" id="tkPartager">Copier / partager</button></div></div>
+ <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px"><button class="btn clair" id="tkImprimer">Imprimer</button>
  ${!nouveau&&!v.annulee?'<button class="btn rouge" id="tkAnnuler">Annuler la vente</button>':""}<span style="flex:1"></span><button class="btn" data-ferme>${nouveau?"Vente suivante":"Fermer"}</button></div>`);
  $("#tkPartager").onclick=async()=>{const t=ticketTexte(v);
   try{if(navigator.share){await navigator.share({title:"Ticket Comptoir",text:t});return}}catch(e){return}
   try{await navigator.clipboard.writeText(t);toast("Ticket copié : collez-le dans un SMS ou un e-mail")}catch(e){toast("Impossible de copier",true)}};
+ // E-mail : ouvre la messagerie du PC avec le ticket prêt à partir. SMS : ouvre l'app de messages (sur PC, il faut un
+ // téléphone relié, par ex. « Lien avec Windows » ; sinon le texte est copié). Le contact du client n'est pas gardé.
+ const contact=()=>$("#tkContact").value.trim();
+ const gsm=t=>{let n=t.replace(/[\s./-]/g,"");if(/^0[1-9]\d{7,8}$/.test(n))n="+32"+n.slice(1);else if(/^00\d+$/.test(n))n="+"+n.slice(2);return /^\+?\d{8,15}$/.test(n)?n:""};
+ const ouvrir=u=>{const a=document.createElement("a");a.href=u;a.click()};
+ $("#tkMail").onclick=()=>{const c=contact();if(c&&!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(c)){toast("Adresse e-mail incomplète",true);return}
+  ouvrir(`mailto:${encodeURIComponent(c)}?subject=${encodeURIComponent(`Votre ticket du Comptoir des Matériaux (${dateBe(v.date)})`)}&body=${encodeURIComponent(ticketTexte(v))}`)};
+ $("#tkSms").onclick=async()=>{const n=gsm(contact());if(contact()&&!n){toast("Numéro de GSM non reconnu",true);return}
+  try{await navigator.clipboard.writeText(ticketTexte(v))}catch(e){}
+  ouvrir(`sms:${n}?body=${encodeURIComponent(ticketTexte(v))}`);toast("Ticket aussi copié, au cas où : collez-le dans le message")};
  $("#tkImprimer").onclick=()=>imprimer(ticketHtml(v));
  const a=$("#tkAnnuler");if(a)a.onclick=async()=>{if(!confirm(`Annuler le ticket n° ${v.num} (${eur(v.total)}) ? Il restera visible, barré.`))return;
   v.annulee=true;v.annuleeA=Date.now();await put("ventes",v);calcStock();fermerModal();render()}}
