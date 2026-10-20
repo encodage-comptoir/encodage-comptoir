@@ -96,6 +96,7 @@ nav a:hover{color:var(--jaune)}
 .actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:14px 0}
 .bouton.clair{background:#fff;color:var(--bleu-f);border:2px solid var(--bleu)}
 .bouton.ok{background:var(--jaune);color:var(--encre)}
+.bouton.parti{background:var(--violet,#7b2382);color:#fff;cursor:default}
 .carte-w{display:flex;flex-direction:column;gap:6px}
 .carte-w .carte{flex:1}
 .ajout-mini{font:inherit;font-size:14px;font-weight:600;border:2px solid var(--bleu);background:#fff;color:var(--bleu-f);border-radius:20px;padding:6px 10px;cursor:pointer}

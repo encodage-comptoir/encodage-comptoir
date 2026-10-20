@@ -71,4 +71,19 @@ document.addEventListener('DOMContentLoaded',()=>{compteur();selecteurs();const 
  document.getElementById('suppr').onclick=()=>{if(confirm(`Supprimer la liste « ${courante().nom} » ?`)){s.listes.splice(s.cur,1);s.cur=0;sauver()}};
  document.getElementById('vider').onclick=()=>{if(confirm('Vider cette liste ?')){courante().items=[];sauver()}};
 });
+// Stock vivant : la caisse du Comptoir publie stock.json à chaque vente ou mouvement de stock.
+// Sur la page d'un article, on met à jour la quantité et l'emplacement, ou on indique que l'article est parti.
+const SRC=document.currentScript&&document.currentScript.src;
+const nbTxt=(n,u)=>u&&u!=='pièce'?`${nb(n)} ${u}`:`${nb(n)} pièce${n>1?'s':''}`;
+document.addEventListener('DOMContentLoaded',()=>{const b=document.querySelector('.bouton[data-ajout]');if(!b||!SRC)return;
+ fetch(new URL('stock.json',SRC),{cache:'no-cache'}).then(r=>r.ok?r.json():null).then(j=>{if(!j)return;
+  const a=JSON.parse(b.dataset.ajout),x=(j.articles||[]).find(y=>y.r===a.r);if(!x)return;
+  const ligne=t=>[...document.querySelectorAll('th')].find(th=>th.textContent.trim()===t);
+  const dispo=ligne('Disponible'),ou=ligne('Emplacement au Comptoir');
+  if(x.st==='vendu'||x.st==='rupture'||x.st==='hors'){
+   const p=document.createElement('p');p.className='bouton parti';p.textContent=x.st==='vendu'?'Déjà vendu':'Plus disponible pour le moment';b.replaceWith(p);
+   if(dispo)dispo.nextElementSibling.textContent='Plus en stock';document.querySelectorAll('.stock-pastille').forEach(e=>e.remove());return}
+  if(x.s>0){a.s=x.s;a.st=nbTxt(x.s,x.u);if(dispo)dispo.nextElementSibling.textContent=a.st}
+  if(x.e){a.o=x.e;if(ou)ou.nextElementSibling.textContent=x.e}
+  b.dataset.ajout=JSON.stringify(a)}).catch(()=>{})});
 })();

@@ -343,7 +343,11 @@ function maj(){{
  history.replaceState(null,'',$('cat').value?'#cat='+$('cat').value:location.pathname+location.search);
 }}
 document.querySelectorAll('#filtres input,#filtres select').forEach(e=>e.addEventListener('input',maj));
-fetch('donnees.json').then(r=>r.json()).then(d=>{{D=d;maj()}});
+// Stock vivant publié par la caisse : articles partis retirés, quantités et emplacements à jour.
+const vivant=(d,j)=>{{if(!j)return d;const m={{}};(j.articles||[]).forEach(x=>m[x.r]=x);
+ return d.filter(a=>!['vendu','rupture','hors'].includes((m[a.r]||{{}}).st)).map(a=>{{const x=m[a.r];if(!x)return a;
+  if(x.s>0){{a.s=x.s;a.st=x.u&&x.u!=='pièce'?`${{String(x.s).replace('.',',')}} ${{x.u}}`:`${{x.s}} pièce${{x.s>1?'s':''}}`;if(a.sc)a.sc=a.st+' en stock'}}if(x.e)a.o=x.e;return a}})}};
+Promise.all([fetch('donnees.json').then(r=>r.json()),fetch('stock.json',{{cache:'no-cache'}}).then(r=>r.ok?r.json():null).catch(()=>null)]).then(([d,j])=>{{D=vivant(d,j);maj()}});
 </script>'''
 open(f'{out}/catalogue.html', 'w').write(page('Catalogue – Comptoir des Matériaux', 'Tous les matériaux de réemploi disponibles au Comptoir des Matériaux à Malmedy, avec recherche par dimensions.', corps, '', '', 'catalogue.html'))
 
