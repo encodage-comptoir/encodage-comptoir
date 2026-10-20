@@ -52,7 +52,7 @@ function afficher(){
  if(!l.items.length){z.innerHTML='<p>Cette liste est vide. Ajoutez des articles depuis le <a href="catalogue.html">catalogue</a> ou un projet de <a href="faire-avec.html">Faire avec</a>.</p>';document.getElementById('envoi').hidden=true;return}
  document.getElementById('envoi').hidden=false;
  const tot=l.items.reduce((s,a)=>s+(a.p>0?a.p*a.q:0),0),sans=l.items.filter(a=>!(a.p>0)).length;
- z.innerHTML=l.items.map((a,i)=>`<div class="ligne"><img src="${esc(a.v)}" alt=""><div class="quoi"><a href="article/${esc(a.r)}.html">${esc(a.t)}</a><small>Réf. ${esc(a.r)} · ${esc(a.pt)}</small>${a.st?`<small>En stock : ${esc(a.st)}</small>`:''}<small class="ou">Emplacement : ${a.o?esc(a.o):'à compléter'}</small></div>
+ z.innerHTML=l.items.map((a,i)=>`<div class="ligne">${a.v?`<img src="${esc(a.v)}" alt="">`:'<span class="vide">📷</span>'}<div class="quoi">${a.v?`<a href="article/${esc(a.r)}.html">${esc(a.t)}</a>`:`<span>${esc(a.t)} <small>(photo à venir)</small></span>`}<small>Réf. ${esc(a.r)} · ${esc(a.pt)}</small>${a.st?`<small>En stock : ${esc(a.st)}</small>`:''}<small class="ou">Emplacement : ${a.o?esc(a.o):'à compléter'}</small></div>
   <div class="qte"><button data-moins="${i}" aria-label="Moins">−</button><span>${nb(a.q)}</span><button data-plus="${i}" aria-label="Plus"${a.s>0&&a.q>=a.s?' disabled':''}>+</button>${a.s>0&&a.q>=a.s?`<span class="max">tout le stock</span>`:''}</div>
   <div class="st">${a.p>0?eur(a.p*a.q):'au comptoir'}</div><button class="retirer" data-retirer="${i}" aria-label="Retirer">✕</button></div>`).join('')
   +`<p class="total">Total indicatif : <b>${eur(tot)}</b>${sans?` <small>(+ ${sans} article${sans>1?'s':''} à prix fixé au comptoir)</small>`:''}</p>`;

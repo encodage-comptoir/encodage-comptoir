@@ -103,6 +103,7 @@ nav a:hover{color:var(--jaune)}
 .ajout-mini.ok{background:var(--jaune);border-color:var(--jaune);color:var(--encre)}
 .panier .ligne{display:grid;grid-template-columns:64px 1fr auto;gap:6px 12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--ligne)}
 .panier .ligne img{width:64px;height:64px;object-fit:cover;border-radius:8px;background:var(--clair);grid-row:span 2}
+.panier .ligne .vide{width:64px;height:64px;border-radius:8px;background:var(--clair);grid-row:span 2;display:flex;align-items:center;justify-content:center}
 .panier .quoi a{font-weight:600;color:var(--encre);text-decoration:none}.panier .quoi small{display:block;color:var(--gris)}
 .panier .qte{display:flex;align-items:center;gap:8px}
 .panier .qte button,.panier .retirer{width:34px;height:34px;border-radius:50%;border:2px solid var(--ligne);background:#fff;font:inherit;font-weight:700;cursor:pointer}
@@ -182,3 +183,4 @@ nav a:hover{color:var(--jaune)}
 .dispo{margin:6px 0 0}
 .stock-pastille{display:inline-block;background:var(--violet);color:#fff;font-weight:700;font-size:12px;padding:3px 8px;border-radius:20px;box-shadow:0 1px 3px rgba(0,0,0,.25)}
 .pastilles .eco,.pastilles .co2-pastille,.pastilles .stock-pastille{position:static;font-size:14px;padding:4px 12px}
+.ex-groupe{font-size:15px;margin:18px 0 6px;color:var(--violet)}
