@@ -1,0 +1,716 @@
+Référence;Nom;Stock;PV particulier TVAc
+VIN 10;;100;0,00
+;;100;0,00
+VIN 3;;100;0,00
+;;100;0,00
+VIN 4;;100;0,00
+VIN 5;;100;0,00
+;;100;0,00
+;;1;17,00
+VIN 7;;100;0,00
+;;100;0,00
+VIN 9;;100;0,00
+LUM3;;1;36,00
+LUM4;;1;40,00
+;;100;0,00
+;;100;0,00
+;;100;0,00
+;;100;0,00
+GRO28;;100;0,00
+ISO5;laine de verre/ roche;2;12,00
+GRO23;Poutrains;50;0,70
+;! Déstockage ! Pierre, marbre, granit, ...;30;2,00
+LAM1;+-50 M² de Lambris de plafonds;50;200,00
+SA88;Baignoire acier;1;40,00
+SA 51;Baignoire acrylique;1;45,00
+SA86;Baignoire Balnéo;1;80,00
+SA137;Baignoire Balnéo;1;150,00
+SA124;Baignoire d'angle;1;150,00
+SA116;Baignoire d'angle asymétrique NEUVE;1;80,00
+SA101;Baignoire d'angle avec bavette;1;150,00
+SA 70;Baignoire en acier;1;45,00
+SA 76;Baignoire en acier;1;30,00
+PAR17;Bande périphérique de dilatation;100;0,50
+BOI01;Barre en bois Hêtre;2;5,00
+DIV29;Bassin préformé;1;35,00
+SA 80;Bati-support WC;1;50,00
+SA 79;Bati-support WC;1;50,00
+SA 89;Bati-support WC;1;50,00
+SA125;Bidet beige;1;40,00
+GRO32;BIG BAG;5;3,00
+GRO 5;Bloc de béton creux;8;1,00
+GRO 6;Bloc de béton creux;18;0,80
+GRO20;Bloc de coffrage;35;0,85
+PO 12;Bloc porte en sapin;1;50,00
+GRO 1;Bloc Ytong;120;1,00
+GRO22;BLOCS (4 palettes);350;0,60
+GRO37;Blocs Ytong;16;1,00
+;Boiler  ACV Smart 130 L - Inox;1;120,00
+SA;Boiler Bulex 150 litres;1;90,00
+SA75;Boiler cuisine;1;25,00
+GRO26;Boisseaux béton;24;10,00
+GRO25;Boisseaux de cheminée;24;7,00
+SA92;Bondes de douche;2;15,00
+GRO 7;Bordure en béton;17;3,20
+DIV32;Bouton de meuble en bois;50;0,00
+GRO 8;Brique de façade grise;1115;0,40
+GRO 9;Brique de façade rouge;1026;0,40
+GRO 4;Brique de terre cuite;10;0,30
+;Brique de verre;174;1,00
+GRO31;Briques blanches;200;0,40
+GRO19;Briques grise;350;0,40
+GRO 11;Briques grises;24;0,30
+GRO 10;Briques grises;76;0,40
+GRO34;Briques réfractaires;16;1,00
+GRO35;Briques rouges;3;0,40
+GRO 15;Briquettes de parement;1444;12,00
+SA102;Cabine de douche;1;50,00
+DIV26;Câble acier galva tressé 18mm;20;3,00
+Q01;Cäbles acier;10;0,45
+SA 57;Cache-siphon;1;10,00
+SA 58;Cache-siphon;1;10,00
+SA 59;Cache-siphon;1;10,00
+DIV;Caillebotis PVC blanc;7;1,00
+CAR 18;Carreaux blancs;5;10,00
+CAR 53;Carreaux blancs à motifs;46;12,00
+CAR 17;Carreaux bruns;21;15,00
+CAR 52;Carreaux bruns;69;10,00
+CAR 14;Carreaux gris;20;8,00
+CAR 20;Carreaux gris;5;8,00
+CAR 49;Carrelage;28;9,00
+CAR 32;Carrelage;36;9,00
+CAR 2;Carrelage;48;12,00
+CAR4;Carrelage;20;13,00
+CAR 5;Carrelage;10;8,00
+CAR 6;Carrelage;8;12,00
+CAR 7;Carrelage;8;8,00
+CAR 8;Carrelage;4;8,00
+CAR 9;Carrelage;34;15,00
+CAR 10;Carrelage;29;10,00
+CAR 11;Carrelage;11;8,00
+CAR 12;Carrelage;33;15,00
+CAR 13;Carrelage;25;8,00
+CAR 15;Carrelage;7;8,00
+CAR 16;Carrelage;76;15,00
+CAR 19;Carrelage;120;15,00
+CAR 21;Carrelage;93;15,00
+CAR 22;Carrelage;11;8,00
+CAR 23;Carrelage;20;9,00
+CAR 24;Carrelage;42;12,00
+CAR 25;Carrelage;26;10,00
+CAR 26;Carrelage;24;10,00
+CAR 27;Carrelage;6;8,00
+CAR 28;Carrelage;5;8,00
+CAR 29;Carrelage;269;12,00
+CAR 34;Carrelage;31;9,00
+CAR 33;Carrelage;36;9,00
+CAR 35;Carrelage;6;5,00
+CAR 50;Carrelage;33;12,00
+CAR 43;Carrelage;10;6,00
+CAR 47;Carrelage;10;6,00
+CAR 48;Carrelage;28;8,00
+CAR 54;Carrelage;25;12,00
+CAR 39;Carrelage &#34Marrazi&#34;108;12,00
+CAR 38;Carrelage &#34Rako&#34;45;7,00
+CAR 37;Carrelage &#34Romanza Belle&#34;35;14,00
+CAR 40;Carrelage &#34Santoria&#34;64;14,00
+CAR 46;Carrelage &#34Tau Ceramica&#34;8;8,00
+CAR 51;Carrelage ancien;77;13,00
+CAR 1;Carrelage blanc;76;12,00
+CAR 3;Carrelage blanc;99;12,00
+CAR67;Carrelage blanc;7;12,00
+CAR68;Carrelage effet marbre;33;8,00
+CAR 42;Carrelage gris;30;5,00
+Q14;Cavalier , attaches câbles divers modèles;300;2,00
+GRO34;Cavalier ancrage métal Stud;60;0,20
+CH 38;CH 38;1;0,00
+CH 54;CH 54;3;0,00
+CH 56;CH 56;1;0,00
+CH 57;CH 57;1;0,00
+CH 58;CH 58;1;0,00
+CH 59;CH 59;1;0,00
+CH 60;CH 60;1;0,00
+Q04;Charnières diverses;30;3,00
+CH 41;chassis alu;1;0,00
+CH 53;chassis alu;1;0,00
+CH 66;chassis alu;1;0,00
+CH 71;chassis alu;1;0,00
+CH 28;chassis Alu noir;1;0,00
+CH 91;chassis bois;1;50,00
+CH 15;Chassis bois;1;80,00
+CH 96;chassis bois;1;30,00
+CH 36;Chassis bois;1;0,00
+CH 13;Chassis bois (complet);2;50,00
+CH 74;Chassis bois alu;1;0,00
+CH 106;Châssis en afzelia;1;60,00
+CH 18;Chassis fixe bois;1;50,00
+CH 19;Chassis fixe PVC;1;50,00
+CH77;Châssis mérantis;2;70,00
+CH 92;chassis pvc;3;90,00
+CH 6;Chassis PVC;1;85,00
+CH 9;Chassis PVC;2;110,00
+CH 10;Chassis PVC;1;45,00
+CH 11;Chassis PVC;2;45,00
+CH 1;Chassis PVC;1;145,00
+CH 2;Chassis PVC;2;145,00
+CH 3;Chassis PVC;1;145,00
+CH 4;Chassis PVC;2;145,00
+CH 5;Chassis PVC;1;145,00
+CH 16;Chassis PVC;2;120,00
+CH 17;Chassis PVC;1;120,00
+CH 25;Chassis PVC;1;110,00
+CH 26;Chassis PVC;1;80,00
+CH 31;chassis pvc;1;0,00
+CH 27;chassis pvc;1;0,00
+CH 29;chassis pvc;1;0,00
+CH 30;chassis pvc;1;0,00
+CH 32;chassis pvc;1;0,00
+CH 93;chassis pvc;1;75,00
+CH 94;chassis pvc;5;120,00
+CH 95;chassis pvc;1;85,00
+CH 97;chassis pvc;1;180,00
+CH 102;chassis pvc;1;180,00
+CH 90;chassis pvc;1;0,00
+CH 33;chassis pvc;1;0,00
+PO 46 - 47;chassis pvc;2;0,00
+CH 34;chassis pvc;1;0,00
+CH 35;chassis pvc;1;0,00
+CH 37;chassis pvc;1;0,00
+CH 40;chassis pvc;1;340,00
+CH 98;chassis pvc;1;200,00
+CH 99;chassis pvc;1;200,00
+CH 100;chassis pvc;1;195,00
+CH 101;chassis pvc;1;195,00
+CH 42;chassis pvc;1;0,00
+CH 43;chassis pvc;1;0,00
+CH 44;chassis pvc;1;0,00
+CH 45;chassis pvc;1;0,00
+CH 46 - 47 - 48;chassis pvc;1;0,00
+CH 49;chassis pvc;1;0,00
+CH 50;chassis pvc;1;0,00
+CH 51;chassis pvc;1;0,00
+CH 52;chassis pvc;1;0,00
+CH 61;chassis pvc;1;0,00
+CH 62;chassis pvc;1;0,00
+CH 63;chassis pvc;1;0,00
+CH 64;chassis pvc;1;0,00
+CH 65;chassis pvc;1;0,00
+CH 67;chassis pvc;1;0,00
+CH 69;chassis pvc;1;0,00
+CH 70;chassis pvc;1;0,00
+CH 72;chassis pvc;1;0,00
+CH110;CHÂSSIS PVC Blanc;1;120,00
+CH 68;chassis pvc fixe;1;0,00
+CH 75;Châssis SCHUCO NEUF;1;170,00
+;Cheminée;1;350,00
+PAR19;Clic clac imitation bois gris;5;7,00
+;Coffrage-drain FSD;2;6,00
+Q07;Collier Acier;56;1,00
+SA81;Collier PVC;30;4,00
+Q08;Collier serrage Laiton;52;1,00
+SA 72;Colonne de lavabo;1;10,00
+SA 60;Colonne de lavabo;1;10,00
+SA 61;Colonne de lavabo;1;10,00
+SA 62;Colonne de lavabo;1;10,00
+SA 63;Colonne de lavabo;1;10,00
+SA 64;Colonne de lavabo;1;10,00
+SA 65;Colonne de lavabo;1;10,00
+CAR56;Compaktuna Flexcement;1;6,00
+OUT10;Compresseur triphasé;1;300,00
+TOI06;Crochet de bandeau de gouttière;50;0,50
+DIV18;Croisillon pour plots terrasse;100;0,30
+;Cuve de récupération d&#39eau;3;20,00
+Q05;Cylindre à clés;10;5,00
+GRO 3;Dalle de granit;1;5,00
+;Dalle de marbre;4;30,00
+;Dalle de plafond;240;3,00
+RA34;Dalles à plots avec isolant pour chauffage sol;7;8,00
+PAR18;Dalles de plafond Maëstro;6;7,00
+GRO36;Dalles pierre;5;25,00
+ELEC06;Disjoncteurs;50;2,00
+ELEC04;Divers Tube Elec PVC;10;0,80
+TOI03;Dôme prise de lumière;2;180,00
+SA127;Double évier;1;50,00
+SA69;Double évier SDB;1;45,00
+SA134;Double évier SDB;1;60,00
+PO57;Double porte;1;75,00
+PO 3x;Double porte chêne;1;50,00
+PO 3Y;Double porte chêne;1;50,00
+PO 2N;Double porte chêne vitrée;1;70,00
+PO 22;Double porte-fenêtre bois (avec cadre);1;50,00
+SA74;Douche à main;10;5,00
+GRO27;Drain;1;7,00
+;Ebrasement et chambranles;6;25,00
+DIV33;Échelle de meunier sapin;1;90,00
+TOI07;Ècran sous-toiture tyvek;30;1,00
+DIV20;Enrouleur volet et axes galva;2;10,00
+DIV24;Equerres , supports d'étagères;100;1,20
+DIV30;Escalier en bois;1;250,00
+OUT09;Établi portatif;1;30,00
+SA 1;Evier;1;20,00
+SA 2;Evier;1;20,00
+SA 3;Evier;1;15,00
+SA 4;Evier;1;15,00
+SA 5;Evier;2;30,00
+SA 6;Evier;1;15,00
+SA 7;Evier;1;15,00
+SA 9;Evier;1;25,00
+SA 11;Evier;1;15,00
+SA 20;Evier;1;15,00
+SA 21;Evier;11;45,00
+SA 22;Evier;1;15,00
+SA 30;Evier;4;25,00
+SA 31;Evier;1;15,00
+SA 75;Evier;1;25,00
+SA 85;Evier;1;25,00
+SA 87;Evier;1;25,00
+SA 92;Evier;1;20,00
+SA 12;Evier (double robinet);1;15,00
+SA 13;Evier (double robinet);1;20,00
+SA 14;Evier (double robinet);1;15,00
+SA 15;Evier (double robinet);1;20,00
+SA 16;Evier (double robinet);1;20,00
+SA 17;Evier (double robinet);1;25,00
+SA 18;Evier (double robinet);2;20,00
+SA132;Evier + robinet;1;25,00
+SA76;Evier +robinet eau froide;1;25,00
+SA120;Evier à poser faïence vintage;1;40,00
+SA118;Evier blanc avec rebord + robinet;1;40,00
+SA135;Evier composite;1;30,00
+SA131;Evier cuisine brun;1;28,00
+SA133;Evier cuisine inox rond;2;40,00
+SA106;Evier de cuisine;1;30,00
+SA108;Evier de service;1;45,00
+SA130;Evier design de coin + robinet;2;45,00
+SA 39;Evier double;1;65,00
+SA 23;Evier double céramique brun;1;70,00
+SA 25;Evier double inox;2;55,00
+SA 26;Evier double inox;1;55,00
+SA 29;Evier double inox;1;75,00
+SA 74;Evier doule inox;1;40,00
+SA127;Évier encastrable Villeroy& Bosch;1;50,00
+SA 50;Evier inox;1;40,00
+SA 56;Evier inox;1;40,00
+SA 24;Evier inox;1;40,00
+SA 88;Evier inox;1;40,00
+SA128;Evier inox;1;45,00
+SA135;Évier inox;1;40,00
+SA138;Evier inox  2 bacs;1;60,00
+SA93;Evier Ovale;1;25,00
+SA94;Evier Villeroy& Boch;1;30,00
+SA117;Evier vintage bleu+ robinet Grohe;1;40,00
+SA71;Evier+ robinet eau froide;1;25,00
+SA95;Evier+robinet;1;20,00
+SA126;Eviers beige;2;40,00
+;Fermacell Sol + isolant;27;14,00
+PO 16;Feuille de porte blanche;1;25,00
+DIV9;Feuilles de MICA;10;1,00
+DIV13;Fibre de verre;2;17,00
+GRO40;Fibre de verre pour ciment;5;6,00
+GRO36;Fibre pour béton;10;6,00
+DIV16;Fixateur de fonds murs;2;8,00
+OUT7;FORET 10 3/8;10;5,00
+DIV2;Four encastrable Bosch;1;50,00
+DIV10;Furet/ Déboucheur;1;8,00
+GRO29;Galets carrara split 8-12 mm;50;3,00
+;Gazinière + four électrique;1;200,00
+;Gazinière + four électrique;1;110,00
+TOI02;Gouttière galva/ alu;6;25,00
+SA132;Grand choix de robinets et éléments de salle de bain;100;0,00
+DIV1;Grillage;1;7,00
+Gyproc;Gyproc;30;3,00
+LUM22;Halogène pour étagère;1;10,00
+DIV25;Hotte Airlux;1;40,00
+DIV11;Hotte de cuisine;1;30,00
+DIV28;Hotte encastrable NOVY D874;1;90,00
+GO37;Hydrofuge Mapei;1;40,00
+RA41;Insert à bois;1;300,00
+DIV14;Intissé lisse rénovation murs;1;17,00
+ISO 1;Isolant accoustique;41;4,00
+ISO 2;Isolant multicouche (10 épaisseurs);4;40,00
+ISO6;Isolant thermique céramique;500;5,00
+GRO 13;Klinkers;452;0,40
+PAR 13;Lambris;126;15,00
+PAR 11;Lambris de châtaignier;9;10,00
+PAR 2;Lambris de murs et plafonds;62;5,00
+PAR 7;Lambris de murs et plafonds;6;8,00
+PAR 12;Lambris pin des landes;24;5,00
+PAR14;Lambris PVC BLanc plafond/mur;1;9,00
+PAR 10;Lame de Padouk;26;8,50
+LUM 1;Lampe Led Philips;2;15,00
+ELEC11;Lampe philipps;3;30,00
+SA 32;Lavabo d&#39angle;1;20,00
+SA 33;Lavabo d&#39angle;1;20,00
+SA 37;Lave-main;1;20,00
+SA 73;Lave-main;1;20,00
+SA 86;Lave-main;1;20,00
+SA136;Lave-mains;1;20,00
+LUM23;Led 18 V;10;6,00
+LUM9;LED extérieur;1;35,00
+LUM17;Led extérieur;1;15,00
+LUM10;Led Plafonnier;1;15,00
+OUT8;Lieur automatique fils;1;15,00
+GRO 18;Linteau;1;10,00
+;Luminaires;100;5,00
+BOI09;Main courante  bois massif;3;15,00
+ELEC;Matériel électrique NIKO TOUT A 1?;100;1,00
+BAR 1;Mélèze de Sibérie;750;5,20
+SA 42;Meuble + évier double + armoire miroir + colonne;1;130,00
+SA83;Meuble de SDB 2 vasques;1;100,00
+SA 55;Meuble évier + éclairage;1;40,00
+SA84;MEUBLE MIROIR SDB;1;40,00
+SA72;Mitigeur douche GROHE;1;50,00
+SA90;Mitijeur douche;1;40,00
+SA91;Mitijeur Douche;1;30,00
+;Mortier de jointoiement &#34Kerakoll Fugabella&#34;40;5,00
+GRO33;Mortier Weber Plan 819;6;15,00
+DIV12;Panier douche;1;10,00
+Q13;Panier système télescopique;1;40,00
+BOI06;Panneau aggloméré blanc;1;17,00
+PO 3q;Panneau de porte PVC;1;25,00
+;Panneau laine de bois (rigide);13;7,00
+;Panneaux fibre de bois;7;6,00
+BOI10;Panneaux MDF 18mm;40;3,00
+;Panneaux PU;22;15,00
+PA 2;paroi de douche;1;130,00
+PA 29;Paroi de douche;2;30,00
+PA3;paroi de douche (porte);1;130,00
+PA11;paroi de douche avec bandeau;1;130,00
+PA 30;Paroi double douche;1;80,00
+PA 23;Paroi douche;1;150,00
+PA4;Paroi douche;1;130,00
+PA6;Paroi douche;1;130,00
+PA7;Paroi douche;1;130,00
+PA9;Paroi douche;1;140,00
+PA16;Paroi douche;1;130,00
+PA 14;Paroi douche;1;130,00
+PA 12;Paroi douche;1;130,00
+PA 1;Paroi douche;1;150,00
+PA 5;Paroi douche;1;130,00
+PA 17;Paroi douche;1;130,00
+PA 18;Paroi douche;1;130,00
+PA19;Paroi douche;1;130,00
+PA 20;Paroi douche;1;130,00
+PA 21;Paroi douche;1;100,00
+PA 22;Paroi douche;1;130,00
+SA87;Parois baignoire divers modèles;3;130,00
+PAR 1;Parquet stratifié;40;7,00
+PAR 3;Parquet stratifié;26;5,00
+PAR 4;Parquet stratifié;44;5,00
+PAR 5;Parquet stratifié;43;5,00
+PAR 6;Parquet stratifié;40;5,00
+PAR 8;Parquet stratifié;13;5,00
+PAR 9;Parquet stratifié;6;5,00
+GRO 16;Pavés;1555;0,30
+GRO38;Pavés beton;6;7,00
+GRO 12;pavés gris;26;0,30
+GRO 14;Pavés gris;1548;0,50
+OUT05;Perceuse Peugeot;1;17,00
+SA117;Petit évier en inox NEUF;1;55,00
+SA105;Pied de receveur de douche MEPA;1;15,00
+GRO 2;Pierre bleue;10;5,00
+GRO 17;Pierre bleue;4;45,00
+GRO28;Pierre de Waimes;10;20,00
+;Pierre, marbre, granit, ...;2;10,00
+;Pierre, marbre, granit, ...;1;6,00
+;Pierre, marbre, granit, ...;4;10,00
+;Pierre, marbre, granit, ...;4;15,00
+;Pierre, marbre, granit, ...;1;20,00
+;Pierre, marbre, granit, ...;1;10,00
+;Pierre, marbre, granit, ...;1;25,00
+;Pierre, marbre, granit, ...;1;25,00
+;Pierre, marbre, granit, ...;1;25,00
+;Pierre, marbre, granit, ...;1;10,00
+LUM16;Plafonnier;1;15,00
+LUM11;Plafonnier Led;2;45,00
+LUM20;Plafonnier Led;1;15,00
+BOI07;Plan de travail;1;8,00
+DIV6;Plan de travail cuisine en Granit;1;270,00
+BOI02;Planche brut sapin;84;1,10
+BOI04;Planche lamellée collée chêne;1;30,00
+BOI03;Planches brutes;250;1,10
+ELECTRO01;Plaque cuisson vitrocéramique;1;40,00
+SA113;Plaque de commande wc encastrable Geberit;1;15,00
+CAR57;Plaque de granit noir;1;150,00
+TOIT01;Plaque ondulées PVC;7;1,00
+ISO6;Plaque répartition Zinc;500;0,10
+TOI04;Plaques polycarbonate;7;3,00
+DIV17;Plateau de  verre  à motif;1;35,00
+CAR58;Plinthe;12;6,00
+;Plot de terrasse;10;7,00
+GRO28;PLOTS de clôture;2;3,00
+Q07;Poignée de porte  intérieur;4;5,00
+Q02;Poignée de porte intérieur;7;10,00
+Q09;Poignée meuble Fer Forgé;20;1,00
+Q03;Poignée porte ancienne;10;10,00
+OUT11;Pompe de relevage;1;300,00
+PO 2i;Porte à peindre;1;15,00
+PO 2x;Porte à peindre;1;15,00
+PO 2z;Porte à peindre;1;30,00
+PO 35;Porte à peindre;1;15,00
+PO 36;Porte à peindre;1;15,00
+PO 37;Porte à peindre;1;25,00
+PO 38;Porte à peindre;1;15,00
+PO 39;Porte à peindre;1;25,00
+PO 1j;Porte à peindre (avec clé);1;50,00
+PO 42;Porte ancienne chêne;1;25,00
+PO 41;Porte ancienne sapin;1;25,00
+PO 1u;Porte blanche (avec clé);1;40,00
+PO 1;Porte blanche (avec clé);1;45,00
+PO 5;Porte blanche (avec clé);1;45,00
+PO 6;Porte blanche (avec clé);1;45,00
+PO 9;Porte blanche (avec clé);1;45,00
+PO 10;Porte blanche (avec clé);1;45,00
+PO59;Porte blanche avec chambranle;1;60,00
+PO 1b;Porte brune;1;25,00
+PO 1e;Porte brune;1;25,00
+PO 1f;Porte brune;1;25,00
+PO 1i;Porte brune;1;25,00
+PO 1k;Porte brune;1;25,00
+PO 1m;Porte brune;1;25,00
+PO 1o;Porte brune;1;25,00
+PO 1p;Porte brune;1;25,00
+PO 1s;Porte brune;1;25,00
+PO 2c;Porte brune;1;25,00
+PO 2e;Porte brune;1;25,00
+PO 3c;Porte brune;1;25,00
+PO 1c;Porte brune;1;25,00
+PO 1a;Porte brune (avec clé);1;25,00
+PO 1d;Porte brune (avec clé);1;25,00
+PO 1g;Porte brune (avec clé);1;25,00
+PO 1h;Porte brune (avec clé);1;25,00
+PO 1n;Porte brune (avec clé);1;25,00
+PO 1r;Porte brune (avec clé);1;25,00
+PO 1t;Porte brune (avec clé);1;25,00
+PO 1q;Porte brune (avec clé);1;25,00
+PO 1v;Porte chêne;1;30,00
+PO 1y;Porte chêne;1;30,00
+PO 1z;Porte chêne;1;30,00
+PO 2k;Porte chêne;1;50,00
+PO 3a;Porte chêne;1;50,00
+PO 3b;Porte chêne;1;15,00
+PO 3d;Porte chêne;1;15,00
+PO 3e;Porte chêne;1;50,00
+PO 3f;Porte chêne;1;50,00
+PO 3g;Porte chêne;1;50,00
+PO 3h;Porte chêne;1;50,00
+PO 3i;Porte chêne;1;50,00
+PO 3j;Porte chêne;1;50,00
+PO 3k;Porte chêne;1;50,00
+PO 3l;Porte chêne;1;50,00
+PO 3n;Porte chêne;1;50,00
+PO 1w;Porte chêne (avec clé);1;30,00
+PO 1x;Porte chêne (avec clé);1;30,00
+PO47;Porte chêne intérieur;3;40,00
+PO48;Porte chêne intérieur;1;40,00
+PO 2g;Porte chêne semi massif (Neuve);1;100,00
+PO 2a;Porte coulissante;1;50,00
+PO 2b;Porte coulissante;1;50,00
+PO 11;Porte coulissante;1;25,00
+PO 25 avec PO24;Porte d&#39entrée double PVC (avec cadre);1;80,00
+PO 18;Porte d&#39entrée en bois (sans cadre);1;25,00
+PO 19;Porte d&#39entrée en bois (sans cadre);1;25,00
+PO 34;Porte d&#39entrée PVC (avec cadre);1;80,00
+PO 24 - PO25;Porte d&#39entrée PVC (avec cadre) double;2;100,00
+PO 23;Porte d&#39entrée PVC (sans cadre);1;25,00
+PO 43;porte d'entrée;1;935,00
+PO 45;porte d'entrée;1;0,00
+PO 44;porte d'entrée sans chambranle;1;0,00
+PA10;Porte douche;1;130,00
+PA13;Porte douche;1;130,00
+PA15;Porte douche;1;130,00
+PO 13;Porte effet massif (avec clé);1;45,00
+PO 15;Porte effet massif (avec clé);1;45,00
+PO 2v;Porte en chêne;1;50,00
+PO 2w;Porte en chêne;1;40,00
+PO 3o;Porte en chêne;1;50,00
+PO 3p;Porte en chêne;1;50,00
+PO 3r;Porte en chêne;1;50,00
+PO 3s;Porte en chêne;1;50,00
+PO 3t;Porte en chêne;1;50,00
+PO 3u;Porte en chêne;1;50,00
+PO 3v;Porte en chêne;1;50,00
+PO 31;Porte en sapin;1;10,00
+PO 17;Porte en verre (neuve);1;80,00
+PO58;Porte entrée PVC;1;160,00
+PO49;Porte fenêtre afzelia;2;50,00
+PO55;Porte garage bois basculante;1;100,00
+PO52;Porte intérieur bois et verre;1;50,00
+PO 32;Porte métallique;1;40,00
+PO 33;Porte métallique;1;40,00
+SA89;Porte papier toilette;1;27,00
+PO 40;Porte sapin;1;25,00
+SA20;Porte serviettes NEUF;5;20,00
+DIV7;Porte verres FATBOY;3;30,00
+PO 2y;Porte vitrée;1;30,00
+PO 7;Porte vitrée;1;25,00
+PO 8;Porte vitrée;1;25,00
+PO46;Porte vitrée;3;25,00
+PO 2j;Porte vitrée chêne;3;50,00
+PO 3m;Porte vitrée chêne;1;50,00
+PO 21;Porte vitrée en bois;2;35,00
+PO 26;Porte vitrée en bois;1;25,00
+PO 28;Porte vitrée en bois;1;10,00
+PO 29;Porte vitrée en bois;1;10,00
+PO 30;Porte vitrée en bois;1;10,00
+PO54;Portes de garage;2;100,00
+DIV5;Poteau de clôture rond;15;10,00
+ELEC01;Prise  16 ampères;1;10,00
+ELEC03;Prise 16 Ampères;1;6,00
+;Prises et interrupteurs;100;1,00
+ELEC05;Prises Multi...;20;1,00
+Q06;Quincaillerie divers;100;2,00
+OUT06;Rabots;10;10,00
+SA79;Raccords plomberie;50;2,00
+RA 1;Radiateur;1;70,00
+RA 2;Radiateur;1;70,00
+RA 3;Radiateur;1;50,00
+RA 4;Radiateur;1;50,00
+RA 5;Radiateur;1;30,00
+RA 6;Radiateur;1;60,00
+RA 7;Radiateur;1;70,00
+RA 8;Radiateur;1;70,00
+RA 9;Radiateur;3;70,00
+RA 12;Radiateur;1;70,00
+RA 13;Radiateur;2;70,00
+RA 15;Radiateur;1;70,00
+RA 16;Radiateur;1;60,00
+RA 18;Radiateur;1;50,00
+RA 21;Radiateur;1;60,00
+RA 22;Radiateur;1;60,00
+RA 23;Radiateur;1;60,00
+RA 24;Radiateur;1;60,00
+RA 25;Radiateur;1;100,00
+RA 26;Radiateur;1;100,00
+RA 28;Radiateur;1;25,00
+RA33;Radiateur;1;60,00
+RA39;Radiateur;1;85,00
+VIN 10;Radiateur;1;60,00
+RA32;Radiateur électrique;2;12,00
+RA48;Radiateur électrique;2;30,00
+RA31;Radiateur Fonte art déco;3;300,00
+RA49;Radiateur mural;1;130,00
+RA 27;Radiateur sèche-serviette;1;45,00
+RA42;radiateur sèche-serviettes;2;40,00
+RA46;Radiateur séche-serviettes électrique;2;30,00
+RA34;Radiateurs en fonte début 1900;8;0,00
+SA 77;Receveur de douche;1;20,00
+SA103;Receveur de douche;1;20,00
+SA 69;Receveur de douche acrylique;3;30,00
+SA77;Receveur de douche résine;1;180,00
+SA119;Receveur douche en angle;1;40,00
+SA78;Receveur douche HUPPE easy flat;1;180,00
+SA104;Receveur douche KALDEWEI;1;50,00
+SA19;Robinet eau froid Grohe NEUF;2;40,00
+RA37;Rouleau Tube cuivre isolé bi-tube Sufix Pour clim;1;5,00
+GRO38;Rouleaux tuyau de drainage;2;55,00
+Q08;Roulements portes coulissantes;8;4,00
+DIV21;Roulette avec frein;2;2,00
+ISO3;Ruban d&#39étanchéité compribande;6;7,00
+GRO30;Sable jaune de maçon;50;1,80
+DIV4;Sac Vermiculite;2;12,00
+OUT01;Scie onglet;1;40,00
+OUT02;scie onglet;1;25,00
+PO53;Serrures;15;6,00
+;Silicone;200;1,00
+DIV15;Silka solution lissage joins de  silicone;2;2,00
+SA82;Siphons;30;2,00
+DIV27;SOCAREX;100;0,70
+ELEC10;Soquets;50;1,00
+PAR15;Sous-couche Parquets;5;40,00
+DIV19;Spiroflex conduit ventilation;5;2,00
+LUM21;Spot encastrable;1;10,00
+LUM6;Spot encastrable;1;30,00
+LUM12;Spot encastrable;1;10,00
+LUM15;Spot encastrable;1;15,00
+LUM18;Spot encastrable;1;15,00
+LUM19;Spot encastrable;1;15,00
+LUM5;Spot led;1;34,00
+LUM14;Spot Led mural;1;15,00
+LUM7;Spot Mural;1;18,00
+LUM13;Spot Mural;1;15,00
+LUM2;Spot Mural Halogène;1;18,00
+LUM8;Spot Plafonnier;1;34,00
+BOI;Stock de bois;100;0,00
+OUT04;Stock de mèches;1;0,00
+BOI05;STOCK de Panneaux de bois;100;0,00
+Q12;Support de rampe en inox;3;6,00
+DIV3;Support Equerre;2;40,00
+ELEC12;Suspension filaire métal;4;15,00
+DIV34;Table de jardin;1;65,00
+SA 68;Tablette en porcelaine;2;10,00
+DIV25;Taque égout fonte;3;35,00
+;Taque vitrocéramique;1;30,00
+;Taque vitrocéramique;1;30,00
+SA73;Tête de douche;1;40,00
+GRO24;Thermoplan terre cuite;40;1,00
+RA30;Thermostat électronique  Honeywell;1;15,00
+RA35;Thermostat Honeywell;1;70,00
+RA38;Thermostat Vaillant;1;60,00
+GRO21;Tôles;1;12,00
+SA129;Top de douche NEUF;1;45,00
+ELEC02;Transformateur lampe halogène;1;7,00
+BOI08;Trespa;10;40,00
+;Trespa (chutes);10;18,00
+OUT09;Treuil électrique de levage 500kg IORI;1;370,00
+DIV8;Tube INOX;9;8,00
+TOI01;Tuile ardoise Huguenot double;24;1,30
+GRO;Tuiles terre cuite;100;0,00
+GRO 39;Tuiles Terre cuite;3;18,00
+DIV22;Tuyau à Gaz annelé;35;5,00
+RA36;Tuyau chauffage sol;50;1,00
+TOI06;Tuyau de descente zinc;15;4,00
+SA80;Tuyau et accessoire PVC & PP;100;0,00
+ISO4;UNILIN ISOLANT;8;1,00
+SA100;Vanne haute pression;2;12,00
+RA29;Vanne thermostatique radiateur;20;4,50
+ELEC08;Varia  coffrets électrique;20;10,00
+ELEC09;Varia Ampoules;100;0,50
+ELEC07;Varia colliers câbles;100;0,10
+OUT07;Varlope;1;20,00
+SA 19;Vasque;1;15,00
+SA 34;Vasque;3;25,00
+SA 91;Vasque;1;40,00
+SA109;Vasque à encastrer Villeroy&bosch;1;100,00
+SA 38;Vasque en plastique;2;10,00
+SA 41;Vasque encastrable;1;100,00
+SA 27;Vasque inox;1;15,00
+SA 84;Vasque inox;1;30,00
+SA 93;Vasque inox;1;30,00
+SA 28;Vasque métallique;1;10,00
+CH 23;Velux;1;175,00
+CAR 36;VENDU - Carrelage &#34revoir Paris - Antonet&#34;50;19,00
+CH 8;VENDU - Chassis bois;1;50,00
+CH 14;vendu - Chassis bois;1;20,00
+CH 24;VENDU - Chassis PVC;1;75,00
+CH 21;VENDU - Chassis PVC double ouvrant;1;120,00
+SA 81;VENDU - Meuble évier;1;25,00
+PO 4;VENDU - Porte blanche;1;45,00
+PO 14;VENDU - Porte blanche;1;45,00
+PO 2m;VENDU - Porte chêne;1;50,00
+PO 2p;VENDU - Porte en chêne;1;25,00
+PO 2r;VENDU - Porte en chêne;1;25,00
+PO 2s;VENDU - Porte en chêne;1;25,00
+PO 2t;VENDU - Porte en chêne;1;40,00
+PO 2u;VENDU - Porte en chêne;1;50,00
+PO 2o;VENDU - Porte vitrée chêne;1;50,00
+PO 27;VENDU - Porte vitrée en bois;1;10,00
+TOI 3;VENDU -Aspirateur de cheminée (tira-trek);4;10,00
+TOI08;Ventilation cheminée d'aération;2;18,00
+Q09;Verrou porte cadenas;2;3,50
+OUT03;Vilebrequin à cliquet;1;40,00
+PO 3w;VINTAGE Double porte vitrée chêne;1;150,00
+SA99;VINTAGE EVIER;1;35,00
+VIN;Vinyle;1;6,00
+VIN 2;Vinyle;1;2,60
+Q11;Vis inox torx;10;22,00
+CH76;Volet pour fenêtre de toit (marque ROTO) solaire;3;130,00
+SA 54;WC;1;40,00
+SA 47;WC;1;40,00
+SA 49;WC;1;40,00
+SA 45;WC  ENFANT suspendu;1;30,00
+SA70;WC Jaune;3;35,00
+SA 67;WC neuf;1;60,00
+SA 43;WC suspendu;6;50,00
+SA 44;WC suspendu;1;30,00
+SA 90;WC suspendu;1;30,00
