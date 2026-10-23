@@ -548,19 +548,35 @@ function brancherMouv(){$("#mvMois").onchange=e=>{if(e.target.value){mvMois=e.ta
 const entreeCaisse=v=>v.mode==="especes"||(v.mode==="facture"&&v.facture.paye==="especes");
 // Un bon d'achat utilisé n'est pas de l'argent reçu : ligne négative dans les recettes (et dans la caisse si le reste est payé en espèces).
 let moisVu=moisDe(jour());
+// Comme un journal des recettes : rien n'est retiré. Un ticket annulé reste à sa place et une ligne
+// d'annulation (montants en négatif) est écrite le jour de l'annulation. Un total par jour suit chaque journée.
+const quandAnnule=x=>x.annuleeA||x.ts;
 function carnet(m){const lignes=[];
- const evts=[...ventes.filter(v=>moisDe(v.date)===m&&!v.annulee).map(v=>({ts:v.ts,v})),...sorties.filter(s=>moisDe(s.date)===m&&!s.annulee).map(s=>({ts:s.ts,s}))].sort((a,b)=>a.ts-b.ts);
+ const evts=[...ventes.filter(v=>moisDe(v.date)===m).map(v=>({ts:v.ts,date:v.date,v})),...sorties.filter(s=>moisDe(s.date)===m).map(s=>({ts:s.ts,date:s.date,s})),
+  ...ventes.filter(v=>v.annulee&&moisDe(jour(new Date(quandAnnule(v))))===m).map(v=>({ts:quandAnnule(v),date:jour(new Date(quandAnnule(v))),v,ann:1})),
+  ...sorties.filter(s=>s.annulee&&moisDe(jour(new Date(quandAnnule(s))))===m).map(s=>({ts:quandAnnule(s),date:jour(new Date(quandAnnule(s))),s,ann:1}))].sort((a,b)=>a.ts-b.ts);
+ const neg=x=>x==null?null:-x;let jourEnCours=null,tj=null;
+ const finJour=()=>{if(tj)lignes.push({date:"",jour:1,lib:"Total du "+dateBe(jourEnCours),rec:r2(tj.rec),ent:r2(tj.ent),sor:r2(tj.sor)})};
  evts.forEach(e=>{
-  if(e.v){const v=e.v,cash=entreeCaisse(v);
-   v.lignes.forEach((l,i)=>{const mt=r2(l.p*l.q);lignes.push({date:i?"":v.date,client:!i,vid:v.id,
+  if(e.date!==jourEnCours){finJour();jourEnCours=e.date;tj={rec:0,ent:0,sor:0}}
+  const avant=lignes.length;
+  if(e.v&&e.ann){const v=e.v,cash=entreeCaisse(v),tot=r2(v.total-(v.bon?v.bon.mt:0));
+   lignes.push({date:e.date,client:true,vid:v.id,corr:1,lib:`Annulation du ticket n° ${v.num} du ${dateBe(v.date)}`,ref:"",
+    rec:v.mode==="facture"?null:-tot,recTxt:v.mode==="facture"?"annul. "+v.facture.num:null,ent:cash?-tot:null,sor:null})}
+  else if(e.v){const v=e.v,cash=entreeCaisse(v);
+   v.lignes.forEach((l,i)=>{const mt=r2(l.p*l.q);lignes.push({date:i?"":v.date,client:!i,vid:v.id,annule:v.annulee,
     lib:(l.q!==1||qSaisie(l)?qTxt(l)+" ":"")+(l.n||"article"),ref:l.r,
     rec:v.mode==="facture"?null:mt,recTxt:v.mode==="facture"?v.facture.num:null,ent:cash?mt:null,sor:null})});
-   if(v.bon)lignes.push({date:"",client:false,vid:v.id,lib:"payé par bon d'achat "+v.bon.num,ref:"",rec:v.mode==="facture"?null:-v.bon.mt,ent:cash?-v.bon.mt:null,sor:null})}
-  else lignes.push({date:e.s.date,client:true,sid:e.s.id,lib:e.s.lib,ref:"",rec:null,ent:null,sor:e.s.montant})});
- const t={rec:0,ent:0,sor:0};lignes.forEach(l=>{t.rec+=l.rec||0;t.ent+=l.ent||0;t.sor+=l.sor||0});for(const k in t)t[k]=r2(t[k]);
+   if(v.bon)lignes.push({date:"",client:false,vid:v.id,annule:v.annulee,lib:"payé par bon d'achat "+v.bon.num,ref:"",rec:v.mode==="facture"?null:-v.bon.mt,ent:cash?-v.bon.mt:null,sor:null})}
+  else if(e.ann)lignes.push({date:e.date,client:true,sid:e.s.id,corr:1,lib:`Annulation de la sortie « ${e.s.lib} » du ${dateBe(e.s.date)}`,ref:"",rec:null,ent:null,sor:-e.s.montant});
+  else lignes.push({date:e.s.date,client:true,sid:e.s.id,annule:e.s.annulee,lib:e.s.lib,ref:"",rec:null,ent:null,sor:e.s.montant});
+  lignes.slice(avant).forEach(l=>{tj.rec+=l.rec||0;tj.ent+=l.ent||0;tj.sor+=l.sor||0})});
+ finJour();
+ const t={rec:0,ent:0,sor:0};lignes.filter(l=>!l.jour).forEach(l=>{t.rec+=l.rec||0;t.ent+=l.ent||0;t.sor+=l.sor||0});for(const k in t)t[k]=r2(t[k]);
  // TVA : sur les articles (pas sur les bons d'achat vendus ; un bon utilisé paie des articles, la TVA est due à ce moment-là).
- t.tva=r2(evts.filter(e=>e.v&&e.v.mode!=="facture").reduce((x,e)=>x+tvaV(e.v).tva,0));
- const rep=report(m);t.solde=r2(rep+t.ent-t.sor);t.clients=evts.filter(e=>e.v).length;
+ // Une annulation retire la TVA le jour où elle est faite.
+ t.tva=r2(evts.filter(e=>e.v&&e.v.mode!=="facture").reduce((x,e)=>x+(e.ann?-1:1)*tvaV(e.v).tva,0));
+ const rep=report(m);t.solde=r2(rep+t.ent-t.sor);t.clients=evts.filter(e=>e.v&&!e.ann&&!e.v.annulee).length;
  return {lignes,t,rep}}
 function report(m,prof=0){const k="report-"+m;if(REG[k]!=null)return REG[k];if(prof>24)return 0;
  const pm=moisAvant(m);const aDes=ventes.some(v=>moisDe(v.date)===pm)||sorties.some(s=>moisDe(s.date)===pm)||REG["report-"+pm]!=null;
@@ -572,7 +588,7 @@ function ecranCarnet(){const {lignes,t,rep}=carnet(moisVu),auj=jour(),cpt=REG["c
  <div class="deux" style="align-items:start">
  <div class="tab-wrap"><table class="t carnet"><thead><tr><th>Date</th><th>Libellé</th><th>Recettes</th><th>Entrée caisse</th><th>Sortie caisse</th></tr></thead><tbody>
   <tr><td></td><td>Report : <button class="lien" id="report">${eur(rep)}</button></td><td></td><td>${nb(rep)}</td><td></td></tr>
-  ${lignes.map(l=>`<tr class="${l.client?"new":""} ${l.vid||l.sid?"cl":""}" ${l.vid?`data-v="${l.vid}"`:l.sid?`data-s="${l.sid}"`:""}><td>${l.date?dateBe(l.date).slice(0,5):""}</td>
+  ${lignes.map(l=>l.jour?`<tr class="jour"><td></td><td>${esc(l.lib)}</td><td>${nb(l.rec)}</td><td>${nb(l.ent)}</td><td>${nb(l.sor)}</td></tr>`:`<tr class="${l.client?"new":""} ${l.vid||l.sid?"cl":""} ${l.annule?"annule":""} ${l.corr?"corr":""}" ${l.vid?`data-v="${l.vid}"`:l.sid&&!l.annule&&!l.corr?`data-s="${l.sid}"`:""}><td>${l.date?dateBe(l.date).slice(0,5):""}</td>
    <td>${esc(l.lib)}${l.ref?` <span class="muted">${esc(l.ref)}</span>`:""}</td><td>${l.recTxt?esc(l.recTxt):nb(l.rec)}</td><td>${l.ent!=null?nb(l.ent):"—"}</td><td>${l.sor!=null?nb(l.sor):"—"}</td></tr>`).join("")||'<tr><td colspan="5" class="vide">Aucune vente ce mois-ci.</td></tr>'}
   <tr class="tot"><td></td><td>Totaux</td><td>${nb(t.rec)}</td><td>${nb(t.ent)}</td><td>${nb(t.sor)}</td></tr></tbody></table></div>
  <div style="display:flex;flex-direction:column;gap:14px">
@@ -746,7 +762,7 @@ async function telecharger(nom,txt,type){const f=new File([type?txt:cp1252(txt)]
  const u=URL.createObjectURL(f),a=document.createElement("a");a.href=u;a.download=nom;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}
 const perNom=()=>{const [d,a]=periode();return d<="2000-01-01"?"tout":d+"_"+a};
 function csvCarnet(m){const {lignes,t,rep}=carnet(m),rows=[["N°","Date","Libellé","Recettes","Entrée caisse","Sortie caisse"],["","","report :","",dec(rep),""]];
- lignes.forEach((l,i)=>rows.push([i+1,l.date?dateBe(l.date):"",l.lib+(l.ref?" "+l.ref:""),l.recTxt||dec(l.rec),dec(l.ent),dec(l.sor)]));
+ let n=0;lignes.forEach(l=>rows.push([l.jour?"":++n,l.date?dateBe(l.date):"",l.lib+(l.ref?" "+l.ref:"")+(l.annule?" (annulé plus loin)":""),l.recTxt||dec(l.rec),dec(l.ent),dec(l.sor)]));
  rows.push(["","","TOTAUX du mois",dec(t.rec),dec(t.ent),dec(t.sor)],["","","Solde de la caisse du mois","","",dec(t.solde)]);return csv(rows)}
 const EXPORTS={
  articles(){const rows=[["Date","Ticket","Référence","Article","Quantité","Unité","Prix unitaire TVAc","Total ligne","Paiement","Statut"]];
