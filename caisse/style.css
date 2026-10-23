@@ -28,6 +28,7 @@ nav.onglets svg{width:18px;height:18px}
 .etat .pt{width:9px;height:9px;border-radius:50%;background:var(--jaune);flex:none}
 .etat .pt.vert{background:#7be0a0}.etat .pt.rouge{background:#ff8a80}.etat .pt.gris{background:rgba(255,255,255,.5)}
 .essai{background:var(--violet);color:#fff;text-align:center;font-size:12px;padding:4px 16px}
+.essai.mal{background:#b3261e;font-weight:600}
 
 .page{max-width:1500px;margin:0 auto;padding:18px 20px 60px}
 .carte{background:var(--blanc);border:1px solid var(--ligne);border-radius:14px;padding:16px}
