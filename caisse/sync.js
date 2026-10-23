@@ -47,7 +47,7 @@ async function fusionner(j){let n=0;const suffixe="-"+slug(j.appareil||"autre");
 function majEtat(etat,msg){Sync.etat=etat;Sync.msg=msg||"";const el=$("#etat");if(!el)return;
  const t={non:["Pas relié au site","gris"],encours:["Synchronisation…","jaune"],ok:["Relié au site · "+new Date(Sync.quand||Date.now()).toTimeString().slice(0,5),"vert"],
   hors:["Hors ligne : envoi en attente","jaune"],err:["Liaison en erreur","rouge"]}[etat];
- el.innerHTML=`<span class="pt ${t[1]}"></span><span>${esc(t[0])}</span>`;el.title=Sync.msg||"La douchette est active sur tous les écrans."}
+ el.innerHTML=`<span class="pt ${t[1]}"></span><span>${esc(t[0])}</span>`;if(typeof bandeau==="function")bandeau();el.title=Sync.msg||"La douchette est active sur tous les écrans."}
 
 async function synchroniser(manuel){
  if(!syncPret()){majEtat("non");return false}
@@ -59,7 +59,9 @@ async function synchroniser(manuel){
   const fichiers=((await gh(GH.dossier))||[]).filter(f=>f.type==="file"&&/^journal-.+\.json$/.test(f.name));
   let recus=0,illisibles=0;
   Sync.fusion=true;
-  try{for(const f of fichiers.filter(f=>f.name!==moi&&REG["sha:"+f.name]!==f.sha)){
+  // On relit aussi notre propre journal s'il a changé sans nous : un autre appareil porte le même nom,
+  // ou ce navigateur a été vidé. On fusionne au lieu d'écraser.
+  try{for(const f of fichiers.filter(f=>REG["sha:"+f.name]!==f.sha)){
    try{recus+=await fusionner(await dechiffrer(await gh(f.path,{},true)));await putSet("sha:"+f.name,f.sha)}catch(e){if(e.status)throw e;illisibles++}}}
   finally{Sync.fusion=false}
   if(recus){appliquerArticles();calcStock();
@@ -70,8 +72,8 @@ async function synchroniser(manuel){
   const ej=await empreinte(JSON.stringify(journal));
   // Journal illisible ailleurs = phrase sans doute mal tapée ici : on n'envoie rien qui serait illisible pour les autres.
   if(!illisibles&&ej!==REG.empreinteJournal){const f=fichiers.find(x=>x.name===moi);
-   await ghEcrire(`${GH.dossier}/${moi}`,await chiffrer({...journal,maj:new Date().toISOString()}),f&&f.sha,`Caisse : journal de ${appareil()}`);
-   await putSet("empreinteJournal",ej)}
+   const r=await ghEcrire(`${GH.dossier}/${moi}`,await chiffrer({...journal,maj:new Date().toISOString()}),f&&f.sha,`Caisse : journal de ${appareil()}`);
+   if(r&&r.content)await putSet("sha:"+moi,r.content.sha);await putSet("empreinteJournal",ej)}
   // Stock pour le site, seulement si on a pu lire tous les journaux (sinon on publierait un stock en retard).
   const S=stockSite(),es=await empreinte(JSON.stringify(S.articles));
   if(!illisibles&&es!==REG.empreinteStock){const f=await gh(GH.stock);

@@ -1,6 +1,6 @@
 "use strict";
 // Caisse & stock du Comptoir des Matériaux. Tout est gardé sur l'appareil (IndexedDB) ; rien n'est écrit dans Impulsion.
-const VERSION="2.4 (essai)";
+const VERSION="2.5 (essai)";
 const CATS=[["SA","Sanitaire"],["PA","Parois de douche"],["CH","Châssis"],["PO","Portes"],["CAR","Carrelage"],["GRO","Gros œuvre"],["RA","Chauffage"],
  ["ELEC","Électricité"],["LUM","Luminaires"],["BOI","Bois"],["PAR","Parquet & bardage"],["LAM","Lambris"],["TOI","Toiture"],["ISO","Isolant"],
  ["Q","Quincaillerie"],["OUT","Outillage"],["ELECTRO","Électroménager"],["DIV","Divers"]];
@@ -56,10 +56,10 @@ function openDb(){return new Promise((ok,ko)=>{const r=indexedDB.open("caisse-co
   if(!n.contains("articles"))d.createObjectStore("articles",{keyPath:"r"});if(!n.contains("mouvements"))d.createObjectStore("mouvements",{keyPath:"id"})};
  r.onsuccess=()=>{idb=r.result;ok()};r.onerror=()=>ko(r.error)})}
 function tx(store,mode,fn){return new Promise((ok,ko)=>{const t=idb.transaction(store,mode),s=t.objectStore(store);const res=fn(s);
- t.oncomplete=()=>ok(res&&res.result);t.onerror=()=>ko(t.error)})}
+ t.oncomplete=()=>ok(res&&res.result);t.onerror=e=>ko(e.target.error||t.error);t.onabort=()=>ko(t.error||new Error("transaction annulée"))})}
 const all=st=>tx(st,"readonly",s=>s.getAll());
 // Chaque changement de ventes ou de stock part ensuite vers le dépôt commun (sync.js).
-const put=(st,v)=>tx(st,"readwrite",s=>s.put(v)).then(r=>{planifierSync();return r});
+const put=(st,v)=>tx(st,"readwrite",s=>s.put(v)).then(r=>{planifierSync();planifierSauv();return r});
 const putSet=(k,v)=>{REG[k]=v;return tx("reglages","readwrite",s=>s.put(v,k))};
 async function allSet(){const o={};await new Promise((ok,ko)=>{const t=idb.transaction("reglages"),s=t.objectStore("reglages"),c=s.openCursor();
  c.onsuccess=()=>{const x=c.result;if(x){o[x.key]=x.value;x.continue()}else ok()};c.onerror=()=>ko(c.error)});return o}
@@ -117,6 +117,7 @@ function render(){
  $("#page").innerHTML=P[screen]();
  ({caisse:brancherCaisse,stock:brancherStock,mouv:brancherMouv,carnet:brancherCarnet,rapports:brancherRapports,reglages:brancherReglages}[screen])();
  if(panneauRef)ouvrirPanneau(panneauRef,true);
+ if(screen==="caisse")garderTicket();bandeau();
 }
 document.addEventListener("click",e=>{const b=e.target.closest("[data-go]");if(b){screen=b.dataset.go;fermerPanneau();render();scrollTo(0,0)}});
 
@@ -335,7 +336,7 @@ function brancherCaisse(){const i=$("#scanIn");
  const f=$("#fnum");if(f)f.oninput=()=>{pay.fnum=f.value};
  $("#valider").onclick=valider}
 async function valider(){const now=new Date(),d=jour(now),t=totalFinal(),rm=remiseMt(),b=bonPaye(),ap=aPayer();
- const n=ventes.filter(v=>v.date===d).length+1;
+ let n=ventes.filter(v=>v.date===d).length+1;while(ventes.some(v=>v.id===d+"-"+String(n).padStart(3,"0")))n++;
  const v={id:d+"-"+String(n).padStart(3,"0"),num:n,date:d,heure:now.toTimeString().slice(0,5),ts:now.getTime(),
   lignes:panier.map(l=>({id:l.id||"",r:l.r,c:l.c||"",m:l.m||"",kg:l.liv||l.bon?0:l.kg??null,kgEst:!!l.kgEst,n:String(l.n).trim(),q:l.q,p:l.p,u:l.u||"",...(l.bon?{bon:1,bonNum:l.bonNum}:{})})),
   total:t,mode:toutParBon()?"bon":pay.mode,annulee:false};
@@ -344,8 +345,17 @@ async function valider(){const now=new Date(),d=jour(now),t=totalFinal(),rm=remi
  if(v.mode==="especes"&&num(pay.recu)!=null){v.recu=num(pay.recu);v.rendu=r2(v.recu-ap)}
  if(v.mode==="facture"){const fn=(pay.fnum.trim()||prochaineFacture()).toUpperCase(),cli={};CLI.forEach(([k])=>{const x=(pay.cli[k]||"").trim();if(x)cli[k]=x});
   v.facture={num:fn,paye:pay.fpaye,client:cli};await putSet("derniereFacture",fn)}
- try{await put("ventes",v)}catch(e){alert("La vente n'a pas pu être enregistrée. Notez-la dans le carnet papier.");return}
- ventes.push(v);calcStock();derniere=v;panier=[];q="";payNeuf();render();montrerTicket(v,true)}
+ // add (et non put) : jamais écraser un ticket déjà enregistré, par exemple depuis un autre onglet.
+ try{for(let essai=0;;essai++){try{await tx("ventes","readwrite",s=>s.add(v));break}
+  catch(e){if(!e||e.name!=="ConstraintError"||essai>20)throw e;
+   ventes=await all("ventes");while(ventes.some(x=>x.id===v.id)){v.num++;v.id=d+"-"+String(v.num).padStart(3,"0")}}}
+  planifierSync();planifierSauv()}
+ catch(e){alert("La vente n'a pas pu être enregistrée. Notez-la dans le carnet papier.");return}
+ ventes.push(v);calcStock();derniere=v;panier=[];q="";payNeuf();render();garderTicket();montrerTicket(v,true)}
+// Ticket en cours gardé sur l'appareil : rien n'est perdu si l'onglet se ferme ou si le PC redémarre.
+function garderTicket(){clearTimeout(garderTicket.t);garderTicket.t=setTimeout(()=>{if(idb)putSet("ticketEnCours",panier.length?{panier,pay,remise}:null).catch(()=>{})},300)}
+document.addEventListener("input",()=>{if(screen==="caisse")garderTicket()});
+document.addEventListener("change",()=>{if(screen==="caisse")garderTicket()});
 
 // Ticket (fenêtre)
 const qTxt=l=>l.remise||l.bon?"":virg(l.q)+(l.u&&l.u!=="pièce"?" "+l.u:" ×");
@@ -538,19 +548,35 @@ function brancherMouv(){$("#mvMois").onchange=e=>{if(e.target.value){mvMois=e.ta
 const entreeCaisse=v=>v.mode==="especes"||(v.mode==="facture"&&v.facture.paye==="especes");
 // Un bon d'achat utilisé n'est pas de l'argent reçu : ligne négative dans les recettes (et dans la caisse si le reste est payé en espèces).
 let moisVu=moisDe(jour());
+// Comme un journal des recettes : rien n'est retiré. Un ticket annulé reste à sa place et une ligne
+// d'annulation (montants en négatif) est écrite le jour de l'annulation. Un total par jour suit chaque journée.
+const quandAnnule=x=>x.annuleeA||x.ts;
 function carnet(m){const lignes=[];
- const evts=[...ventes.filter(v=>moisDe(v.date)===m&&!v.annulee).map(v=>({ts:v.ts,v})),...sorties.filter(s=>moisDe(s.date)===m&&!s.annulee).map(s=>({ts:s.ts,s}))].sort((a,b)=>a.ts-b.ts);
+ const evts=[...ventes.filter(v=>moisDe(v.date)===m).map(v=>({ts:v.ts,date:v.date,v})),...sorties.filter(s=>moisDe(s.date)===m).map(s=>({ts:s.ts,date:s.date,s})),
+  ...ventes.filter(v=>v.annulee&&moisDe(jour(new Date(quandAnnule(v))))===m).map(v=>({ts:quandAnnule(v),date:jour(new Date(quandAnnule(v))),v,ann:1})),
+  ...sorties.filter(s=>s.annulee&&moisDe(jour(new Date(quandAnnule(s))))===m).map(s=>({ts:quandAnnule(s),date:jour(new Date(quandAnnule(s))),s,ann:1}))].sort((a,b)=>a.ts-b.ts);
+ const neg=x=>x==null?null:-x;let jourEnCours=null,tj=null;
+ const finJour=()=>{if(tj)lignes.push({date:"",jour:1,lib:"Total du "+dateBe(jourEnCours),rec:r2(tj.rec),ent:r2(tj.ent),sor:r2(tj.sor)})};
  evts.forEach(e=>{
-  if(e.v){const v=e.v,cash=entreeCaisse(v);
-   v.lignes.forEach((l,i)=>{const mt=r2(l.p*l.q);lignes.push({date:i?"":v.date,client:!i,vid:v.id,
+  if(e.date!==jourEnCours){finJour();jourEnCours=e.date;tj={rec:0,ent:0,sor:0}}
+  const avant=lignes.length;
+  if(e.v&&e.ann){const v=e.v,cash=entreeCaisse(v),tot=r2(v.total-(v.bon?v.bon.mt:0));
+   lignes.push({date:e.date,client:true,vid:v.id,corr:1,lib:`Annulation du ticket n° ${v.num} du ${dateBe(v.date)}`,ref:"",
+    rec:v.mode==="facture"?null:-tot,recTxt:v.mode==="facture"?"annul. "+v.facture.num:null,ent:cash?-tot:null,sor:null})}
+  else if(e.v){const v=e.v,cash=entreeCaisse(v);
+   v.lignes.forEach((l,i)=>{const mt=r2(l.p*l.q);lignes.push({date:i?"":v.date,client:!i,vid:v.id,annule:v.annulee,
     lib:(l.q!==1||qSaisie(l)?qTxt(l)+" ":"")+(l.n||"article"),ref:l.r,
     rec:v.mode==="facture"?null:mt,recTxt:v.mode==="facture"?v.facture.num:null,ent:cash?mt:null,sor:null})});
-   if(v.bon)lignes.push({date:"",client:false,vid:v.id,lib:"payé par bon d'achat "+v.bon.num,ref:"",rec:v.mode==="facture"?null:-v.bon.mt,ent:cash?-v.bon.mt:null,sor:null})}
-  else lignes.push({date:e.s.date,client:true,sid:e.s.id,lib:e.s.lib,ref:"",rec:null,ent:null,sor:e.s.montant})});
- const t={rec:0,ent:0,sor:0};lignes.forEach(l=>{t.rec+=l.rec||0;t.ent+=l.ent||0;t.sor+=l.sor||0});for(const k in t)t[k]=r2(t[k]);
+   if(v.bon)lignes.push({date:"",client:false,vid:v.id,annule:v.annulee,lib:"payé par bon d'achat "+v.bon.num,ref:"",rec:v.mode==="facture"?null:-v.bon.mt,ent:cash?-v.bon.mt:null,sor:null})}
+  else if(e.ann)lignes.push({date:e.date,client:true,sid:e.s.id,corr:1,lib:`Annulation de la sortie « ${e.s.lib} » du ${dateBe(e.s.date)}`,ref:"",rec:null,ent:null,sor:-e.s.montant});
+  else lignes.push({date:e.s.date,client:true,sid:e.s.id,annule:e.s.annulee,lib:e.s.lib,ref:"",rec:null,ent:null,sor:e.s.montant});
+  lignes.slice(avant).forEach(l=>{tj.rec+=l.rec||0;tj.ent+=l.ent||0;tj.sor+=l.sor||0})});
+ finJour();
+ const t={rec:0,ent:0,sor:0};lignes.filter(l=>!l.jour).forEach(l=>{t.rec+=l.rec||0;t.ent+=l.ent||0;t.sor+=l.sor||0});for(const k in t)t[k]=r2(t[k]);
  // TVA : sur les articles (pas sur les bons d'achat vendus ; un bon utilisé paie des articles, la TVA est due à ce moment-là).
- t.tva=r2(evts.filter(e=>e.v&&e.v.mode!=="facture").reduce((x,e)=>x+tvaV(e.v).tva,0));
- const rep=report(m);t.solde=r2(rep+t.ent-t.sor);t.clients=evts.filter(e=>e.v).length;
+ // Une annulation retire la TVA le jour où elle est faite.
+ t.tva=r2(evts.filter(e=>e.v&&e.v.mode!=="facture").reduce((x,e)=>x+(e.ann?-1:1)*tvaV(e.v).tva,0));
+ const rep=report(m);t.solde=r2(rep+t.ent-t.sor);t.clients=evts.filter(e=>e.v&&!e.ann&&!e.v.annulee).length;
  return {lignes,t,rep}}
 function report(m,prof=0){const k="report-"+m;if(REG[k]!=null)return REG[k];if(prof>24)return 0;
  const pm=moisAvant(m);const aDes=ventes.some(v=>moisDe(v.date)===pm)||sorties.some(s=>moisDe(s.date)===pm)||REG["report-"+pm]!=null;
@@ -562,7 +588,7 @@ function ecranCarnet(){const {lignes,t,rep}=carnet(moisVu),auj=jour(),cpt=REG["c
  <div class="deux" style="align-items:start">
  <div class="tab-wrap"><table class="t carnet"><thead><tr><th>Date</th><th>Libellé</th><th>Recettes</th><th>Entrée caisse</th><th>Sortie caisse</th></tr></thead><tbody>
   <tr><td></td><td>Report : <button class="lien" id="report">${eur(rep)}</button></td><td></td><td>${nb(rep)}</td><td></td></tr>
-  ${lignes.map(l=>`<tr class="${l.client?"new":""} ${l.vid||l.sid?"cl":""}" ${l.vid?`data-v="${l.vid}"`:l.sid?`data-s="${l.sid}"`:""}><td>${l.date?dateBe(l.date).slice(0,5):""}</td>
+  ${lignes.map(l=>l.jour?`<tr class="jour"><td></td><td>${esc(l.lib)}</td><td>${nb(l.rec)}</td><td>${nb(l.ent)}</td><td>${nb(l.sor)}</td></tr>`:`<tr class="${l.client?"new":""} ${l.vid||l.sid?"cl":""} ${l.annule?"annule":""} ${l.corr?"corr":""}" ${l.vid?`data-v="${l.vid}"`:l.sid&&!l.annule&&!l.corr?`data-s="${l.sid}"`:""}><td>${l.date?dateBe(l.date).slice(0,5):""}</td>
    <td>${esc(l.lib)}${l.ref?` <span class="muted">${esc(l.ref)}</span>`:""}</td><td>${l.recTxt?esc(l.recTxt):nb(l.rec)}</td><td>${l.ent!=null?nb(l.ent):"—"}</td><td>${l.sor!=null?nb(l.sor):"—"}</td></tr>`).join("")||'<tr><td colspan="5" class="vide">Aucune vente ce mois-ci.</td></tr>'}
   <tr class="tot"><td></td><td>Totaux</td><td>${nb(t.rec)}</td><td>${nb(t.ent)}</td><td>${nb(t.sor)}</td></tr></tbody></table></div>
  <div style="display:flex;flex-direction:column;gap:14px">
@@ -736,7 +762,7 @@ async function telecharger(nom,txt,type){const f=new File([type?txt:cp1252(txt)]
  const u=URL.createObjectURL(f),a=document.createElement("a");a.href=u;a.download=nom;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}
 const perNom=()=>{const [d,a]=periode();return d<="2000-01-01"?"tout":d+"_"+a};
 function csvCarnet(m){const {lignes,t,rep}=carnet(m),rows=[["N°","Date","Libellé","Recettes","Entrée caisse","Sortie caisse"],["","","report :","",dec(rep),""]];
- lignes.forEach((l,i)=>rows.push([i+1,l.date?dateBe(l.date):"",l.lib+(l.ref?" "+l.ref:""),l.recTxt||dec(l.rec),dec(l.ent),dec(l.sor)]));
+ let n=0;lignes.forEach(l=>rows.push([l.jour?"":++n,l.date?dateBe(l.date):"",l.lib+(l.ref?" "+l.ref:"")+(l.annule?" (annulé plus loin)":""),l.recTxt||dec(l.rec),dec(l.ent),dec(l.sor)]));
  rows.push(["","","TOTAUX du mois",dec(t.rec),dec(t.ent),dec(t.sor)],["","","Solde de la caisse du mois","","",dec(t.solde)]);return csv(rows)}
 const EXPORTS={
  articles(){const rows=[["Date","Ticket","Référence","Article","Quantité","Unité","Prix unitaire TVAc","Total ligne","Paiement","Statut"]];
@@ -773,36 +799,77 @@ const EXPORTS={
 function ecranReglages(){return `<div class="titre"><h2>Réglages</h2></div><div class="deux">
  <div class="carte"><h3>Sauvegarde</h3><p class="muted">Ventes, mouvements, fiches et réglages sont gardés dans ce navigateur, sur cet appareil. Faites une sauvegarde chaque semaine (clé USB ou Drive).</p>
   <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="save">Télécharger une sauvegarde</button><button class="btn clair" id="restore">Restaurer une sauvegarde</button><input type="file" id="fRestore" accept=".json" hidden></div>
-  <p class="muted">Dernière sauvegarde : ${REG.derniereSauvegarde?dateBe(jour(new Date(REG.derniereSauvegarde))):"jamais"}.</p></div>
+  <p class="muted">Dernière sauvegarde (manuelle ou automatique) : ${REG.derniereSauvegarde?dateBe(jour(new Date(REG.derniereSauvegarde))):"jamais"}.</p>
+  <p class="muted">${stockageProtege?"Le navigateur s'est engagé à ne pas effacer ces données de lui-même.":"Le navigateur n'a pas garanti la conservation : gardez la caisse dans les favoris et faites les sauvegardes."} Attention : « Effacer les données de navigation » (cookies et données de sites) efface aussi la caisse.</p></div>
  <div class="carte"><h3>Douchette</h3><p class="muted">Scannez un QR d'étiquette ici pour tester :</p><input class="champ" id="testScan" placeholder="Cliquez puis scannez" autocomplete="off"><div id="testRes" class="muted" style="margin-top:8px"></div>
   <p class="muted">La douchette doit être réglée en clavier AZERTY (code dans son manuel). Si elle reste en QWERTY, la caisse corrige d'elle-même.</p></div>
  <div class="carte"><h3>Paiement par QR code</h3><p class="muted">Avec le mode « QR code », la caisse affiche un QR de virement avec le montant déjà rempli (norme européenne, lue par les apps des banques belges).</p>
   <label class="f">IBAN de La Pile<input class="champ" id="rIban" value="${esc(REG.iban||"")}" placeholder="BE00 0000 0000 0000" autocomplete="off"></label>
   <label class="f">Bénéficiaire<input class="champ" id="rBenef" value="${esc(REG.beneficiaire||"La Pile asbl")}"></label>
   <label class="f">BIC (facultatif)<input class="champ" id="rBic" value="${esc(REG.bic||"")}" placeholder="ex. GEBABEBB"></label><p class="muted" id="rIbanOk">${REG.iban?(ibanOk(REG.iban)?"IBAN valide.":"IBAN incorrect : vérifiez-le."):""}</p></div>
+ ${carteSauvAuto()}
  ${carteSync()}
  <div class="carte"><h3>Factures</h3><label class="f">Dernier n° de facture utilisé<input class="champ" id="dFact" value="${esc(REG.derniereFacture||"")}" placeholder="ex. F49-26"></label></div>
  <div class="carte"><h3>À propos</h3><p class="muted">Caisse & stock ${VERSION} · ${CAT.length} articles (export Impulsion du 14/10/2026, annonces du site, fiches) · ${ventes.length} tickets · ${MVT.length} mouvements.</p></div></div>`}
 function brancherReglages(){
- $("#save").onclick=async()=>{const d={version:VERSION,date:new Date().toISOString(),ventes,sorties,mouvements:MVT,articles:Object.values(ARTS),inventaire:Object.values(INV),reglages:sansSecrets(REG)};
+ $("#save").onclick=async()=>{const d=donneesSauvegarde();
   telecharger(`sauvegarde-caisse-${jour()}.json`,JSON.stringify(d),"application/json");await putSet("derniereSauvegarde",Date.now());render()};
  $("#restore").onclick=()=>$("#fRestore").click();
  $("#fRestore").onchange=async e=>{const f=e.target.files[0];if(!f)return;let d;try{d=JSON.parse(await f.text())}catch(x){toast("Fichier illisible",true);return}
-  if(!confirm(`Restaurer la sauvegarde du ${d.date?dateBe(d.date.slice(0,10)):"?"} ? Les ventes et mouvements absents d'ici sont ajoutés ; rien n'est effacé.`))return;
-  for(const v of d.ventes||[])await put("ventes",v);for(const s of d.sorties||[])await put("sorties",s);for(const m of d.mouvements||[])await put("mouvements",m);
-  for(const a of d.articles||[])await put("articles",a);for(const i of d.inventaire||[])await put("inventaire",i);location.reload()};
+  if(!confirm(`Restaurer la sauvegarde du ${d.date?dateBe(d.date.slice(0,10)):"?"} ? Les ventes et mouvements absents d'ici sont ajoutés ; rien n'est effacé ni remplacé.`))return;
+  // Même fusion que la synchro : une vente déjà ici n'est pas remplacée par sa copie plus ancienne.
+  try{await fusionner({...d,appareil:"sauvegarde"})}catch(x){alert("La restauration s'est arrêtée en cours : "+(x&&x.message||x)+". Rien n'a été effacé.");return}
+  location.reload()};
  const t=$("#testScan");t.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();const r=lireCode(t.value);$("#testRes").innerHTML=r?`Reconnu : <b>${esc(r)}</b> · ${esc(parRef(r).n)}`:`Non reconnu : « ${esc(t.value)} »`;t.value=""}};
+ brancherSauvAuto();
  $("#dFact").onchange=e=>putSet("derniereFacture",e.target.value.trim().toUpperCase());brancherSync();
  $("#rIban").onchange=async e=>{const v=ibanNet(e.target.value);await putSet("iban",v);$("#rIbanOk").textContent=v?(ibanOk(v)?"IBAN valide.":"IBAN incorrect : vérifiez-le."):""};
  $("#rBenef").onchange=e=>putSet("beneficiaire",e.target.value.trim()||"La Pile asbl");$("#rBic").onchange=e=>putSet("bic",e.target.value.trim())}
 
+// Bandeau sous l'en-tête : dit si les ventes sont à l'abri, et sinon ce qu'il faut faire.
+let stockageKo=false,stockageProtege=null;
+function bandeau(){const el=$("#bandeau");if(!el)return;let t,mal=false;
+ const j=REG.derniereSauvegarde?Math.floor((Date.now()-REG.derniereSauvegarde)/864e5):null;
+ if(!stockageKo&&sauvAuto==="pause"){el.textContent="Sauvegarde automatique en pause depuis le redémarrage du navigateur : cliquez ici pour la réactiver.";el.classList.add("mal");el.style.cursor="pointer";return}
+ el.style.cursor="";
+ if(stockageKo){t="Stockage indisponible dans ce navigateur (fenêtre privée ?) : les ventes ne sont pas gardées. Notez-les dans le carnet papier.";mal=true}
+ else if(syncPret())t=Sync.etat==="err"?"Liaison en erreur : les ventes sont gardées sur cet appareil, mais pas encore copiées. Voir Réglages.":"Version d'essai : les ventes sont gardées sur cet appareil et copiées dans le dépôt du Comptoir. Le carnet papier fait toujours foi.";
+ else if(j==null||j>=7){t=`Version d'essai : les ventes ne sont gardées que dans ce navigateur. ${j==null?"Aucune sauvegarde faite":"Dernière sauvegarde il y a "+j+" jours"} : Réglages › Télécharger une sauvegarde.`;mal=ventes.length>0}
+ else t="Version d'essai : les ventes sont gardées dans ce navigateur, dernière sauvegarde "+(j?"il y a "+j+" jour"+(j>1?"s":""):"aujourd'hui")+". Le carnet papier fait toujours foi.";
+ el.textContent=t;el.classList.toggle("mal",mal)}
+
+// ---------- Sauvegarde automatique dans un dossier (Chrome ou Edge sur PC) ----------
+// Un fichier par jour, réécrit après chaque vente. Si le dossier est synchronisé (OneDrive, Google Drive),
+// une copie quitte le PC sans rien faire. Après un redémarrage du navigateur, il faut parfois réautoriser d'un clic.
+const donneesSauvegarde=()=>({version:VERSION,date:new Date().toISOString(),ventes,sorties,mouvements:MVT,articles:Object.values(ARTS),inventaire:Object.values(INV),reglages:sansSecrets(REG)});
+let sauvAuto="";
+function planifierSauv(){if(!REG.dossierSauv)return;clearTimeout(planifierSauv.t);planifierSauv.t=setTimeout(()=>sauvegardeAuto(false),3000)}
+async function sauvegardeAuto(geste){const h=REG.dossierSauv;if(!h||!h.getFileHandle)return false;
+ try{let p=await h.queryPermission({mode:"readwrite"});if(p!=="granted"&&geste)p=await h.requestPermission({mode:"readwrite"});
+  if(p!=="granted"){sauvAuto="pause";bandeau();return false}
+  const f=await h.getFileHandle(`sauvegarde-caisse-${jour()}.json`,{create:true}),w=await f.createWritable();
+  await w.write(JSON.stringify(donneesSauvegarde()));await w.close();
+  await putSet("derniereSauvegarde",Date.now());sauvAuto="ok";bandeau();return true}
+ catch(e){sauvAuto="err";bandeau();return false}}
+function carteSauvAuto(){const ok=!!window.showDirectoryPicker,h=REG.dossierSauv;
+ return `<div class="carte"><h3>Sauvegarde automatique</h3>${!ok?'<p class="muted">Ce navigateur ne le permet pas : utilisez Chrome ou Edge sur le PC.</p>':
+ `<p class="muted">Après chaque vente, la caisse écrit la sauvegarde du jour dans un dossier. Choisissez un dossier synchronisé (OneDrive ou Google Drive) : une copie quitte alors le PC.</p>
+  <p><b>Dossier :</b> ${h?esc(h.name):"aucun"}${h?` · ${{ok:"dernière copie à "+new Date(REG.derniereSauvegarde||0).toTimeString().slice(0,5),pause:"en pause, à réautoriser",err:"erreur d'écriture"}[sauvAuto]||"en attente"}`:""}</p>
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="sauvDos">${h?"Changer de dossier":"Choisir le dossier"}</button>${h&&sauvAuto!=="ok"?'<button class="btn clair" id="sauvGo">Réautoriser et sauvegarder</button>':""}</div>`}</div>`}
+function brancherSauvAuto(){const d=$("#sauvDos");if(d)d.onclick=async()=>{let h;try{h=await showDirectoryPicker({id:"sauvegarde-caisse",mode:"readwrite"})}catch(e){return}
+  await putSet("dossierSauv",h);toast(await sauvegardeAuto(true)?"Sauvegarde écrite dans « "+h.name+" »":"Le dossier n'a pas pu être utilisé",!sauvAuto||sauvAuto!=="ok");render()};
+ const g=$("#sauvGo");if(g)g.onclick=async()=>{await sauvegardeAuto(true);render()}}
+document.addEventListener("click",e=>{if(e.target.closest("#bandeau")&&sauvAuto==="pause")sauvegardeAuto(true)});
+
 // Le jeton GitHub et la phrase secrète ne sortent jamais de cet appareil.
-const sansSecrets=r=>{const o={...r};delete o.ghJeton;delete o.ghPhrase;Object.keys(o).forEach(k=>{if(k.startsWith("sha:")||k.startsWith("empreinte"))delete o[k]});return o};
+const sansSecrets=r=>{const o={...r};delete o.ghJeton;delete o.ghPhrase;delete o.dossierSauv;delete o.ticketEnCours;Object.keys(o).forEach(k=>{if(k.startsWith("sha:")||k.startsWith("empreinte"))delete o[k]});return o};
 
 // ---------- Démarrage ----------
 (async()=>{
  try{await openDb();ventes=await all("ventes");sorties=await all("sorties");MVT=await all("mouvements");REG=await allSet();
-  (await all("inventaire")).forEach(i=>INV[i.k]=i);(await all("articles")).forEach(a=>ARTS[a.r]=a)}catch(e){toast("Stockage indisponible : les ventes ne seront pas gardées",true)}
+  (await all("inventaire")).forEach(i=>INV[i.k]=i);(await all("articles")).forEach(a=>ARTS[a.r]=a);
+  const te=REG.ticketEnCours;if(te&&te.panier&&te.panier.length){panier=te.panier;if(te.pay)pay={...pay,...te.pay};if(te.remise)remise=te.remise}}
+ catch(e){idb=null;stockageKo=true}
  try{(await (await fetch("catalogue.json")).json()).forEach(ajouterArticle)}catch(e){}
  try{HIST=await (await fetch("historique.json")).json()}catch(e){HIST=[]}
  appliquerArticles();
@@ -814,6 +881,8 @@ const sansSecrets=r=>{const o={...r};delete o.ghJeton;delete o.ghPhrase;Object.k
  calcStock();render();demarrerSync();
  $("#modal").addEventListener("keydown",e=>{if(e.key==="Escape")fermerModal()});
  document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(!$("#modal").hidden)fermerModal();else if(!$("#panneau").hidden)fermerPanneau()}});
- if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();
+ // Demande au navigateur de ne jamais effacer les données de la caisse pour faire de la place.
+ if(navigator.storage&&navigator.storage.persist)try{stockageProtege=await navigator.storage.persisted()||await navigator.storage.persist()}catch(e){}
+ bandeau();sauvegardeAuto(false);
  if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js");
 })();
