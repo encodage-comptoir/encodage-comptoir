@@ -129,7 +129,7 @@ pre.txt{white-space:pre-wrap;font-family:var(--body);font-size:16px;background:v
 <script src="essai/poids.js"></script>
 <script>
 "use strict";
-const VERSION="7.3 (Saïd / Audrey)";
+const VERSION="7.4 (envoi à Audrey)";
 // ---------- Données de référence ----------
 // Préfixes et catégories : les noms doivent être identiques aux catégories du back-office Impulsion (vérifiés le 14/10/2026).
 const CATS=[
@@ -205,7 +205,7 @@ const getSet=k=>tx("reglages","readonly",s=>s.get(k));
 const putSet=(k,v)=>tx("reglages","readwrite",s=>s.put(v,k));
 
 let fiches=[], LAST={...LAST0};
-async function load(){fiches=(await dbAll()).sort((a,b)=>b.cree-a.cree);const l=await getSet("last");if(l)LAST={...LAST0,...l};recoOn=(await getSet("reco"))!==false}
+async function load(){fiches=(await dbAll()).sort((a,b)=>b.cree-a.cree);const l=await getSet("last");if(l)LAST={...LAST0,...l};recoOn=(await getSet("reco"))!==false;ENVOI_URL=(await getSet("envoi"))||ENVOI_URL0}
 
 // ---------- Outils ----------
 let screen="home", cur=null, step=0, openId=null;
@@ -229,6 +229,22 @@ function toast(t){const el=$("#toast");el.textContent=t;el.hidden=false;clearTim
 function bar(html){$("#barIn").innerHTML=html}
 const today=()=>new Date().toISOString().slice(0,10);
 const photoName=(f,i)=>`${f.code}-${i+1}.jpg`;
+
+// Envoi direct par e-mail à Audrey : un petit relais Google (outils/envoi-audrey.gs) reçoit le fichier et l'envoie avec la pièce jointe.
+// Son adresse (lien « /exec ») se colle dans Réglages, ou ici une fois pour toutes.
+const DEST="audrey@la-pile.be", ENVOI_URL0="", ENVOI_CLE="comptoir-pile-2026";
+let ENVOI_URL=ENVOI_URL0;
+const marquerEnvoye=async list=>{const d=new Date().toLocaleDateString("fr-BE");for(const f of list){f.envoye=d;await dbPut(f)}
+ const l={...LAST};list.forEach(f=>{const m=+f.code.slice(f.cat.length);if(m>(l[f.cat]||0))l[f.cat]=m});LAST=l;await putSet("last",l)};
+// Les photos pèsent lourd : plusieurs e-mails si besoin (environ 15 Mo par e-mail).
+function paquets(list){const P=[];let p=[],t=0;for(const f of list){const n=f.photos.reduce((s,x)=>s+x.length,0)+5000;if(p.length&&t+n>15e6){P.push(p);p=[];t=0}p.push(f);t+=n}if(p.length)P.push(p);return P}
+async function envoyerAudrey(list,suivi){const P=paquets(list),jour=new Date().toLocaleDateString("fr-BE");
+ for(let i=0;i<P.length;i++){const l=P[i],par=[...new Set(l.map(f=>f.par).filter(Boolean))].join(" et ");suivi(i,P.length);
+  const objet=`Comptoir – ${l.length} matériau${l.length>1?"x":""} encodé${l.length>1?"s":""} le ${jour}${P.length>1?` (${i+1}/${P.length})`:""}`;
+  const texte=`Bonjour Audrey,\n\nVoici ${l.length} matériau${l.length>1?"x":""}${par?" encodé"+(l.length>1?"s":"")+" par "+par:""} :\n\n`+l.map(f=>f.code+"  "+(f.type==="maj"?(f.statut==="introuvable"?"introuvable":"annonce complétée"):f.nom)+(f.note?"  ("+f.note+")":"")).join("\n")
+   +`\n\nOuvrez la pièce jointe dans le navigateur : elle contient le fichier d'import pour Impulsion et les photos nommées avec leur référence.\n\nL'app d'encodage`;
+  const r=await fetch(ENVOI_URL,{method:"POST",body:JSON.stringify({cle:ENVOI_CLE,objet,texte,fichier:`comptoir-${today()}${P.length>1?"-"+(i+1):""}.html`,html:reportHtml(l)})});
+  const j=await r.json();if(!j.ok)throw new Error(j.err||"refusé");await marquerEnvoye(l)}}
 
 // Fichier d'import Impulsion : séparateur « ; », encodage Windows-1252 comme leur export.
 // Image : nom de la première photo ; Impulsion la demande à l'étape « Importer les images associées ».
@@ -340,20 +356,26 @@ function render(){
  else if(screen==="export"){
   const todo=fiches.filter(f=>!f.envoye), nPh=todo.reduce((s,f)=>s+f.photos.length,0);
   const canShare=!!(navigator.canShare&&navigator.canShare({files:[new File(["x"],"t.html",{type:"text/html"})]}));
+  const direct=!!ENVOI_URL;
   a.innerHTML=`<div class="top"><span class="brand">Envoi au bureau</span></div>
    <h1>${todo.length} matériau${todo.length>1?"x":""}, ${nPh} photo${nPh>1?"s":""}</h1>
-   <p class="hint">Appuyez sur le bouton jaune, puis choisissez <b>Drive</b> et le dossier <b>À encoder</b>.</p>
+   <p class="hint">${direct?`Appuyez sur le bouton jaune : tout part par e-mail à <b>${DEST}</b>.`:`Appuyez sur le bouton jaune, puis choisissez <b>Drive</b> et le dossier <b>À encoder</b>.`}</p>
    <div class="card"><pre class="txt">${todo.map(f=>f.code+"  "+(f.type==="maj"?(f.statut==="introuvable"?"introuvable":"annonce complétée"):"nouveau : "+f.nom)).map(esc).join("\n")}</pre></div>
-   <p class="hint">Un seul fichier part au bureau. Sur l'ordinateur, la gestionnaire l'ouvre : il contient le fichier d'import pour Impulsion et les photos de chaque produit, nommées avec leur référence.</p>
-   <button class="big ghost" id="sent">C'est bien envoyé</button>`;
-  bar(`<button class="big ghost back" id="bk">Retour</button><button class="big" id="go">${canShare?"Envoyer":"Télécharger"}</button>`);
+   <p class="hint" id="etatEnvoi">Un seul fichier part au bureau. Sur l'ordinateur, Audrey l'ouvre : il contient le fichier d'import pour Impulsion et les photos de chaque produit, nommées avec leur référence.</p>
+   ${direct?`<button class="big ghost" id="autre">Pas de réseau ? Envoyer autrement</button>`:`<button class="big ghost" id="sent">C'est bien envoyé</button>`}`;
+  bar(`<button class="big ghost back" id="bk">Retour</button><button class="big vif" id="go">${direct?"Envoyer à Audrey":canShare?"Envoyer":"Télécharger"}</button>`);
   $("#bk").onclick=()=>{screen="home";render()};
-  $("#go").onclick=async()=>{const files=[exportFile(todo)];
+  const partager=async()=>{const files=[exportFile(todo)];
    if(canShare){try{await navigator.share({files,title:"Comptoir – import "+today()});toast("Envoyé ? Appuyez sur « C'est bien envoyé »")}catch(e){if(e.name!=="AbortError")toast("L'envoi n'a pas marché, réessayez")}}
    else{download(files[0]);toast("Fichier téléchargé")}};
-  $("#sent").onclick=async()=>{const d=new Date().toLocaleDateString("fr-BE");for(const f of todo){f.envoye=d;await dbPut(f)}
-   const l={...LAST};todo.forEach(f=>{const m=+f.code.slice(f.cat.length);if(m>(l[f.cat]||0))l[f.cat]=m});LAST=l;await putSet("last",l);
-   toast("Marqué comme envoyé");screen="home";render()};
+  if(direct){
+   $("#go").onclick=async()=>{const b=$("#go");b.disabled=true;
+    try{await envoyerAudrey(todo,(i,n)=>{b.textContent=n>1?`Envoi ${i+1} sur ${n}…`:"Envoi en cours…"});await load();toast("Envoyé à Audrey");screen="home";render()}
+    catch(e){await load();b.disabled=false;b.textContent="Réessayer";$("#etatEnvoi").innerHTML=`<span class="warn" style="display:block">L'envoi n'a pas marché (${esc(navigator.onLine?e.message:"pas de réseau")}). Les fiches restent dans « À envoyer » : réessayez plus tard, ou envoyez autrement.</span>`}};
+   $("#autre").onclick=()=>{const u=ENVOI_URL;ENVOI_URL="";render();ENVOI_URL=u}}
+  else{
+   $("#go").onclick=partager;
+   $("#sent").onclick=async()=>{await marquerEnvoye(todo);toast("Marqué comme envoyé");screen="home";render()}}
  }
  else if(screen==="annonces")ecranAnnonces(a);
  else if(screen==="annonce")ecranAnnonce(a);
@@ -361,6 +383,9 @@ function render(){
   a.innerHTML=`<div class="top"><span class="brand">Réglages</span></div><h1>Derniers numéros utilisés</h1>
    <p class="hint">Pour la gestionnaire. L'app continue la numérotation à partir de ces numéros. À corriger si une référence a été créée directement sur le site.</p>
    <div class="card recap"><dl>${CATS.map(([c])=>`<dt><span class="code">${c}</span> ${esc(label(c))}</dt><dd><input class="t" style="min-height:44px;font-size:18px" inputmode="numeric" data-last="${c}" value="${LAST[c]||0}"></dd>`).join("")}</dl></div>
+   <h1 style="margin-top:28px">Envoi à Audrey</h1>
+   <p class="hint">Lien du relais Google qui envoie les fiches par e-mail à ${DEST} (se termine par « /exec »). Vide : l'envoi passe par le menu de partage du téléphone.</p>
+   <input class="t" id="envoiUrl" style="font-size:16px" placeholder="https://script.google.com/macros/s/…/exec" value="${esc(ENVOI_URL)}">
    <h1 style="margin-top:28px">Reconnaissance photo</h1>
    <p class="hint">L'app propose la catégorie, le nom, la matière et la couleur d'après la photo. Elle télécharge une fois environ 35 Mo (de préférence en wifi), puis fonctionne sans internet.</p>
    <div class="card"><p style="margin:0 0 10px;font-weight:700" id="recoEtat">${recoTxt()}</p>
@@ -371,7 +396,7 @@ function render(){
   $("#recoOn").onclick=async()=>{await putSet("reco",true);recoOn=true;render()};
   $("#recoOff").onclick=async()=>{await putSet("reco",false);recoOn=false;render()};
   if($("#recoGo"))$("#recoGo").onclick=()=>{recoCharger();$("#recoGo").remove();recoMaj()};
-  $("#ok").onclick=async()=>{const l={...LAST};a.querySelectorAll("[data-last]").forEach(i=>l[i.dataset.last]=parseInt(i.value)||0);LAST=l;await putSet("last",l);toast("Enregistré");screen="home";render()};
+  $("#ok").onclick=async()=>{const l={...LAST};a.querySelectorAll("[data-last]").forEach(i=>l[i.dataset.last]=parseInt(i.value)||0);LAST=l;await putSet("last",l);ENVOI_URL=$("#envoiUrl").value.trim();await putSet("envoi",ENVOI_URL);toast("Enregistré");screen="home";render()};
  }
  else if(screen==="wizs")wizSaid(a);
  else wiz(a);
