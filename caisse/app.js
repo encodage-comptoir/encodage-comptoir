@@ -109,7 +109,7 @@ function aLaPiece(a){if(a.c!=="CAR"||a.u!=="m²")return;const L=num(a.L),l=num(a
 const m2Txt=(a,n)=>a.pm&&n>0?` (≈ ${nb(n/a.pm).replace(/,00$/,"")} m²)`:"";
 
 // ---------- Navigation ----------
-const ONGLETS={caisse:"Caisse",stock:"Stock",mouv:"Mouvements",carnet:"Carnet",rapports:"Rapports",reglages:"Réglages"};
+const ONGLETS={caisse:"Caisse",carnet:"Carnet de caisse",mouv:"Mouvements",stock:"Stock",rapports:"Rapports",reglages:"Réglages"};
 let screen="caisse";
 function render(){
  $("#nav").innerHTML=Object.entries(ONGLETS).map(([k,t])=>`<button data-go="${k}" class="${screen===k?"sel":""}">${IC[k]}${t}</button>`).join("");
