@@ -115,6 +115,11 @@ pre.txt{white-space:pre-wrap;font-family:var(--body);font-size:16px;background:v
 .wait{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:15px;margin:0 0 12px}
 .wait progress{flex:1;height:8px}
 .big.vif{background:#ffd800;color:#1d2328}
+/* Parcours de Saïd : boutons et choix sélectionnés en jaune vif */
+body.said .big.ghost,body.said .slot .act button,body.said .chip.sel,body.said .tile.sel{background:#ffd800;color:#1d2328;border-color:#ffd800}
+body.said .chip.sel,body.said .tile.sel{border-color:#1d2328}
+body.said .tile.sel b{color:#1d2328}
+body.said .steps i.on{background:#ffd800}
 .revoir{width:100%;max-height:62vh;object-fit:contain;border-radius:14px;background:#000;margin-top:12px;display:block}
 .chips.gros .chip{min-height:60px;font-size:19px;padding:10px 20px}
 .sub{font-family:var(--display);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px}
@@ -129,7 +134,7 @@ pre.txt{white-space:pre-wrap;font-family:var(--body);font-size:16px;background:v
 <script src="essai/poids.js"></script>
 <script>
 "use strict";
-const VERSION="7.4 (envoi à Audrey)";
+const VERSION="7.5 (envoi à Audrey)";
 // ---------- Données de référence ----------
 // Préfixes et catégories : les noms doivent être identiques aux catégories du back-office Impulsion (vérifiés le 14/10/2026).
 const CATS=[
@@ -315,7 +320,7 @@ function download(file){const u=URL.createObjectURL(file),a=document.createEleme
 
 // ---------- Écrans ----------
 function render(){
- const a=$("#app");window.scrollTo(0,0);
+ const a=$("#app");window.scrollTo(0,0);document.body.classList.toggle("said",qui==="said");
  if(screen==="home"&&brouillon)return ecranBrouillon(a);
  if(screen==="home"&&!qui)return ecranQui(a);
  if(screen==="home"&&qui==="said")return accueilSaid(a);
