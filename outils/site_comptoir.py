@@ -77,8 +77,15 @@ def stock_vente(a):
     return n, f'{n} {pluriel(n, u)}'
 
 def pose(a):
-    """Briques et pavés : nombre de pièces par m² posé (hypothèse affichée), ou None."""
+    """Briques, pavés et carrelage : nombre de pièces par m² posé (hypothèse affichée), ou None."""
     t = a['titre'].lower()
+    if a['famille'] == 'Carrelage' and not re.search(r'brique|pavé|klinker', t):
+        # carreaux : surface d'un carreau L1 × L2, comme le m² du prix d'Impulsion (l'épaisseur n'est pas nécessaire)
+        L1, L2 = map(prix_num, trois(a)[:2])
+        if not (L1 and L2):
+            return None
+        par_m2 = 1e4 / (L1 * L2)
+        return par_m2, '', f'carreaux de {nombre(L1)} × {nombre(L2)} cm, soit ≈ {nombre(round(par_m2, 1))} carreaux par m² (joints non comptés)'
     if not re.search(r'brique|pavé|klinker', t) or re.search(r'bloc|thermoplan|poutrain', t):
         return None
     L1, L2, L3 = map(prix_num, trois(a))
@@ -115,10 +122,14 @@ for a in stock_tous:
         pm = a['_pose'][0]
         if a['_unite'] == 'm²':
             a['_m2_vendus'] = prix_num(a['stock'])
+            if a['famille'] == 'Carrelage':
+                # Impulsion compte souvent le carrelage en carreaux malgré le prix au m² : stock_vente le reconnaît
+                n, txt = stock_vente(a)
+                a['_carreaux'] = int(a['stock']) if 'soit' in txt else round(n * pm) if n else None
             p = a['_prix'] = round(p / pm, 2)
             a['_unite'] = 'pièce'
         if p > 0:
-            a['_prix_m2'] = f"soit ≈ {euros(round(p * pm))} / m² {a['_pose'][1]}"
+            a['_prix_m2'] = f"soit ≈ {euros(round(p * pm))} / m²{' ' + a['_pose'][1] if a['_pose'][1] else ''}"
     a['_prix_txt'] = f"{euros(p)} / {a['_unite']}" if p > 0 else 'Prix au comptoir'
     n = a.get('neuf')
     a['_neuf_txt'] = ''
@@ -145,13 +156,16 @@ for a in stock_tous:
     a['_surf'] = None
     if a['_pose']:
         pm, quoi, hyp = a['_pose']
-        if a.get('_m2_vendus'):
+        if a['famille'] == 'Carrelage' and '_carreaux' in a:
+            nb = a['_carreaux']
+            a['_stock'], a['_stock_txt'] = (nb, f'{nb} {pluriel(nb, "pièce")}') if nb else (0, a['_stock_txt'])
+        elif a.get('_m2_vendus'):
             # stock noté en m² : on le repasse en pièces (nombre de la description s'il y est)
             c = re.search(r'(\d+) pièces', a['description'])
             nb = int(c.group(1)) if c else round(a['_m2_vendus'] * pm)
             a['_stock'], a['_stock_txt'] = nb, f'{nb} pièces'
         if a['_stock']:
-            a['_surf'] = (f"≈ {m2_txt(a['_stock'] / pm)} m² {quoi}", hyp)
+            a['_surf'] = (f"≈ {m2_txt(a['_stock'] / pm)} m²{' ' + quoi if quoi else ''}", hyp)
     a['_co2'] = co2(a, trois(a), a['_unite'])
     # emplacement dans l'entrepôt (code zone + travée + niveau, ex. N2-1) : colonne à remplir plus tard, vide pour l'instant
     a['_empl'] = a.get('emplacement_reel', '')

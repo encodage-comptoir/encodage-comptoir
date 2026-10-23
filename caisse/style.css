@@ -204,3 +204,11 @@ table.t img{width:40px;height:40px;object-fit:cover;border-radius:6px;display:bl
 .qr-img{width:150px;flex:none;background:#fff;border-radius:8px;padding:4px}
 .qr-img svg,.qr-grand svg{display:block;width:100%;height:auto}
 .qr-grand{width:min(360px,80vw);margin:12px auto;background:#fff;padding:8px}
+/* Réduction, bons d'achat, client de la facture */
+.ticket .l,#totaux .l{display:flex;justify-content:space-between;gap:10px;padding:2px 0;font-variant-numeric:tabular-nums}
+.remise{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:10px}
+.remise .champ{width:120px;padding:6px 10px}
+.cli{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;margin-top:8px}
+.cli label:first-child{grid-column:1/-1}
+.tk-cli{margin-top:6px;font-size:13px}
+.bad{color:var(--rouge)}
