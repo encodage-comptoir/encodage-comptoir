@@ -126,7 +126,7 @@ pre.txt{white-space:pre-wrap;font-family:var(--body);font-size:16px;background:v
 <script src="poids.js"></script>
 <script>
 "use strict";
-const VERSION="6.5 (essai : L1 L2 L3 + poids)";
+const VERSION="6.6 (provenance)";
 // ---------- Données de référence ----------
 // Préfixes et catégories : les noms doivent être identiques aux catégories du back-office Impulsion (vérifiés le 14/10/2026).
 const CATS=[
@@ -148,6 +148,8 @@ const SUGG={SA:["Évier","Lavabo","Vasque","WC","Baignoire","Bac de douche","Rob
  OUT:["Scie","Outil électrique","Compresseur","Établi","Outil à main","Échelle"],DIV:["Mobilier","Palette","Vitre","Lot divers"]};
 // Valeurs alignées sur les filtres du moteur « Faire avec ».
 const ETATS=["Neuf","Très bon état","Bon état","À rafraîchir","Pour pièces"];
+// D'où vient le matériau : déposé par un particulier, collecté par l'équipe, ou récupéré via Intradel.
+const PROVENANCES=["Dépôt","Collecte","Intradel"];
 const UNITS=["pièce","m²","m courant","lot"];
 const MATIERES=["Bois massif","Panneau (multiplex, OSB, MDF)","Métal","Verre","Céramique","Pierre / béton","PVC / plastique","Textile"];
 const COULEURS=["Blanc","Noir","Gris / métal","Naturel","Brun","Beige","Couleur"];
@@ -221,10 +223,10 @@ const HEAD=["Référence","Nom","Catégories","Stock","Prix de vente TTC","Descr
 function csvText(list){const q=v=>{v=String(v??"");return /[;"\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
  return [HEAD].concat(list.map(f=>[f.code,f.nom,siteCat(f.cat),f.qte,String(f.prix||"").replace(".",","),descr(f),f.photos.length?photoName(f,0):""])).map(r=>r.map(q).join(";")).join("\r\n")+"\r\n"}
 // Fichier des caractéristiques pour l'outil « Faire avec » (onglet Fiches) : UTF-8, séparateur « ; ».
-const HEAD_FICHES=["Référence","Nom","Catégorie","L1 (cm)","L2 (cm)","L3 (cm)","Matière","Couleur","Intérieur / extérieur","État","Forme","Transport","Quantité","Unité","Arrivée","Photos","Emplacement","Poids (kg)","Poids estimé"];
+const HEAD_FICHES=["Référence","Nom","Catégorie","L1 (cm)","L2 (cm)","L3 (cm)","Matière","Couleur","Intérieur / extérieur","État","Forme","Transport","Quantité","Unité","Arrivée","Photos","Emplacement","Poids (kg)","Poids estimé","Provenance"];
 function fichesCsv(list){const q=v=>{v=String(v??"");return /[;"\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
  return "﻿"+[HEAD_FICHES].concat(list.map(f=>[f.code,f.nom,siteCat(f.cat),f.L,f.l,f.h,f.matiere,f.couleur,f.lieu,f.etat,formeNom(f.cat,f.nom),transport(f),f.qte,f.unite,
-  new Date(f.cree).toISOString().slice(0,10),f.photos.map((_,i)=>photoName(f,i)).join(" "),f.empl||"",f.poids||"",f.poids&&f.poidsEst?"oui":""])).map(r=>r.map(q).join(";")).join("\r\n")+"\r\n"}
+  new Date(f.cree).toISOString().slice(0,10),f.photos.map((_,i)=>photoName(f,i)).join(" "),f.empl||"",f.poids||"",f.poids&&f.poidsEst?"oui":"",f.prov||""])).map(r=>r.map(q).join(";")).join("\r\n")+"\r\n"}
 // Tableau des annonces existantes vérifiées au comptoir (rien n'est importé automatiquement).
 const HEAD_MAJ=["Référence","Statut","Titre actuel","Titre proposé","Catégorie","Stock compté","Description proposée","Photos","Emplacement"];
 // Titre pour le site : le titre nettoyé (ou le nom), avec les mesures si le titre n'en a pas.
@@ -516,7 +518,8 @@ function wiz(a){
   body=`<h2>${esc(label(cur.cat))} : lequel ?</h2><p class="hint">Touchez un nom ou écrivez-le (le micro du clavier marche aussi).</p>
    <div class="chips">${(SUGG[cur.cat]||[]).map(s=>`<button class="chip ${cur.nom===s?"sel":""}" data-nom="${esc(s)}">${esc(s)}</button>`).join("")}</div>
    <label class="f" for="nom">Nom ${ia("nom")}</label><input class="t" id="nom" value="${esc(cur.nom)}" placeholder="ex. Lavabo blanc">
-   <label class="f">État</label><div class="chips">${ETATS.map(s=>`<button class="chip ${cur.etat===s?"sel":""}" data-etat="${s}">${s}</button>`).join("")}</div>`;
+   <label class="f">État</label><div class="chips">${ETATS.map(s=>`<button class="chip ${cur.etat===s?"sel":""}" data-etat="${s}">${s}</button>`).join("")}</div>
+   <label class="f">Provenance</label><div class="chips">${PROVENANCES.map(s=>`<button class="chip ${cur.prov===s?"sel":""}" data-prov="${s}">${s}</button>`).join("")}</div>`;
   ok=!!cur.nom.trim();
  } else if(step===3){
   proposerDetails();
@@ -536,7 +539,7 @@ function wiz(a){
   const nPh=cur.slots.filter(Boolean).length;
   body=`<h2>Tout est juste ?</h2><p class="hint">Touchez « Retour » pour corriger.</p>
    <div class="card recap"><dl><dt>Référence</dt><dd><span class="code">${esc(cur.code)}</span></dd><dt>Nom</dt><dd>${esc(cur.nom)}</dd>
-   <dt>Catégorie</dt><dd>${esc(label(cur.cat))}</dd><dt>État</dt><dd>${esc(cur.etat||"-")}</dd>
+   <dt>Catégorie</dt><dd>${esc(label(cur.cat))}</dd><dt>État</dt><dd>${esc(cur.etat||"-")}</dd><dt>Provenance</dt><dd>${esc(cur.prov||"-")}</dd>
    <dt>Matière</dt><dd>${esc(cur.matiere||"-")}</dd><dt>Couleur</dt><dd>${esc(cur.couleur||"-")}</dd><dt>Usage</dt><dd>${esc(cur.lieu||"-")}</dd>
    <dt>Mesures</dt><dd>${dimTxt(cur)||"-"}</dd><dt>Poids</dt><dd>${cur.poids?esc(cur.poids)+" kg"+(cur.poidsEst?" (estimé)":""):"-"}</dd>${transport(cur)?`<dt>Transport</dt><dd>${transport(cur)}</dd>`:""}
    <dt>Stock</dt><dd>${esc(cur.qte)} ${esc(cur.unite)}</dd><dt>Rangé en</dt><dd>${esc(cur.empl==="R"?"R (pas encore rangé)":cur.empl||"-")}</dd><dt>Photos</dt><dd>${nPh}</dd></dl></div>
@@ -561,6 +564,7 @@ function wiz(a){
  a.querySelectorAll("[data-cat]").forEach(b=>b.onclick=()=>{if(cur.cat!==b.dataset.cat){cur.cat=b.dataset.cat;cur.nom="";cur.code="";delete cur.propose.nom}delete cur.propose.cat;step++;render()});
  a.querySelectorAll("[data-nom]").forEach(b=>b.onclick=()=>{cur.nom=b.dataset.nom;delete cur.propose.nom;render()});
  a.querySelectorAll("[data-etat]").forEach(b=>b.onclick=()=>{cur.etat=cur.etat===b.dataset.etat?"":b.dataset.etat;render()});
+ a.querySelectorAll("[data-prov]").forEach(b=>b.onclick=()=>{cur.prov=cur.prov===b.dataset.prov?"":b.dataset.prov;render()});
  a.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{const k=b.dataset.k;cur[k]=cur[k]===b.dataset.v?"":b.dataset.v;cur.propose[k]=0;render()});
  a.querySelectorAll("[data-unit]").forEach(b=>b.onclick=()=>{cur.unite=b.dataset.unit;render()});
  emplClic(a);

@@ -66,6 +66,7 @@ button:focus-visible,input:focus-visible,.tile:focus-visible{outline:3px solid v
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 18px}
 .chip{min-height:48px;padding:8px 16px;border-radius:24px;border:2px solid var(--line);background:var(--surface);font-weight:700;font-size:17px}
 .chip.sel{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip.zone{border-left:10px solid var(--zc)}.chip.zone.sel{background:var(--zc);border-color:var(--zc);color:#fff}
 label.f{display:block;font-weight:700;margin:14px 0 6px}
 input.t{width:100%;box-sizing:border-box;min-height:58px;border-radius:12px;border:2px solid var(--line);background:var(--surface);
   color:var(--ink);font:inherit;font-size:20px;padding:10px 14px}
@@ -94,6 +95,26 @@ pre.txt{white-space:pre-wrap;font-family:var(--body);font-size:16px;background:v
   padding:12px 20px;border-radius:24px;font-weight:700}
 .ex{font-size:12px;font-weight:700;color:var(--muted);border:1px solid var(--line);border-radius:8px;padding:1px 6px;margin-left:6px}
 @media (prefers-reduced-motion:no-preference){.tile,.chip,.big{transition:transform .08s}.tile:active,.chip:active,.big:active{transform:scale(.97)}}
+/* Protocole photo : une carte par photo demandée */
+.slot{display:grid;grid-template-columns:96px minmax(0,1fr);gap:12px;align-items:center;background:var(--surface);border:2px solid var(--line);
+  border-radius:14px;padding:10px;margin-bottom:10px;text-align:left;width:100%;box-sizing:border-box}
+.slot.req{border-color:var(--ink)}
+.slot .pic{width:96px;height:96px;border-radius:10px;background:var(--bg);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--muted)}
+.slot .pic img{width:100%;height:100%;object-fit:cover}
+.slot .pic svg{width:58px;height:58px}
+.slot h3{font-family:var(--display);font-weight:800;font-size:19px;margin:0 0 2px}
+.slot p{margin:0;color:var(--muted);font-size:15px;line-height:1.3}
+.slot .act{margin-top:8px;display:flex;gap:8px;flex-wrap:wrap}
+.slot .act button{min-height:44px;padding:6px 14px;border-radius:22px;border:2px solid var(--line);background:var(--surface);font-weight:700;font-size:16px}
+.slot .act button.go{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.warn{background:var(--warn-bg);border-radius:10px;padding:8px 10px;margin-top:8px;font-size:15px;font-weight:700}
+.tips{margin:6px 0 14px;color:var(--muted);font-size:15px}
+.tips summary{font-weight:700;cursor:pointer;min-height:40px;display:flex;align-items:center}
+.tips ul{margin:4px 0 0;padding-left:20px}
+.ia{display:inline-block;font-size:12px;font-weight:700;padding:1px 7px;border-radius:9px;background:var(--ok-bg);color:var(--ok);vertical-align:middle;margin-left:6px}
+.wait{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:15px;margin:0 0 12px}
+.wait progress{flex:1;height:8px}
+.sub{font-family:var(--display);font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:18px 0 8px}
 </style>
 
 </head>
@@ -102,9 +123,10 @@ pre.txt{white-space:pre-wrap;font-family:var(--body);font-size:16px;background:v
 <div class="bar" id="bar"><div class="in" id="barIn"></div></div>
 <input type="file" id="cam" accept="image/*" capture="environment" multiple hidden>
 <div class="toast" id="toast" hidden></div>
+<script src="essai/poids.js"></script>
 <script>
 "use strict";
-const VERSION="5.2 (L1 L2 L3)";
+const VERSION="6.6 (provenance)";
 // ---------- Données de référence ----------
 // Préfixes et catégories : les noms doivent être identiques aux catégories du back-office Impulsion (vérifiés le 14/10/2026).
 const CATS=[
@@ -121,15 +143,52 @@ const SUGG={SA:["Évier","Lavabo","Vasque","WC","Baignoire","Bac de douche","Rob
  CAR:["Carrelage sol","Faïence murale","Plinthes","Dalles"],GRO:["Briques","Blocs béton","Pavés","Poutrains","Linteau"],
  RA:["Radiateur","Radiateur électrique","Thermostat","Vannes"],ELEC:["Prises","Interrupteurs","Variateur","Disjoncteurs","Câble"],
  LUM:["Spot LED","Plafonnier","Applique","Réglette"],BOI:["Planches","Poutre","Panneau OSB","Panneau multiplex","Trespa"],
- PAR:["Parquet","Bardage","Lames de terrasse"],LAM:["Lambris bois","Lambris PVC","Dalles de plafond"],ELECTRO:["Frigo","Four","Taque de cuisson","Hotte","Lave-vaisselle"],TOI:["Tuiles","Ardoises","Gouttière","Tôles"],
+ PAR:["Parquet","Bardage","Lames de terrasse"],LAM:["Lambris bois","Lambris PVC","Dalles de plafond"],ELECTRO:["Frigo","Four","Taque de cuisson","Hotte","Lave-vaisselle","Lave-linge"],TOI:["Tuiles","Ardoises","Gouttière","Tôles"],
  ISO:["Laine de verre","Laine de roche","Panneau PIR","Polystyrène"],Q:["Poignées","Charnières","Serrures","Vis"],
- OUT:["Scie","Compresseur","Établi","Outil à main","Échelle"],DIV:["Mobilier","Verre","Lot divers"]};
-const ETATS=["Neuf","Très bon état","Bon état","À rafraîchir"];
+ OUT:["Scie","Outil électrique","Compresseur","Établi","Outil à main","Échelle"],DIV:["Mobilier","Palette","Vitre","Lot divers"]};
+// Valeurs alignées sur les filtres du moteur « Faire avec ».
+const ETATS=["Neuf","Très bon état","Bon état","À rafraîchir","Pour pièces"];
+// D'où vient le matériau : déposé par un particulier, collecté par l'équipe, ou récupéré via Intradel.
+const PROVENANCES=["Dépôt","Collecte","Intradel"];
 const UNITS=["pièce","m²","m courant","lot"];
+const MATIERES=["Bois massif","Panneau (multiplex, OSB, MDF)","Métal","Verre","Céramique","Pierre / béton","PVC / plastique","Textile"];
+const COULEURS=["Blanc","Noir","Gris / métal","Naturel","Brun","Beige","Couleur"];
+const LIEUX=["Intérieur","Extérieur","Les deux"];
+// Emplacement dans l'entrepôt : zone + travée + niveau (B3-1), « R » = réception, pas encore rangé.
+// Nombre de travées par zone d'après le plan provisoire, à ajuster avec les vraies mesures.
+const ZONES={A:["Gros œuvre, bois",4],B:["Sanitaire, isolant, toiture",4],C:["Vitrine",2],D:["Portes",12],E:["Châssis, radiateurs",12],F:["Petit matériel",3]};
+const ZONE_COUL={R:"#7b8480",A:"#a8642c",B:"#2c68a8",C:"#23857c",D:"#b83c33",E:"#7552a3",F:"#3f8a35"};
+const ZONE_CAT={GRO:"A",CAR:"A",BOI:"A",PAR:"A",LAM:"A",SA:"B",ISO:"B",TOI:"B",ELECTRO:"C",DIV:"C",PO:"D",CH:"E",PA:"E",RA:"E",Q:"F",ELEC:"F",LUM:"F",OUT:"F"};
+const emplParts=e=>{const m=/^([A-F])(\d+)?(?:-(\d))?$/.exec(e||"");return m?{z:m[1],t:m[2]||"",n:m[3]??""}:{z:e==="R"?"R":"",t:"",n:""}};
+// Ce que le nom dit déjà de la matière (la photo départage), du lieu et de la forme.
+const MAT_NOM={"Lavabo":["Céramique"],"Vasque":["Céramique","Verre","Pierre / béton"],"WC":["Céramique"],"Baignoire":["Céramique","PVC / plastique","Métal"],
+ "Bac de douche":["Céramique","PVC / plastique"],"Évier":["Métal","Céramique","Pierre / béton"],"Robinet":["Métal"],"Meuble lavabo":["Panneau (multiplex, OSB, MDF)","Bois massif"],
+ "Paroi de douche":["Verre"],"Porte de douche":["Verre"],"Châssis PVC":["PVC / plastique"],"Châssis bois":["Bois massif"],"Châssis alu":["Métal"],
+ "Porte-fenêtre":["PVC / plastique","Bois massif","Métal"],"Velux":["Bois massif","PVC / plastique"],"Porte intérieure":["Bois massif","Panneau (multiplex, OSB, MDF)"],
+ "Porte chêne":["Bois massif"],"Porte extérieure":["Bois massif","PVC / plastique","Métal"],"Porte vitrée":["Bois massif","Verre","Métal"],"Bloc-porte":["Bois massif","Panneau (multiplex, OSB, MDF)"],
+ "Carrelage sol":["Céramique","Pierre / béton"],"Faïence murale":["Céramique"],"Plinthes":["Céramique","Bois massif","Panneau (multiplex, OSB, MDF)"],"Dalles":["Céramique","Pierre / béton"],
+ "Briques":["Pierre / béton"],"Blocs béton":["Pierre / béton"],"Pavés":["Pierre / béton"],"Poutrains":["Pierre / béton"],"Linteau":["Pierre / béton","Métal","Bois massif"],
+ "Radiateur":["Métal"],"Vannes":["Métal"],"Prises":["PVC / plastique"],"Interrupteurs":["PVC / plastique"],"Disjoncteurs":["PVC / plastique"],
+ "Planches":["Bois massif"],"Poutre":["Bois massif"],"Panneau OSB":["Panneau (multiplex, OSB, MDF)"],"Panneau multiplex":["Panneau (multiplex, OSB, MDF)"],
+ "Parquet":["Bois massif","Panneau (multiplex, OSB, MDF)"],"Bardage":["Bois massif","PVC / plastique","Métal"],"Lames de terrasse":["Bois massif","PVC / plastique"],
+ "Lambris bois":["Bois massif"],"Lambris PVC":["PVC / plastique"],"Tuiles":["Céramique","Pierre / béton"],"Ardoises":["Pierre / béton"],"Gouttière":["Métal","PVC / plastique"],"Tôles":["Métal"],
+ "Panneau PIR":["PVC / plastique"],"Polystyrène":["PVC / plastique"],"Poignées":["Métal"],"Charnières":["Métal"],"Serrures":["Métal"],"Vis":["Métal"],
+ "Frigo":["Métal"],"Four":["Métal"],"Hotte":["Métal"],"Lave-vaisselle":["Métal"],"Lave-linge":["Métal"],"Palette":["Bois massif"],"Vitre":["Verre"]};
+const EXT=["Porte extérieure","Tuiles","Ardoises","Gouttière","Tôles","Pavés","Lames de terrasse","Bardage","Briques","Blocs béton","Poutrains","Châssis PVC","Châssis bois","Châssis alu","Porte-fenêtre","Velux","Palette"];
+const DEUX=["Planches","Poutre","Panneau OSB","Panneau multiplex","Trespa","Linteau","Outil électrique","Scie","Compresseur","Établi","Outil à main","Échelle","Charnières","Vis","Câble","Robinet"];
+const lieuNom=(cat,nom)=>EXT.includes(nom)||cat==="TOI"?"Extérieur":DEUX.includes(nom)||["OUT","Q","GRO","BOI"].includes(cat)?"Les deux":nom?"Intérieur":"";
+const FORMES={"Plaque":["Panneau OSB","Panneau multiplex","Trespa","Carrelage sol","Faïence murale","Dalles","Dalles de plafond","Tôles","Vitre","Panneau PIR","Polystyrène","Ardoises","Tuiles"],
+ "Barre / poutre":["Planches","Poutre","Linteau","Poutrains","Lames de terrasse","Bardage","Parquet","Lambris bois","Lambris PVC","Plinthes","Gouttière"],
+ "Rouleau":["Laine de verre","Laine de roche","Câble"],"Petite pièce":["Vis","Charnières","Poignées","Serrures","Prises","Interrupteurs","Vannes","Spot LED","Disjoncteurs","Robinet","Thermostat","Variateur"]};
+const formeNom=(cat,nom)=>{for(const k in FORMES)if(FORMES[k].includes(nom))return k;return ["CAR","TOI"].includes(cat)?"Plaque":["BOI","PAR","LAM"].includes(cat)?"Barre / poutre":nom?"Objet fini":""};
+// Estimation grossière d'après les mesures (cm) : ce que le client doit prévoir pour l'emporter.
+function transport(f){const d=[f.L,f.l,f.h].map(x=>parseFloat(String(x).replace(",","."))||0).sort((a,b)=>b-a);if(!d[0])return "";
+ return d[0]<=120&&d[1]<=80?"Voiture":d[0]<=250&&d[1]<=150?"Camionnette":"À plusieurs"}
 
 // ---------- Stockage (IndexedDB, sur le téléphone) ----------
 let idb;
-function openDb(){return new Promise((ok,ko)=>{const r=indexedDB.open("comptoir",1);
+function openDb(){return new Promise((ok,ko)=>{// La version d'essai garde ses fiches à part, pour ne pas mélanger avec les vraies.
+const r=indexedDB.open(location.pathname.includes("/essai/")?"comptoir-essai":"comptoir",1);
  r.onupgradeneeded=()=>{const d=r.result;d.createObjectStore("fiches",{keyPath:"id"});d.createObjectStore("reglages")};
  r.onsuccess=()=>{idb=r.result;ok()};r.onerror=()=>ko(r.error)})}
 function tx(store,mode,fn){return new Promise((ok,ko)=>{const t=idb.transaction(store,mode),s=t.objectStore(store);const res=fn(s);
@@ -141,7 +200,7 @@ const getSet=k=>tx("reglages","readonly",s=>s.get(k));
 const putSet=(k,v)=>tx("reglages","readwrite",s=>s.put(v,k));
 
 let fiches=[], LAST={...LAST0};
-async function load(){fiches=(await dbAll()).sort((a,b)=>b.cree-a.cree);const l=await getSet("last");if(l)LAST={...LAST0,...l}}
+async function load(){fiches=(await dbAll()).sort((a,b)=>b.cree-a.cree);const l=await getSet("last");if(l)LAST={...LAST0,...l};recoOn=(await getSet("reco"))!==false}
 
 // ---------- Outils ----------
 let screen="home", cur=null, step=0, openId=null;
@@ -151,7 +210,8 @@ function nextCode(cat){let n=LAST[cat]||0;fiches.forEach(f=>{if(f.cat===cat&&f.i
 function dimTxt(f){const d=[f.L,f.l,f.h].filter(Boolean);return d.length?d.join(" × ")+" cm":""}
 // L1 ≥ L2 ≥ L3 : les mesures sont toujours rangées de la plus grande à la plus petite (cm)
 function trierDims(f){const v=[f.L,f.l,f.h].map(x=>String(x??"").trim()).filter(Boolean).sort((a,b)=>(parseFloat(b.replace(",","."))||0)-(parseFloat(a.replace(",","."))||0));[f.L,f.l,f.h]=[v[0]||"",v[1]||"",v[2]||""]}
-function descr(f){return [f.etat,dimTxt(f)?"Dimensions : "+dimTxt(f):"","Vendu par "+f.unite,f.note].filter(Boolean).join(" · ")}
+function descr(f){return [f.etat,dimTxt(f)?"Dimensions : "+dimTxt(f):"",f.matiere?"Matière : "+f.matiere:"",f.couleur?"Couleur : "+f.couleur:"",
+ f.lieu==="Les deux"?"Intérieur ou extérieur":f.lieu,"Vendu par "+f.unite,f.note].filter(Boolean).join(" · ")}
 function toast(t){const el=$("#toast");el.textContent=t;el.hidden=false;clearTimeout(toast.t);toast.t=setTimeout(()=>el.hidden=true,2200)}
 function bar(html){$("#barIn").innerHTML=html}
 const today=()=>new Date().toISOString().slice(0,10);
@@ -162,6 +222,18 @@ const photoName=(f,i)=>`${f.code}-${i+1}.jpg`;
 const HEAD=["Référence","Nom","Catégories","Stock","Prix de vente TTC","Description","Image"];
 function csvText(list){const q=v=>{v=String(v??"");return /[;"\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
  return [HEAD].concat(list.map(f=>[f.code,f.nom,siteCat(f.cat),f.qte,String(f.prix||"").replace(".",","),descr(f),f.photos.length?photoName(f,0):""])).map(r=>r.map(q).join(";")).join("\r\n")+"\r\n"}
+// Fichier des caractéristiques pour l'outil « Faire avec » (onglet Fiches) : UTF-8, séparateur « ; ».
+const HEAD_FICHES=["Référence","Nom","Catégorie","L1 (cm)","L2 (cm)","L3 (cm)","Matière","Couleur","Intérieur / extérieur","État","Forme","Transport","Quantité","Unité","Arrivée","Photos","Emplacement","Poids (kg)","Poids estimé","Provenance"];
+function fichesCsv(list){const q=v=>{v=String(v??"");return /[;"\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+ return "﻿"+[HEAD_FICHES].concat(list.map(f=>[f.code,f.nom,siteCat(f.cat),f.L,f.l,f.h,f.matiere,f.couleur,f.lieu,f.etat,formeNom(f.cat,f.nom),transport(f),f.qte,f.unite,
+  new Date(f.cree).toISOString().slice(0,10),f.photos.map((_,i)=>photoName(f,i)).join(" "),f.empl||"",f.poids||"",f.poids&&f.poidsEst?"oui":"",f.prov||""])).map(r=>r.map(q).join(";")).join("\r\n")+"\r\n"}
+// Tableau des annonces existantes vérifiées au comptoir (rien n'est importé automatiquement).
+const HEAD_MAJ=["Référence","Statut","Titre actuel","Titre proposé","Catégorie","Stock compté","Description proposée","Photos","Emplacement"];
+// Titre pour le site : le titre nettoyé (ou le nom), avec les mesures si le titre n'en a pas.
+function titrePropose(f){const d=[f.L,f.l,f.h].filter(Boolean),t=f.titreBase||f.nom;return t+(d.length&&!/\d/.test(t)?" – "+d.join(" × ")+" cm":"")}
+function majCsv(list){const q=v=>{v=String(v??"");return /[;"\r\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v};
+ return [HEAD_MAJ].concat(list.map(f=>f.statut==="introuvable"?[f.code,"Introuvable ou vendu",f.titreActuel,"","","0","","",""]:
+  [f.code,f.codeNouveau?"Nouvelle référence (écrite sur l'objet)":"Vérifiée",f.titreActuel,titrePropose(f),siteCat(f.cat),f.qte,descr(f),f.photos.map((_,i)=>photoName(f,i)).join(" "),f.empl||""])).map(r=>r.map(q).join(";")).join("\r\n")+"\r\n"}
 const CP={0x20AC:0x80,0x201A:0x82,0x192:0x83,0x201E:0x84,0x2026:0x85,0x2020:0x86,0x2021:0x87,0x2C6:0x88,0x2030:0x89,0x160:0x8A,0x2039:0x8B,0x152:0x8C,0x17D:0x8E,
  0x2018:0x91,0x2019:0x92,0x201C:0x93,0x201D:0x94,0x2022:0x95,0x2013:0x96,0x2014:0x97,0x2DC:0x98,0x2122:0x99,0x161:0x9A,0x203A:0x9B,0x153:0x9C,0x17E:0x9E,0x178:0x9F};
 function cp1252(s){const out=new Uint8Array(s.length);let n=0;for(const ch of s){const c=ch.codePointAt(0);
@@ -171,9 +243,12 @@ function dataUrlToBlob(u){const [h,b]=u.split(",");const bin=atob(b),a=new Uint8
 // qui contient le fichier d'import et les photos, avec des boutons qui les téléchargent sous leur vrai nom.
 function b64(bytes){let s="";for(let i=0;i<bytes.length;i+=0x8000)s+=String.fromCharCode.apply(null,bytes.subarray(i,i+0x8000));return btoa(s)}
 function reportHtml(list){
- const csvName=`import-${today()}.csv`, csv64=b64(cp1252(csvText(list)));
- const cards=list.map(f=>`<section><h2><span class="ref">${esc(f.code)}</span> ${esc(f.nom)}</h2>
-  <p>${esc(siteCat(f.cat))} · stock ${esc(f.qte)} ${esc(f.unite)}${f.prix?" · "+esc(f.prix)+" €":" · prix à fixer"}</p><p class="d">${esc(descr(f))}</p>
+ const neufs=list.filter(f=>f.type!=="maj"), maj=list.filter(f=>f.type==="maj"), list0=list;list=neufs.concat(maj.filter(f=>f.statut!=="introuvable"));
+ const csvName=`import-${today()}.csv`, csv64=b64(cp1252(csvText(neufs)));
+ const mName=`mises-a-jour-${today()}.csv`, m64=b64(cp1252(majCsv(maj)));
+ const fName=`caracteristiques-${today()}.csv`, f64=b64(new TextEncoder().encode(fichesCsv(list)));
+ const cards=list0.map(f=>`<section><h2><span class="ref">${esc(f.code)}</span> ${esc(f.type==="maj"?titrePropose(f):f.nom)}${f.type==="maj"?` <small>(${f.statut==="introuvable"?"introuvable au comptoir":"annonce existante"})</small>`:""}</h2>
+  <p>${esc(siteCat(f.cat))} · stock ${esc(f.qte)} ${esc(f.unite)}${f.prix?" · "+esc(f.prix)+" €":" · prix à fixer"}${f.empl?" · rangé en "+esc(f.empl):""}</p><p class="d">${esc(descr(f))}</p>
   <div class="ph">${f.photos.map((p,i)=>`<figure><img src="${p}" alt=""><figcaption>${photoName(f,i)}</figcaption></figure>`).join("")}</div>
   ${f.photos.length?`<button data-ref="${esc(f.code)}">Télécharger les ${f.photos.length} photo${f.photos.length>1?"s":""} de ${esc(f.code)}</button>`:""}</section>`).join("");
  const photos=JSON.stringify(Object.fromEntries(list.map(f=>[f.code,f.photos.map((p,i)=>[photoName(f,i),p])]))).replace(/</g,"\\u003c");
@@ -186,18 +261,23 @@ section,.top{background:#fff;border:1px solid #d9d7d0;border-radius:12px;padding
 button{font:inherit;font-weight:700;background:#f2b705;border:0;border-radius:10px;padding:12px 18px;margin-top:10px;cursor:pointer}
 ol{padding-left:20px}</style></head><body>
 <h1>Envoi du comptoir – ${new Date().toLocaleDateString("fr-BE")}</h1>
-<div class="top"><ol><li>Téléchargez le fichier d'import et toutes les photos (boutons 1 et 2), puis importez le fichier dans Impulsion (Gestion des produits › Importation).</li>
+<div class="top">${neufs.length?`<p><b>Nouveaux produits (${neufs.length})</b></p><ol><li>Téléchargez le fichier d'import et toutes les photos (boutons 1 et 2), puis importez le fichier dans Impulsion (Gestion des produits › Importation).</li>
 <li>À l'étape « Importer les images associées », touchez + Ajouter, choisissez les photos téléchargées (celles qui finissent par -1.jpg suffisent), puis « Traiter les photos ».</li>
 <li>S'il y a d'autres photos (-2.jpg, -3.jpg), ajoutez-les dans Impulsion : crayon › onglet Images › + Ajouter.</li>
 <li>Vérifiez le prix, puis mettez en ligne.</li></ol>
-<button id="csv">1. Télécharger le fichier d'import (${list.length} produit${list.length>1?"s":""})</button><br>
-<button id="all">2. Télécharger toutes les photos (${list.reduce((n,f)=>n+f.photos.length,0)})</button>
+<button id="csv">1. Télécharger le fichier d'import (${neufs.length} produit${neufs.length>1?"s":""})</button><br>`:""}
+${maj.length?`<p><b>Annonces existantes vérifiées (${maj.length})</b> : le tableau des mises à jour donne, par référence, le titre et la description proposés, le stock compté et les articles introuvables. Rien n'est changé dans Impulsion : à reporter à la main quand vous le décidez.</p>
+<button id="maj">Télécharger le tableau des mises à jour (${maj.length})</button><br>`:""}
+<button id="all">2. Télécharger toutes les photos (${list.reduce((n,f)=>n+f.photos.length,0)})</button><br>
+<button id="fiches" style="background:#fff;border:2px solid #d9d7d0">3. Caractéristiques pour l'outil « Faire avec » (facultatif)</button>
 <p class="d">Si le navigateur demande d'autoriser plusieurs téléchargements, répondez Autoriser.</p></div>
 ${cards}
 <script>
 const P=${photos};
 function dl(name,url){const a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove()}
-document.getElementById("csv").onclick=()=>dl(${JSON.stringify(csvName)},"data:text/csv;base64,${csv64}");
+if(document.getElementById("csv"))document.getElementById("csv").onclick=()=>dl(${JSON.stringify(csvName)},"data:text/csv;base64,${csv64}");
+if(document.getElementById("maj"))document.getElementById("maj").onclick=()=>dl(${JSON.stringify(mName)},"data:text/csv;base64,${m64}");
+document.getElementById("fiches").onclick=()=>dl(${JSON.stringify(fName)},"data:text/csv;charset=utf-8;base64,${f64}");
 document.getElementById("all").onclick=()=>Object.values(P).flat().forEach(([n,u],i)=>setTimeout(()=>dl(n,u),i*400));
 document.querySelectorAll("[data-ref]").forEach(b=>b.onclick=()=>P[b.dataset.ref].forEach(([n,u],i)=>setTimeout(()=>dl(n,u),i*400)));
 <\/script></body></html>`}
@@ -210,18 +290,20 @@ function render(){
  if(screen==="home"){
   const todo=fiches.filter(f=>!f.envoye), done=fiches.filter(f=>f.envoye);
   const row=f=>`<button class="item" data-open="${f.id}"><div class="thumb">${f.photos[0]?`<img src="${f.photos[0]}" alt="">`:esc(f.cat)}</div>
-   <div><div class="n">${esc(f.nom)}</div>
+   <div><div class="n">${esc(f.type==="maj"?(f.statut==="introuvable"?f.titreActuel:titrePropose(f)):f.nom)}</div>
    <div class="d"><span class="code">${esc(f.code)}</span> ${esc(f.qte)} ${esc(f.unite)}</div>
-   <span class="pill ${f.envoye?"ok":""}">${f.envoye?"envoyé le "+f.envoye:"à envoyer"}</span></div></button>`;
+   <span class="pill ${f.envoye?"ok":""}">${f.envoye?"envoyé le "+f.envoye:"à envoyer"}</span>${f.type==="maj"?` <span class="pill">${f.statut==="introuvable"?"introuvable":"annonce complétée"}</span>`:""}</div></button>`;
   a.innerHTML=`<div class="top"><span class="brand">Comptoir des Matériaux</span><button class="chip" id="set">Réglages</button></div>
    <h1>Matériaux reçus</h1><p class="hint">Un matériau arrive au comptoir ? Appuyez sur le bouton jaune et laissez-vous guider.</p>
+   <button class="big ghost" id="ann" style="margin-top:4px">Compléter les annonces existantes</button>
    <p class="sec">À envoyer au bureau (${todo.length})</p><div class="list">${todo.map(row).join("")||'<p class="hint">Rien en attente.</p>'}</div>
    ${done.length?`<p class="sec">Déjà envoyés (${done.length})</p><div class="list">${done.map(row).join("")}</div>`:""}
    <p class="hint" style="text-align:center;font-size:14px;margin-top:28px">Version ${VERSION}</p>`;
   bar((todo.length?`<button class="big ghost" id="exp" style="flex:0 0 42%">Envoyer (${todo.length})</button>`:"")+`<button class="big" id="new">+ Nouveau</button>`);
   if($("#exp"))$("#exp").onclick=()=>{screen="export";render()};
   $("#set").onclick=()=>{screen="reglages";render()};
-  $("#new").onclick=()=>{cur={id:Date.now()+"-"+Math.random().toString(36).slice(2,7),cree:Date.now(),code:"",cat:"",nom:"",etat:"",L:"",l:"",h:"",qte:1,unite:"pièce",prix:"",note:"",photos:[],envoye:""};step=0;screen="wiz";render()};
+  $("#ann").onclick=()=>{screen="annonces";render()};
+  $("#new").onclick=()=>{cur={id:Date.now()+"-"+Math.random().toString(36).slice(2,7),cree:Date.now(),code:"",cat:"",nom:"",etat:"",L:"",l:"",h:"",qte:1,unite:"pièce",prix:"",note:"",photos:[],envoye:"",matiere:"",couleur:"",lieu:"",empl:"R",propose:{},qual:[]};step=0;screen="wiz";render()};
   a.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{openId=b.dataset.open;screen="detail";render()});
  }
  else if(screen==="detail"){
@@ -247,7 +329,7 @@ function render(){
   a.innerHTML=`<div class="top"><span class="brand">Envoi au bureau</span></div>
    <h1>${todo.length} matériau${todo.length>1?"x":""}, ${nPh} photo${nPh>1?"s":""}</h1>
    <p class="hint">Appuyez sur le bouton jaune, puis choisissez <b>Drive</b> et le dossier <b>À encoder</b>.</p>
-   <div class="card"><pre class="txt" style="overflow-x:auto;white-space:pre">${esc(csvText(todo))}</pre></div>
+   <div class="card"><pre class="txt">${todo.map(f=>f.code+"  "+(f.type==="maj"?(f.statut==="introuvable"?"introuvable":"annonce complétée"):"nouveau : "+f.nom)).map(esc).join("\n")}</pre></div>
    <p class="hint">Un seul fichier part au bureau. Sur l'ordinateur, la gestionnaire l'ouvre : il contient le fichier d'import pour Impulsion et les photos de chaque produit, nommées avec leur référence.</p>
    <button class="big ghost" id="sent">C'est bien envoyé</button>`;
   bar(`<button class="big ghost back" id="bk">Retour</button><button class="big" id="go">${canShare?"Envoyer":"Télécharger"}</button>`);
@@ -259,80 +341,272 @@ function render(){
    const l={...LAST};todo.forEach(f=>{const m=+f.code.slice(f.cat.length);if(m>(l[f.cat]||0))l[f.cat]=m});LAST=l;await putSet("last",l);
    toast("Marqué comme envoyé");screen="home";render()};
  }
+ else if(screen==="annonces")ecranAnnonces(a);
+ else if(screen==="annonce")ecranAnnonce(a);
  else if(screen==="reglages"){
   a.innerHTML=`<div class="top"><span class="brand">Réglages</span></div><h1>Derniers numéros utilisés</h1>
    <p class="hint">Pour la gestionnaire. L'app continue la numérotation à partir de ces numéros. À corriger si une référence a été créée directement sur le site.</p>
-   <div class="card recap"><dl>${CATS.map(([c])=>`<dt><span class="code">${c}</span> ${esc(label(c))}</dt><dd><input class="t" style="min-height:44px;font-size:18px" inputmode="numeric" data-last="${c}" value="${LAST[c]||0}"></dd>`).join("")}</dl></div>`;
+   <div class="card recap"><dl>${CATS.map(([c])=>`<dt><span class="code">${c}</span> ${esc(label(c))}</dt><dd><input class="t" style="min-height:44px;font-size:18px" inputmode="numeric" data-last="${c}" value="${LAST[c]||0}"></dd>`).join("")}</dl></div>
+   <h1 style="margin-top:28px">Reconnaissance photo</h1>
+   <p class="hint">L'app propose la catégorie, le nom, la matière et la couleur d'après la photo. Elle télécharge une fois environ 35 Mo (de préférence en wifi), puis fonctionne sans internet.</p>
+   <div class="card"><p style="margin:0 0 10px;font-weight:700" id="recoEtat">${recoTxt()}</p>
+   <div class="chips" style="margin:0"><button class="chip ${recoOn?"sel":""}" id="recoOn">Activée</button><button class="chip ${recoOn?"":"sel"}" id="recoOff">Désactivée</button>
+   ${recoOn&&RECO.etat!=="pret"&&RECO.etat!=="charge"?`<button class="chip" id="recoGo">Télécharger maintenant</button>`:""}</div></div>`;
   bar(`<button class="big ghost back" id="bk">Retour</button><button class="big" id="ok">Enregistrer</button>`);
   $("#bk").onclick=()=>{screen="home";render()};
+  $("#recoOn").onclick=async()=>{await putSet("reco",true);recoOn=true;render()};
+  $("#recoOff").onclick=async()=>{await putSet("reco",false);recoOn=false;render()};
+  if($("#recoGo"))$("#recoGo").onclick=()=>{recoCharger();$("#recoGo").remove();recoMaj()};
   $("#ok").onclick=async()=>{const l={...LAST};a.querySelectorAll("[data-last]").forEach(i=>l[i.dataset.last]=parseInt(i.value)||0);LAST=l;await putSet("last",l);toast("Enregistré");screen="home";render()};
  }
  else wiz(a);
 }
 
-const STEPS=["Photos","Catégorie","Quoi ?","Mesures","Vérifier"];
+// ---------- Protocole photo ----------
+const ICO={ens:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 14V6h8M34 6h8v8M42 34v8h-8M14 42H6v-8"/><rect x="15" y="12" width="18" height="24" rx="2"/></svg>',
+ pres:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="20" cy="20" r="11"/><path d="M28 28l12 12M15 17h10M15 22h7"/></svg>',
+ mes:'<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="5" y="16" width="38" height="14" rx="2"/><path d="M11 16v6M17 16v4M23 16v6M29 16v4M35 16v6"/></svg>'};
+const SLOTS=[{t:"1. Vue d'ensemble",d:"Tout l'objet dans la photo, de face, sur un fond dégagé (mur ou sol). Reculez d'un pas.",i:"ens",req:1},
+ {t:"2. De près",d:"La matière, la couleur, et les défauts s'il y en a.",i:"pres"},
+ {t:"3. Mesure ou étiquette",d:"Le mètre déplié contre l'objet, ou l'étiquette, la marque. Facultatif.",i:"mes"}];
+const TIPS=`<details class="tips"><summary>Conseils pour une bonne photo</summary><ul><li>Lumière du jour, pas de contre-jour (pas de fenêtre derrière l'objet).</li>
+ <li>Un seul objet dans la photo, rien qui dépasse devant.</li><li>Grand objet : téléphone à l'horizontale, reculez.</li><li>Essuyez l'objectif avec un chiffon.</li></ul></details>`;
+// Contrôle d'une photo : trop sombre, trop claire, floue (variance du laplacien sur une image grise de 320 px, seuils calés sur des photos test).
+function qualite(img){const k=320/Math.max(img.width,img.height),w=Math.max(3,Math.round(img.width*k)),h=Math.max(3,Math.round(img.height*k));
+ const c=document.createElement("canvas");c.width=w;c.height=h;const x=c.getContext("2d",{willReadFrequently:true});x.drawImage(img,0,0,w,h);
+ const d=x.getImageData(0,0,w,h).data,g=new Float32Array(w*h);let m=0;for(let i=0;i<w*h;i++){g[i]=.299*d[4*i]+.587*d[4*i+1]+.114*d[4*i+2];m+=g[i]}m/=w*h;
+ let s=0,s2=0,n=0;for(let y=1;y<h-1;y++)for(let x0=1;x0<w-1;x0++){const i=y*w+x0,v=g[i-1]+g[i+1]+g[i-w]+g[i+w]-4*g[i];s+=v;s2+=v*v;n++}
+ const net=s2/n-(s/n)**2;return m<55?"Trop sombre : allumez ou approchez-vous d'une fenêtre, puis reprenez la photo.":m>225?"Trop claire : évitez le soleil direct ou le flash, puis reprenez la photo.":net<60?"Floue : tenez le téléphone immobile, touchez l'objet à l'écran pour faire la mise au point, puis reprenez.":""}
+
+// ---------- Reconnaissance d'après la photo (sur le téléphone, sans internet une fois chargée) ----------
+// Modèle MobileCLIP S0 (Apple) : la photo est comparée à des descriptions précalculées (modeles/libelles.json).
+const RECO={etat:"",pct:0,ses:null,cls:null,err:""};
+let recoOn=true;
+async function recoCharger(){
+ if(RECO.etat==="pret"||RECO.etat==="charge")return RECO.wait;
+ RECO.etat="charge";RECO.pct=0;
+ return RECO.wait=(async()=>{try{
+  if(!window.ort)await new Promise((ok,ko)=>{const s=document.createElement("script");s.src="essai/vendor/ort.wasm.min.js";s.onload=ok;s.onerror=()=>ko(new Error("ort"));document.head.appendChild(s)});
+  ort.env.wasm.numThreads=1;ort.env.wasm.wasmPaths=new URL("essai/vendor/",location.href).href;
+  const lib=await (await fetch("essai/modeles/libelles.json")).json();
+  RECO.cls=lib.classes.map(c=>{const b=atob(c.e),v=new Float32Array(b.length);let n=0;for(let i=0;i<b.length;i++){const q=b.charCodeAt(i);v[i]=(q>127?q-256:q)*c.k;n+=v[i]*v[i]}n=Math.sqrt(n);for(let i=0;i<v.length;i++)v[i]/=n;return{...c,vec:v}});
+  const r=await fetch("essai/modeles/mobileclip_s0.onnx"),tot=+r.headers.get("content-length")||23e6,rd=r.body.getReader(),parts=[];let got=0;
+  for(;;){const {done,value}=await rd.read();if(done)break;parts.push(value);got+=value.length;const p=Math.min(99,Math.round(got/tot*100));if(p!==RECO.pct){RECO.pct=p;recoMaj()}}
+  const buf=new Uint8Array(got);let o=0;for(const p of parts){buf.set(p,o);o+=p.length}
+  RECO.ses=await ort.InferenceSession.create(buf,{executionProviders:["wasm"]});RECO.etat="pret";recoMaj();
+ }catch(e){RECO.etat="erreur";RECO.err=String(e&&e.message||e);recoMaj()}})()}
+// Met à jour l'écran ouvert quand le chargement ou l'analyse avancent.
+const recoTxt=()=>RECO.etat==="pret"?"Prête":RECO.etat==="charge"?"Téléchargement : "+RECO.pct+" %":RECO.etat==="erreur"?"Problème : "+esc(RECO.err):"Pas encore chargée sur ce téléphone";
+function recoMaj(){if(screen==="reglages"){const e=$("#recoEtat");if(e)e.innerHTML=recoTxt();return}if(screen==="wiz"&&step<=1){const w=$("#recoWait");if(RECO.etat==="charge"){if(w)w.querySelector("progress").value=RECO.pct;return}render()}}
+async function vecteur(src){const img=await chargerImg(src),c=document.createElement("canvas");c.width=c.height=256;
+ const k=256/Math.min(img.width,img.height),w=img.width*k,h=img.height*k,x=c.getContext("2d",{willReadFrequently:true});
+ x.imageSmoothingQuality="high";x.drawImage(img,(256-w)/2,(256-h)/2,w,h);const d=x.getImageData(0,0,256,256).data,t=new Float32Array(3*256*256);
+ for(let i=0;i<256*256;i++){t[i]=d[4*i]/255;t[65536+i]=d[4*i+1]/255;t[131072+i]=d[4*i+2]/255}
+ const out=await RECO.ses.run({pixel_values:new ort.Tensor("float32",t,[1,3,256,256])}),v=out.image_embeds.data;let n=0;for(const a of v)n+=a*a;n=Math.sqrt(n);return Array.from(v,a=>a/n)}
+// Probabilités (softmax, échelle 100 comme CLIP) de chaque description d'un groupe : nom, matière ou couleur.
+function probas(v,g){const L=RECO.cls.filter(c=>c.g===g),s=L.map(c=>{let d=0;for(let i=0;i<v.length;i++)d+=v[i]*c.vec[i];return 100*d}),m=Math.max(...s),e=s.map(x=>Math.exp(x-m)),t=e.reduce((a,b)=>a+b,0);
+ return L.map((c,i)=>({v:c.v,c:c.c,p:e[i]/t}))}
+async function analyser(f){
+ if(!f.slots[0]||!recoOn)return;
+ const cle=f.slots[0].length+":"+(f.slots[1]||"").length;if(f.reco&&f.reco.cle===cle)return;
+ recoCharger();await RECO.wait;if(RECO.etat!=="pret")return;
+ try{const v0=await vecteur(f.slots[0]),v1=f.slots[1]?await vecteur(f.slots[1]):null,vm=v1?v0.map((a,i)=>(a+v1[i])/2):v0;
+  const noms=probas(v0,"nom"),cats={};noms.forEach(o=>cats[o.c]=(cats[o.c]||0)+o.p);
+  const map=a=>Object.fromEntries(a.map(o=>[o.v,o.p]));
+  f.reco={cle,cats:Object.entries(cats).sort((a,b)=>b[1]-a[1]),noms:Object.fromEntries(noms.map(o=>[o.c+"|"+o.v,o.p])),mat:map(probas(vm,"matiere")),coul:map(probas(vm,"couleur"))};
+  if(!f.cat&&f.reco.cats[0][1]>=.5){f.cat=f.reco.cats[0][0];f.propose.cat=1}
+ }catch(e){RECO.err=String(e&&e.message||e)}
+ if(f===cur)recoMaj()}
+function proposerNom(){if(cur.nom||!cur.reco||!cur.cat)return;let best="",p=0;
+ for(const k in cur.reco.noms){const [c,v]=k.split("|");if(c===cur.cat&&cur.reco.noms[k]>p){p=cur.reco.noms[k];best=v}}
+ if(best){cur.nom=best;cur.propose.nom=1}}
+function proposerDetails(){const r=cur.reco,P=cur.propose;if(cur.type==="maj"&&cur.matiere&&cur.couleur&&cur.lieu)return;
+ if(!cur.matiere||(P.matiere&&cur.type!=="maj")){const c=MAT_NOM[cur.nom];let v="";
+  if(c&&c.length===1)v=c[0];else if(c)v=r?c.slice().sort((a,b)=>(r.mat[b]||0)-(r.mat[a]||0))[0]:c[0];
+  else if(r){const [m,p]=Object.entries(r.mat).sort((a,b)=>b[1]-a[1])[0];if(p>=.6)v=m}
+  cur.matiere=v;P.matiere=v?1:0}
+ if(r&&(!cur.couleur||(P.couleur&&cur.type!=="maj"))){const [c,p]=Object.entries(r.coul).sort((a,b)=>b[1]-a[1])[0];cur.couleur=p>=.45?c:"";P.couleur=cur.couleur?1:0}
+ if(!cur.lieu||(P.lieu&&cur.type!=="maj")){cur.lieu=lieuNom(cur.cat,cur.nom);P.lieu=cur.lieu?1:0}}
+const ia=k=>cur.propose[k]?`<span class="ia">${cur.type==="maj"?"à vérifier":"proposé"}</span>`:"";
+
+// ---------- Compléter les annonces existantes ----------
+// annonces.json : préparé à distance à partir de l'export Impulsion et du catalogue public (lecture seule).
+// Pour chaque champ : « sûr » (écrit dans l'annonce) ou « à vérifier » (déduit du titre ou de la photo).
+let ANN=null, annCat="", annQ="", annMax=40, annId=null;
+async function chargerAnnonces(){if(ANN)return;try{ANN=await (await fetch("essai/annonces.json")).json()}catch(e){ANN=[]}}
+const annFiche=a=>fiches.find(f=>f.annonce===a.id);
+const IMG_SITE="https://www.la-pile.be";
+function ecranAnnonces(a){
+ if(!ANN){a.innerHTML='<p class="hint">Chargement des annonces…</p>';bar('');chargerAnnonces().then(render);return}
+ const cats=[...new Set(ANN.map(x=>x.cat))].sort((x,y)=>label(x).localeCompare(label(y)));
+ const q=annQ.trim().toLowerCase().replace(/\s+/g,"");
+ const list=ANN.filter(x=>(!annCat||x.cat===annCat)&&(!q||(x.code+x.titre).toLowerCase().replace(/\s+/g,"").includes(q)));
+ const reste=list.filter(x=>!annFiche(x)),faites=list.length-reste.length;
+ const row=x=>{const f=annFiche(x);return `<button class="item" data-ann="${esc(x.id)}"><div class="thumb">${x.photos[0]?`<img src="${IMG_SITE+x.photos[0]}" alt="" loading="lazy">`:esc(x.cat)}</div>
+  <div><div class="n">${esc(x.titre||"(sans titre)")}</div><div class="d"><span class="code">${esc(x.code||"sans réf.")}</span> stock ${esc(x.stock||"?")}</div>
+  ${f?`<span class="pill ok">${f.statut==="introuvable"?"introuvable":"fait"}</span>`:x.todo.map(t=>`<span class="pill">${esc(t)}</span>`).join(" ")}</div></button>`};
+ a.innerHTML=`<div class="top"><span class="brand">Annonces existantes</span><button class="chip" id="home">Accueil</button></div>
+  <h1>Compléter les annonces</h1><p class="hint">Choisissez une catégorie, faites le tour du rayon, et touchez l'article que vous avez devant vous.</p>
+  <input class="t" id="annQ" placeholder="Chercher une référence ou un mot" value="${esc(annQ)}">
+  <div class="chips"><button class="chip ${annCat?"":"sel"}" data-acat="">Toutes</button>${cats.map(c=>`<button class="chip ${annCat===c?"sel":""}" data-acat="${c}">${esc(label(c))}</button>`).join("")}</div>
+  <p class="sec">À faire (${reste.length}) · faites (${faites})</p>
+  <div class="list">${reste.slice(0,annMax).map(row).join("")||'<p class="hint">Tout est fait ici.</p>'}</div>
+  ${reste.length>annMax?`<button class="big ghost" id="plus" style="margin-top:10px">Afficher plus</button>`:""}`;
+ bar(`<button class="big" id="bk">Retour à l'accueil</button>`);
+ $("#bk").onclick=$("#home").onclick=()=>{screen="home";render()};
+ $("#annQ").oninput=e=>{annQ=e.target.value;annMax=40;const pos=e.target.selectionStart;render();const i=$("#annQ");i.focus();i.setSelectionRange(pos,pos)};
+ a.querySelectorAll("[data-acat]").forEach(b=>b.onclick=()=>{annCat=b.dataset.acat;annMax=40;render()});
+ if($("#plus"))$("#plus").onclick=()=>{annMax+=40;render();};
+ a.querySelectorAll("[data-ann]").forEach(b=>b.onclick=()=>{annId=b.dataset.ann;screen="annonce";render()});
+}
+function ecranAnnonce(a){
+ const x=ANN.find(y=>y.id===annId),champ=(k,t,v)=>v?`<dt>${t}</dt><dd>${esc(v)} ${x.sur.includes(k)?'<span class="ia" style="background:var(--ok-bg)">sûr</span>':'<span class="ia" style="background:var(--warn-bg);color:var(--ink)">à vérifier</span>'}</dd>`:"";
+ const dims=[x.L,x.l,x.h].some(Boolean)?[x.L||"?",x.l||"?",x.h||"?"].join(" × ")+" cm":"";
+ a.innerHTML=`<div class="top"><span class="brand">Annonce existante</span><span class="code">${esc(x.code||"sans réf.")}</span></div>
+  <h1>${esc(x.titre||"(sans titre)")}</h1>
+  ${x.photos.length?`<div class="photos" style="margin-top:14px">${x.photos.slice(0,3).map(p=>`<div class="ph"><img src="${IMG_SITE+p}" alt=""></div>`).join("")}</div>`:'<p class="hint">Pas de photo sur le site.</p>'}
+  ${x.desc?`<p class="hint">${esc(x.desc)}</p>`:""}
+  <div class="card recap"><dl><dt>Stock annoncé</dt><dd>${esc(x.stock||"?")}</dd>${champ("cat","Catégorie",label(x.cat))}${champ("nom","Nom",x.nom)}${champ("dims","Mesures",dims)}
+  ${champ("matiere","Matière",x.matiere)}${champ("couleur","Couleur",x.couleur)}${champ("lieu","Usage",x.lieu)}${champ("etat","État",x.etat)}</dl></div>
+  ${x.note?`<div class="warn">${esc(x.note)}</div>`:""}
+  <p class="hint" style="margin-top:14px">L'article est devant vous ? Vérifiez que la référence <b>${esc(x.code||"(à créer)")}</b> est écrite dessus, puis complétez.</p>
+  <button class="big ghost" id="introuvable">Introuvable ou déjà vendu</button>`;
+ bar(`<button class="big ghost back" id="bk">Retour</button><button class="big" id="go">Je l'ai trouvé</button>`);
+ $("#bk").onclick=()=>{screen="annonces";render()};
+ const base=()=>({id:Date.now()+"-"+Math.random().toString(36).slice(2,7),cree:Date.now(),type:"maj",annonce:x.id,titreActuel:x.titre,envoye:"",photos:[],qual:[],propose:{}});
+ $("#introuvable").onclick=async()=>{const b=$("#introuvable");if(!b.dataset.c){b.dataset.c=1;b.textContent="Appuyez encore pour confirmer";return}
+  await dbPut({...base(),statut:"introuvable",code:x.code||"",cat:x.cat,nom:x.nom,qte:0,unite:x.unite||"pièce"});await load();toast("Noté comme introuvable");screen="annonces";render()};
+ $("#go").onclick=()=>{const P={};["cat","nom","matiere","couleur","lieu","etat"].forEach(k=>{if(x[k]&&!x.sur.includes(k))P[k]=1});
+  cur={...base(),statut:"trouvee",titreBase:x.titre,code:x.code||"",codeNouveau:!x.code,cat:x.cat,nom:x.nom||"",etat:x.etat||"",L:x.L||"",l:x.l||"",h:x.h||"",qte:parseInt(x.stock)>0?parseInt(x.stock):1,
+   unite:x.unite||"pièce",prix:"",note:"",matiere:x.matiere||"",couleur:x.couleur||"",lieu:x.lieu||"",propose:P};
+  step=0;screen="wiz";render()};
+}
+
+// ---------- Assistant ----------
+const STEPS=["Photos","Catégorie","Quoi ?","Détails","Mesures","Vérifier"];
 function wiz(a){
+ if(!cur.slots){cur.slots=[0,1,2].map(i=>cur.photos[i]||null).concat(cur.photos.slice(3));cur.propose=cur.propose||{};cur.qual=cur.qual||[]}
+ const last=STEPS.length-1;
  const head=`<div class="top"><span class="brand">Étape ${step+1} sur ${STEPS.length}</span><button class="chip" id="cancel">Annuler</button></div>
   <div class="steps">${STEPS.map((_,i)=>`<i class="${i<=step?"on":""}"></i>`).join("")}</div>`;
  let body="",ok=true;
  if(step===0){
-  body=`<h2>Prenez des photos</h2><p class="hint">Une photo de l'ensemble, puis un détail ou une étiquette si possible.</p>
-   ${cur.photos.length?`<div class="photos">${cur.photos.map((p,i)=>`<div class="ph"><img src="${p}" alt="Photo ${i+1}"><button class="x" data-rm="${i}" aria-label="Retirer">×</button></div>`).join("")}</div>`:""}
-   <button class="camera" id="shoot"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="4"/></svg>${cur.photos.length?"Encore une photo":"Prendre une photo"}</button>`;
-  ok=cur.photos.length>0;
+  const card=(s,i)=>{const p=cur.slots[i];return `<div class="slot ${s.req&&!p?"req":""}"><div class="pic">${p?`<img src="${p}" alt="${esc(s.t)}">`:ICO[s.i]}</div>
+   <div><h3>${s.t}</h3><p>${s.d}</p>${cur.qual[i]?`<div class="warn">${cur.qual[i]}</div>`:""}
+   <div class="act">${p?`<button data-shot="${i}">Reprendre</button><button data-rm="${i}">Retirer</button>`:`<button class="go" data-shot="${i}">Prendre la photo</button>`}</div></div></div>`};
+  const extra=cur.slots.slice(3);
+  body=`<h2>Trois photos, toujours les mêmes</h2><p class="hint" style="margin-bottom:6px">La première suffit pour continuer. L'app propose ensuite la catégorie et le nom.</p>${TIPS}
+   ${SLOTS.map(card).join("")}
+   ${extra.length?`<div class="photos">${extra.map((p,j)=>`<div class="ph"><img src="${p}" alt="Photo ${j+4}"><button class="x" data-rm="${j+3}" aria-label="Retirer">×</button></div>`).join("")}</div>`:""}
+   <button class="chip" data-shot="${cur.slots.length<3?3:cur.slots.length}">+ Autre photo</button>`;
+  ok=!!cur.slots[0];
  } else if(step===1){
-  body=`<h2>C'est quoi comme matériau ?</h2><p class="hint">Touchez la bonne case.</p>
-   <div class="tiles">${CATS.map(([c])=>`<button class="tile ${cur.cat===c?"sel":""}" data-cat="${c}"><b>${c}</b><span>${esc(label(c))}</span></button>`).join("")}</div>`;
+  const r=cur.reco,tile=c=>`<button class="tile ${cur.cat===c?"sel":""}" data-cat="${c}"><b>${c}</b><span>${esc(label(c))}</span></button>`;
+  let wait="";
+  if(!r&&RECO.etat==="charge")wait=`<div class="wait" id="recoWait">Préparation de la reconnaissance (une seule fois)… <progress max="100" value="${RECO.pct}"></progress></div>`;
+  else if(!r&&RECO.etat==="pret")wait=`<div class="wait">Analyse de la photo…</div>`;
+  const top=r?r.cats.filter(x=>x[1]>=.08).slice(0,3).map(x=>x[0]):[];
+  const doute=r&&r.cats[0][1]<.25;
+  body=`<h2>C'est quoi comme matériau ?</h2><p class="hint">Touchez la bonne case.</p>${wait}
+   ${top.length?`<p class="sub">D'après la photo</p><div class="tiles">${top.map(tile).join("")}</div>
+   ${doute?`<div class="warn">La photo n'est pas claire pour l'app. Vérifiez que la photo 1 montre l'objet en entier, seul, de face.</div>`:""}
+   <p class="sub">Toutes les catégories</p>`:""}
+   <div class="tiles">${CATS.filter(([c])=>!top.includes(c)).map(([c])=>tile(c)).join("")}</div>`;
   ok=!!cur.cat;
  } else if(step===2){
+  proposerNom();
   body=`<h2>${esc(label(cur.cat))} : lequel ?</h2><p class="hint">Touchez un nom ou écrivez-le (le micro du clavier marche aussi).</p>
    <div class="chips">${(SUGG[cur.cat]||[]).map(s=>`<button class="chip ${cur.nom===s?"sel":""}" data-nom="${esc(s)}">${esc(s)}</button>`).join("")}</div>
-   <label class="f" for="nom">Nom</label><input class="t" id="nom" value="${esc(cur.nom)}" placeholder="ex. Lavabo blanc">
-   <label class="f">État</label><div class="chips">${ETATS.map(s=>`<button class="chip ${cur.etat===s?"sel":""}" data-etat="${s}">${s}</button>`).join("")}</div>`;
+   <label class="f" for="nom">Nom ${ia("nom")}</label><input class="t" id="nom" value="${esc(cur.nom)}" placeholder="ex. Lavabo blanc">
+   <label class="f">État</label><div class="chips">${ETATS.map(s=>`<button class="chip ${cur.etat===s?"sel":""}" data-etat="${s}">${s}</button>`).join("")}</div>
+   <label class="f">Provenance</label><div class="chips">${PROVENANCES.map(s=>`<button class="chip ${cur.prov===s?"sel":""}" data-prov="${s}">${s}</button>`).join("")}</div>`;
   ok=!!cur.nom.trim();
  } else if(step===3){
+  proposerDetails();
+  const row=(k,t,vals)=>`<label class="f">${t} ${ia(k)}</label><div class="chips">${vals.map(v=>`<button class="chip ${cur[k]===v?"sel":""}" data-k="${k}" data-v="${esc(v)}">${esc(v)}</button>`).join("")}</div>`;
+  body=`<h2>Quelques détails</h2><p class="hint">Les réponses « proposé » viennent de la photo et du nom. Corrigez si besoin, sinon touchez Suivant.</p>
+   ${row("matiere","Matière",MATIERES)}${row("couleur","Couleur",COULEURS)}${row("lieu","Pour l'intérieur ou l'extérieur ?",LIEUX)}`;
+ } else if(step===4){
   body=`<h2>Mesures et quantité</h2><p class="hint">En centimètres, de la plus grande mesure (L1) à la plus petite (L3). Peu importe l'ordre : l'app les range. Laissez vide ce qui ne se mesure pas.</p>
    <div class="dims"><div><input class="t" id="L" inputmode="decimal" value="${esc(cur.L)}" aria-label="L1, la plus grande"><small>L1 (plus grande)</small></div>
    <div><input class="t" id="l" inputmode="decimal" value="${esc(cur.l)}" aria-label="L2"><small>L2</small></div>
    <div><input class="t" id="h" inputmode="decimal" value="${esc(cur.h)}" aria-label="L3, la plus petite"><small>L3 (plus petite)</small></div></div>
    <label class="f" for="qte">Combien ?</label>
    <div class="qty"><button id="minus" aria-label="Moins">−</button><input class="t" id="qte" inputmode="numeric" value="${esc(cur.qte)}"><button id="plus" aria-label="Plus">+</button></div>
-   <div class="chips">${UNITS.map(u=>`<button class="chip ${cur.unite===u?"sel":""}" data-unit="${u}">${u}</button>`).join("")}</div>`;
+   <div class="chips">${UNITS.map(u=>`<button class="chip ${cur.unite===u?"sel":""}" data-unit="${u}">${u}</button>`).join("")}</div>${poidsHtml()}${emplHtml()}`;
  } else {
-  if(!cur.code||!cur.code.startsWith(cur.cat)||!/^\d+$/.test(cur.code.slice(cur.cat.length)))cur.code=nextCode(cur.cat);
+  if(!(cur.type==="maj"&&cur.code)&&(!cur.code||!cur.code.startsWith(cur.cat)||!/^\d+$/.test(cur.code.slice(cur.cat.length))))cur.code=nextCode(cur.cat);
+  const nPh=cur.slots.filter(Boolean).length;
   body=`<h2>Tout est juste ?</h2><p class="hint">Touchez « Retour » pour corriger.</p>
    <div class="card recap"><dl><dt>Référence</dt><dd><span class="code">${esc(cur.code)}</span></dd><dt>Nom</dt><dd>${esc(cur.nom)}</dd>
-   <dt>Catégorie</dt><dd>${esc(label(cur.cat))}</dd><dt>État</dt><dd>${esc(cur.etat||"-")}</dd><dt>Mesures</dt><dd>${dimTxt(cur)||"-"}</dd>
-   <dt>Stock</dt><dd>${esc(cur.qte)} ${esc(cur.unite)}</dd><dt>Photos</dt><dd>${cur.photos.length}</dd></dl></div>
-   <p class="hint" style="margin-top:12px">Écrivez <b>${esc(cur.code)}</b> sur le matériau (craie, scotch ou étiquette).</p>
-   <label class="f" for="note">Remarque (facultatif)</label><input class="t" id="note" value="${esc(cur.note)}" placeholder="couleur, marque, défaut…">
+   <dt>Catégorie</dt><dd>${esc(label(cur.cat))}</dd><dt>État</dt><dd>${esc(cur.etat||"-")}</dd><dt>Provenance</dt><dd>${esc(cur.prov||"-")}</dd>
+   <dt>Matière</dt><dd>${esc(cur.matiere||"-")}</dd><dt>Couleur</dt><dd>${esc(cur.couleur||"-")}</dd><dt>Usage</dt><dd>${esc(cur.lieu||"-")}</dd>
+   <dt>Mesures</dt><dd>${dimTxt(cur)||"-"}</dd><dt>Poids</dt><dd>${cur.poids?esc(cur.poids)+" kg"+(cur.poidsEst?" (estimé)":""):"-"}</dd>${transport(cur)?`<dt>Transport</dt><dd>${transport(cur)}</dd>`:""}
+   <dt>Stock</dt><dd>${esc(cur.qte)} ${esc(cur.unite)}</dd><dt>Rangé en</dt><dd>${esc(cur.empl==="R"?"R (pas encore rangé)":cur.empl||"-")}</dd><dt>Photos</dt><dd>${nPh}</dd></dl></div>
+   ${cur.type==="maj"?`<p class="hint" style="margin-top:12px">Titre proposé pour le site : <b>${esc(titrePropose(cur))}</b></p>`:""}
+   <p class="hint" style="margin-top:12px">${cur.type==="maj"&&!cur.codeNouveau?"Vérifiez que":"Écrivez"} <b>${esc(cur.code)}</b> ${cur.type==="maj"&&!cur.codeNouveau?"est bien écrit":""} sur le matériau (craie, scotch ou étiquette).</p>
+   <label class="f" for="note">Remarque (facultatif)</label><input class="t" id="note" value="${esc(cur.note)}" placeholder="marque, défaut…">
    <label class="f" for="prix">Prix en € (facultatif, la gestionnaire peut le mettre après)</label><input class="t" id="prix" inputmode="decimal" value="${esc(cur.prix)}">`;
  }
  a.innerHTML=head+body;
- bar((step>0?`<button class="big ghost back" id="prev">Retour</button>`:"")+`<button class="big" id="next" ${ok?"":"disabled"}>${step===4?"Enregistrer":"Suivant"}</button>`);
- $("#cancel").onclick=()=>{screen="home";render()};
+ bar((step>0?`<button class="big ghost back" id="prev">Retour</button>`:"")+`<button class="big" id="next" ${ok?"":"disabled"}>${step===last?"Enregistrer":"Suivant"}</button>`);
+ $("#cancel").onclick=()=>{screen=cur.type==="maj"?"annonce":"home";render()};
  if($("#prev"))$("#prev").onclick=()=>{step--;render()};
- $("#next").onclick=async()=>{trierDims(cur);if(step<4){step++;render()}else{cur.qte=Math.max(1,parseInt(cur.qte)||1);await dbPut(cur);await load();toast("Matériau enregistré : "+cur.code);screen="home";render()}};
- const bind=k=>{const el=$("#"+k);if(el)el.oninput=()=>{cur[k]=el.value;if(k==="nom"){$("#next").disabled=!el.value.trim();a.querySelectorAll("[data-nom]").forEach(c=>c.classList.toggle("sel",c.dataset.nom===el.value))}}};
+ $("#next").onclick=async()=>{trierDims(cur);if(step<last){step++;render()}else{cur.qte=Math.max(1,parseInt(cur.qte)||1);
+  cur.photos=cur.slots.filter(Boolean);const f={...cur};delete f.slots;delete f.qual;await dbPut(f);await load();toast("Matériau enregistré : "+cur.code);screen=cur.type==="maj"?"annonces":"home";render()}};
+ const bind=k=>{const el=$("#"+k);if(el)el.oninput=()=>{cur[k]=el.value;if(k==="nom"){delete cur.propose.nom;$("#next").disabled=!el.value.trim();a.querySelectorAll("[data-nom]").forEach(c=>c.classList.toggle("sel",c.dataset.nom===el.value))}}};
  ["nom","L","l","h","qte","note","prix"].forEach(bind);
- if($("#shoot"))$("#shoot").onclick=()=>$("#cam").click();
- a.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{cur.photos.splice(+b.dataset.rm,1);render()});
- a.querySelectorAll("[data-cat]").forEach(b=>b.onclick=()=>{if(cur.cat!==b.dataset.cat){cur.cat=b.dataset.cat;cur.nom="";cur.code=""}step++;render()});
- a.querySelectorAll("[data-nom]").forEach(b=>b.onclick=()=>{cur.nom=b.dataset.nom;render()});
+ ["L","l","h"].forEach(k=>{const el=$("#"+k);if(el)el.addEventListener("input",majPoids)});
+ if($("#poids")){$("#poids").oninput=e=>{cur.poids=e.target.value;cur.poidsEst=false;$("#poidsInfo").textContent=cur.poids?"Poids pesé.":poidsInfo(poidsEstime())};
+  $("#poidsEst").onclick=()=>{const e=poidsEstime();if(e){cur.poids=String(e.kg).replace(".",",");cur.poidsEst=true;render()}}}
+ a.querySelectorAll("[data-shot]").forEach(b=>b.onclick=()=>{slotCible=+b.dataset.shot;$("#cam").click()});
+ a.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{const i=+b.dataset.rm;if(i<3){cur.slots[i]=null;cur.qual[i]=""}else cur.slots.splice(i,1);if(i<2)cur.reco=null;render()});
+ a.querySelectorAll("[data-cat]").forEach(b=>b.onclick=()=>{if(cur.cat!==b.dataset.cat){cur.cat=b.dataset.cat;cur.nom="";cur.code="";delete cur.propose.nom}delete cur.propose.cat;step++;render()});
+ a.querySelectorAll("[data-nom]").forEach(b=>b.onclick=()=>{cur.nom=b.dataset.nom;delete cur.propose.nom;render()});
  a.querySelectorAll("[data-etat]").forEach(b=>b.onclick=()=>{cur.etat=cur.etat===b.dataset.etat?"":b.dataset.etat;render()});
+ a.querySelectorAll("[data-prov]").forEach(b=>b.onclick=()=>{cur.prov=cur.prov===b.dataset.prov?"":b.dataset.prov;render()});
+ a.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{const k=b.dataset.k;cur[k]=cur[k]===b.dataset.v?"":b.dataset.v;cur.propose[k]=0;render()});
  a.querySelectorAll("[data-unit]").forEach(b=>b.onclick=()=>{cur.unite=b.dataset.unit;render()});
+ emplClic(a);
  if($("#plus")){$("#plus").onclick=()=>{cur.qte=(+cur.qte||0)+1;render()};$("#minus").onclick=()=>{cur.qte=Math.max(1,(+cur.qte||1)-1);render()}}
 }
 
-// Photos réduites à 1600 px pour le site et pour garder le téléphone léger.
-$("#cam").onchange=e=>{
- const files=[...e.target.files];e.target.value="";
- files.forEach(file=>{const url=URL.createObjectURL(file),img=new Image();img.onload=()=>{
-  const k=Math.min(1,1600/Math.max(img.width,img.height)),c=document.createElement("canvas");
-  c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);c.getContext("2d").drawImage(img,0,0,c.width,c.height);
-  URL.revokeObjectURL(url);cur.photos.push(c.toDataURL("image/jpeg",.82));render()};img.src=url});
-};
+// Poids : pesé si possible, sinon estimé d'après la matière et les mesures (poids.js, même calcul que la caisse).
+const poidsEstime=()=>Poids.estimer({nom:cur.nom,titre:cur.titreBase,cat:cur.cat,matiere:cur.matiere,unite:cur.unite,L:cur.L,l:cur.l,h:cur.h});
+const parUnite=()=>cur.unite==="pièce"?"par pièce":"par "+cur.unite;
+function poidsInfo(e){return e?`Estimé d'après ${e.base} : environ ${String(e.kg).replace(".",",")} kg.`:"Pesez si possible, ou laissez vide."}
+function poidsHtml(){const e=poidsEstime();if(cur.poidsEst&&e)cur.poids=String(e.kg).replace(".",",");
+ return `<label class="f" for="poids">Poids en kg ${parUnite()} (facultatif)</label>
+ <input class="t" id="poids" inputmode="decimal" value="${esc(cur.poids||"")}" placeholder="${e?String(e.kg).replace(".",","):""}">
+ <p class="hint" id="poidsInfo" style="margin:6px 0 0">${cur.poids&&!cur.poidsEst?"Poids pesé.":poidsInfo(e)}</p>
+ <div class="chips" style="margin-top:0"><button class="chip" id="poidsEst" ${e?"":"hidden"}>Prendre l'estimation</button></div>`}
+function majPoids(){const e=poidsEstime(),i=$("#poids");if(!i)return;i.placeholder=e?String(e.kg).replace(".",","):"";$("#poidsEst").hidden=!e;
+ if(cur.poidsEst&&e){cur.poids=String(e.kg).replace(".",",");i.value=cur.poids}if(!cur.poids||cur.poidsEst)$("#poidsInfo").textContent=poidsInfo(e)}
+function emplHtml(){const e=emplParts(cur.empl),conseil=ZONE_CAT[cur.cat];
+ const c=(z,t)=>`<button class="chip zone ${e.z===z?"sel":""}" data-ez="${z}" style="--zc:${ZONE_COUL[z]}">${t}</button>`;
+ let h=`<label class="f">Où est-il rangé ? <small class="ia">${esc(cur.empl||"pas encore choisi")}</small></label>
+  <div class="chips">${c("R","Pas encore rangé")}${Object.keys(ZONES).map(z=>c(z,z)).join("")}</div>
+  ${conseil?`<p class="hint">Zone conseillée pour cette catégorie : <b>${conseil}</b> (${esc(ZONES[conseil][0])}).</p>`:""}`;
+ if(ZONES[e.z]){h+=`<label class="f">Numéro (travée, peigne ou gondole)</label><div class="chips">${Array.from({length:ZONES[e.z][1]},(_,i)=>`<button class="chip ${e.t==String(i+1)?"sel":""}" data-et="${i+1}">${e.z}${i+1}</button>`).join("")}</div>`;
+  if(e.t&&!"DE".includes(e.z))h+=`<label class="f">Niveau (0 = au sol)</label><div class="chips">${[0,1,2,3,4,5].map(n=>`<button class="chip ${e.n===String(n)?"sel":""}" data-en="${n}">${n}</button>`).join("")}</div>`}
+ return h}
+function emplClic(a){a.querySelectorAll("[data-ez]").forEach(b=>b.onclick=()=>{const z=b.dataset.ez;cur.empl=z===emplParts(cur.empl).z&&z!=="R"?"":z;render()});
+ a.querySelectorAll("[data-et]").forEach(b=>b.onclick=()=>{const e=emplParts(cur.empl);cur.empl=e.z+b.dataset.et+("DE".includes(e.z)?"-0":"");render()});
+ a.querySelectorAll("[data-en]").forEach(b=>b.onclick=()=>{const e=emplParts(cur.empl);cur.empl=e.z+e.t+"-"+b.dataset.en;render()})}
 
+// Photos réduites à 1600 px pour le site et pour garder le téléphone léger.
+let slotCible=0;
+const chargerImg=src=>new Promise((ok,ko)=>{const i=new Image();i.onload=()=>ok(i);i.onerror=ko;i.src=src});
+$("#cam").onchange=async e=>{
+ const file=e.target.files[0];e.target.value="";if(!file)return;
+ const url=URL.createObjectURL(file),img=await chargerImg(url);
+ const k=Math.min(1,1600/Math.max(img.width,img.height)),c=document.createElement("canvas");
+ c.width=Math.round(img.width*k);c.height=Math.round(img.height*k);c.getContext("2d").drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);
+ const f=cur,i=slotCible,data=c.toDataURL("image/jpeg",.82);
+ if(i>=f.slots.length)f.slots.push(data);else f.slots[i]=data;
+ if(i<3)f.qual[i]=qualite(c);
+ if(i<2){f.reco=null;analyser(f)}
+ render()};
 (async()=>{
  try{await openDb();await load();if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}
  catch(e){$("#app").innerHTML='<h1>Problème de stockage</h1><p class="hint">Le téléphone refuse d\'enregistrer les données. Ouvrez l\'app dans Chrome, pas en navigation privée.</p>';return}

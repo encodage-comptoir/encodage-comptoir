@@ -45,3 +45,7 @@ Fichiers : `index.html` (coquille), `style.css` (charte), `app.js` (écrans), `s
 `caisse/historique.json` reprend les ventes du carnet papier de janvier à septembre 2026 (comptées dans les
 statistiques, case à décocher). Rien n'est écrit dans Impulsion.
 Adresse : https://encodage-comptoir.github.io/encodage-comptoir/caisse/
+
+## Version en ligne (23/10/2026)
+L'app à la racine est la 6.6 : copie de `essai/index.html` dont les chemins `poids.js`, `vendor/`, `modeles/` et `annonces.json` pointent vers `essai/` (pas de doublon des 35 Mo du modèle). Elle garde les fiches déjà encodées (même base « comptoir » sur le téléphone). L'ancienne 5.2 reste disponible dans `v5/`.
+Pour remettre la dernière version d'essai en ligne : refaire la copie avec ces chemins, et changer le nom du cache dans `sw.js`.
