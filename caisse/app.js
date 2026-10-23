@@ -59,7 +59,7 @@ function tx(store,mode,fn){return new Promise((ok,ko)=>{const t=idb.transaction(
  t.oncomplete=()=>ok(res&&res.result);t.onerror=e=>ko(e.target.error||t.error);t.onabort=()=>ko(t.error||new Error("transaction annulée"))})}
 const all=st=>tx(st,"readonly",s=>s.getAll());
 // Chaque changement de ventes ou de stock part ensuite vers le dépôt commun (sync.js).
-const put=(st,v)=>tx(st,"readwrite",s=>s.put(v)).then(r=>{planifierSync();return r});
+const put=(st,v)=>tx(st,"readwrite",s=>s.put(v)).then(r=>{planifierSync();planifierSauv();return r});
 const putSet=(k,v)=>{REG[k]=v;return tx("reglages","readwrite",s=>s.put(v,k))};
 async function allSet(){const o={};await new Promise((ok,ko)=>{const t=idb.transaction("reglages"),s=t.objectStore("reglages"),c=s.openCursor();
  c.onsuccess=()=>{const x=c.result;if(x){o[x.key]=x.value;x.continue()}else ok()};c.onerror=()=>ko(c.error)});return o}
@@ -349,7 +349,7 @@ async function valider(){const now=new Date(),d=jour(now),t=totalFinal(),rm=remi
  try{for(let essai=0;;essai++){try{await tx("ventes","readwrite",s=>s.add(v));break}
   catch(e){if(!e||e.name!=="ConstraintError"||essai>20)throw e;
    ventes=await all("ventes");while(ventes.some(x=>x.id===v.id)){v.num++;v.id=d+"-"+String(v.num).padStart(3,"0")}}}
-  planifierSync()}
+  planifierSync();planifierSauv()}
  catch(e){alert("La vente n'a pas pu être enregistrée. Notez-la dans le carnet papier.");return}
  ventes.push(v);calcStock();derniere=v;panier=[];q="";payNeuf();render();garderTicket();montrerTicket(v,true)}
 // Ticket en cours gardé sur l'appareil : rien n'est perdu si l'onglet se ferme ou si le PC redémarre.
@@ -799,7 +799,7 @@ const EXPORTS={
 function ecranReglages(){return `<div class="titre"><h2>Réglages</h2></div><div class="deux">
  <div class="carte"><h3>Sauvegarde</h3><p class="muted">Ventes, mouvements, fiches et réglages sont gardés dans ce navigateur, sur cet appareil. Faites une sauvegarde chaque semaine (clé USB ou Drive).</p>
   <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="save">Télécharger une sauvegarde</button><button class="btn clair" id="restore">Restaurer une sauvegarde</button><input type="file" id="fRestore" accept=".json" hidden></div>
-  <p class="muted">Dernière sauvegarde : ${REG.derniereSauvegarde?dateBe(jour(new Date(REG.derniereSauvegarde))):"jamais"}.</p>
+  <p class="muted">Dernière sauvegarde (manuelle ou automatique) : ${REG.derniereSauvegarde?dateBe(jour(new Date(REG.derniereSauvegarde))):"jamais"}.</p>
   <p class="muted">${stockageProtege?"Le navigateur s'est engagé à ne pas effacer ces données de lui-même.":"Le navigateur n'a pas garanti la conservation : gardez la caisse dans les favoris et faites les sauvegardes."} Attention : « Effacer les données de navigation » (cookies et données de sites) efface aussi la caisse.</p></div>
  <div class="carte"><h3>Douchette</h3><p class="muted">Scannez un QR d'étiquette ici pour tester :</p><input class="champ" id="testScan" placeholder="Cliquez puis scannez" autocomplete="off"><div id="testRes" class="muted" style="margin-top:8px"></div>
   <p class="muted">La douchette doit être réglée en clavier AZERTY (code dans son manuel). Si elle reste en QWERTY, la caisse corrige d'elle-même.</p></div>
@@ -807,11 +807,12 @@ function ecranReglages(){return `<div class="titre"><h2>Réglages</h2></div><div
   <label class="f">IBAN de La Pile<input class="champ" id="rIban" value="${esc(REG.iban||"")}" placeholder="BE00 0000 0000 0000" autocomplete="off"></label>
   <label class="f">Bénéficiaire<input class="champ" id="rBenef" value="${esc(REG.beneficiaire||"La Pile asbl")}"></label>
   <label class="f">BIC (facultatif)<input class="champ" id="rBic" value="${esc(REG.bic||"")}" placeholder="ex. GEBABEBB"></label><p class="muted" id="rIbanOk">${REG.iban?(ibanOk(REG.iban)?"IBAN valide.":"IBAN incorrect : vérifiez-le."):""}</p></div>
+ ${carteSauvAuto()}
  ${carteSync()}
  <div class="carte"><h3>Factures</h3><label class="f">Dernier n° de facture utilisé<input class="champ" id="dFact" value="${esc(REG.derniereFacture||"")}" placeholder="ex. F49-26"></label></div>
  <div class="carte"><h3>À propos</h3><p class="muted">Caisse & stock ${VERSION} · ${CAT.length} articles (export Impulsion du 14/10/2026, annonces du site, fiches) · ${ventes.length} tickets · ${MVT.length} mouvements.</p></div></div>`}
 function brancherReglages(){
- $("#save").onclick=async()=>{const d={version:VERSION,date:new Date().toISOString(),ventes,sorties,mouvements:MVT,articles:Object.values(ARTS),inventaire:Object.values(INV),reglages:sansSecrets(REG)};
+ $("#save").onclick=async()=>{const d=donneesSauvegarde();
   telecharger(`sauvegarde-caisse-${jour()}.json`,JSON.stringify(d),"application/json");await putSet("derniereSauvegarde",Date.now());render()};
  $("#restore").onclick=()=>$("#fRestore").click();
  $("#fRestore").onchange=async e=>{const f=e.target.files[0];if(!f)return;let d;try{d=JSON.parse(await f.text())}catch(x){toast("Fichier illisible",true);return}
@@ -820,6 +821,7 @@ function brancherReglages(){
   try{await fusionner({...d,appareil:"sauvegarde"})}catch(x){alert("La restauration s'est arrêtée en cours : "+(x&&x.message||x)+". Rien n'a été effacé.");return}
   location.reload()};
  const t=$("#testScan");t.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();const r=lireCode(t.value);$("#testRes").innerHTML=r?`Reconnu : <b>${esc(r)}</b> · ${esc(parRef(r).n)}`:`Non reconnu : « ${esc(t.value)} »`;t.value=""}};
+ brancherSauvAuto();
  $("#dFact").onchange=e=>putSet("derniereFacture",e.target.value.trim().toUpperCase());brancherSync();
  $("#rIban").onchange=async e=>{const v=ibanNet(e.target.value);await putSet("iban",v);$("#rIbanOk").textContent=v?(ibanOk(v)?"IBAN valide.":"IBAN incorrect : vérifiez-le."):""};
  $("#rBenef").onchange=e=>putSet("beneficiaire",e.target.value.trim()||"La Pile asbl");$("#rBic").onchange=e=>putSet("bic",e.target.value.trim())}
@@ -828,14 +830,39 @@ function brancherReglages(){
 let stockageKo=false,stockageProtege=null;
 function bandeau(){const el=$("#bandeau");if(!el)return;let t,mal=false;
  const j=REG.derniereSauvegarde?Math.floor((Date.now()-REG.derniereSauvegarde)/864e5):null;
+ if(!stockageKo&&sauvAuto==="pause"){el.textContent="Sauvegarde automatique en pause depuis le redémarrage du navigateur : cliquez ici pour la réactiver.";el.classList.add("mal");el.style.cursor="pointer";return}
+ el.style.cursor="";
  if(stockageKo){t="Stockage indisponible dans ce navigateur (fenêtre privée ?) : les ventes ne sont pas gardées. Notez-les dans le carnet papier.";mal=true}
  else if(syncPret())t=Sync.etat==="err"?"Liaison en erreur : les ventes sont gardées sur cet appareil, mais pas encore copiées. Voir Réglages.":"Version d'essai : les ventes sont gardées sur cet appareil et copiées dans le dépôt du Comptoir. Le carnet papier fait toujours foi.";
  else if(j==null||j>=7){t=`Version d'essai : les ventes ne sont gardées que dans ce navigateur. ${j==null?"Aucune sauvegarde faite":"Dernière sauvegarde il y a "+j+" jours"} : Réglages › Télécharger une sauvegarde.`;mal=ventes.length>0}
  else t="Version d'essai : les ventes sont gardées dans ce navigateur, dernière sauvegarde "+(j?"il y a "+j+" jour"+(j>1?"s":""):"aujourd'hui")+". Le carnet papier fait toujours foi.";
  el.textContent=t;el.classList.toggle("mal",mal)}
 
+// ---------- Sauvegarde automatique dans un dossier (Chrome ou Edge sur PC) ----------
+// Un fichier par jour, réécrit après chaque vente. Si le dossier est synchronisé (OneDrive, Google Drive),
+// une copie quitte le PC sans rien faire. Après un redémarrage du navigateur, il faut parfois réautoriser d'un clic.
+const donneesSauvegarde=()=>({version:VERSION,date:new Date().toISOString(),ventes,sorties,mouvements:MVT,articles:Object.values(ARTS),inventaire:Object.values(INV),reglages:sansSecrets(REG)});
+let sauvAuto="";
+function planifierSauv(){if(!REG.dossierSauv)return;clearTimeout(planifierSauv.t);planifierSauv.t=setTimeout(()=>sauvegardeAuto(false),3000)}
+async function sauvegardeAuto(geste){const h=REG.dossierSauv;if(!h||!h.getFileHandle)return false;
+ try{let p=await h.queryPermission({mode:"readwrite"});if(p!=="granted"&&geste)p=await h.requestPermission({mode:"readwrite"});
+  if(p!=="granted"){sauvAuto="pause";bandeau();return false}
+  const f=await h.getFileHandle(`sauvegarde-caisse-${jour()}.json`,{create:true}),w=await f.createWritable();
+  await w.write(JSON.stringify(donneesSauvegarde()));await w.close();
+  await putSet("derniereSauvegarde",Date.now());sauvAuto="ok";bandeau();return true}
+ catch(e){sauvAuto="err";bandeau();return false}}
+function carteSauvAuto(){const ok=!!window.showDirectoryPicker,h=REG.dossierSauv;
+ return `<div class="carte"><h3>Sauvegarde automatique</h3>${!ok?'<p class="muted">Ce navigateur ne le permet pas : utilisez Chrome ou Edge sur le PC.</p>':
+ `<p class="muted">Après chaque vente, la caisse écrit la sauvegarde du jour dans un dossier. Choisissez un dossier synchronisé (OneDrive ou Google Drive) : une copie quitte alors le PC.</p>
+  <p><b>Dossier :</b> ${h?esc(h.name):"aucun"}${h?` · ${{ok:"dernière copie à "+new Date(REG.derniereSauvegarde||0).toTimeString().slice(0,5),pause:"en pause, à réautoriser",err:"erreur d'écriture"}[sauvAuto]||"en attente"}`:""}</p>
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="sauvDos">${h?"Changer de dossier":"Choisir le dossier"}</button>${h&&sauvAuto!=="ok"?'<button class="btn clair" id="sauvGo">Réautoriser et sauvegarder</button>':""}</div>`}</div>`}
+function brancherSauvAuto(){const d=$("#sauvDos");if(d)d.onclick=async()=>{let h;try{h=await showDirectoryPicker({id:"sauvegarde-caisse",mode:"readwrite"})}catch(e){return}
+  await putSet("dossierSauv",h);toast(await sauvegardeAuto(true)?"Sauvegarde écrite dans « "+h.name+" »":"Le dossier n'a pas pu être utilisé",!sauvAuto||sauvAuto!=="ok");render()};
+ const g=$("#sauvGo");if(g)g.onclick=async()=>{await sauvegardeAuto(true);render()}}
+document.addEventListener("click",e=>{if(e.target.closest("#bandeau")&&sauvAuto==="pause")sauvegardeAuto(true)});
+
 // Le jeton GitHub et la phrase secrète ne sortent jamais de cet appareil.
-const sansSecrets=r=>{const o={...r};delete o.ghJeton;delete o.ghPhrase;Object.keys(o).forEach(k=>{if(k.startsWith("sha:")||k.startsWith("empreinte"))delete o[k]});return o};
+const sansSecrets=r=>{const o={...r};delete o.ghJeton;delete o.ghPhrase;delete o.dossierSauv;delete o.ticketEnCours;Object.keys(o).forEach(k=>{if(k.startsWith("sha:")||k.startsWith("empreinte"))delete o[k]});return o};
 
 // ---------- Démarrage ----------
 (async()=>{
@@ -856,6 +883,6 @@ const sansSecrets=r=>{const o={...r};delete o.ghJeton;delete o.ghPhrase;Object.k
  document.addEventListener("keydown",e=>{if(e.key==="Escape"){if(!$("#modal").hidden)fermerModal();else if(!$("#panneau").hidden)fermerPanneau()}});
  // Demande au navigateur de ne jamais effacer les données de la caisse pour faire de la place.
  if(navigator.storage&&navigator.storage.persist)try{stockageProtege=await navigator.storage.persisted()||await navigator.storage.persist()}catch(e){}
- bandeau();
+ bandeau();sauvegardeAuto(false);
  if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js");
 })();
