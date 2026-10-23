@@ -129,7 +129,7 @@ pre.txt{white-space:pre-wrap;font-family:var(--body);font-size:16px;background:v
 <script src="poids.js"></script>
 <script>
 "use strict";
-const VERSION="7.1 (Saïd / Audrey)";
+const VERSION="7.2 (Saïd / Audrey)";
 // ---------- Données de référence ----------
 // Préfixes et catégories : les noms doivent être identiques aux catégories du back-office Impulsion (vérifiés le 14/10/2026).
 const CATS=[
@@ -623,7 +623,7 @@ function wiz(a){
 // ---------- Parcours simplifié de Saïd ----------
 // Photos (revues une à une), mesures et quantité, catégorie reconnue, nom proposé, état et provenance, puis vérification.
 const S_STEPS=["Photos","Mesures","Catégorie","Nom","État","Vérifier"];
-const S_SLOTS=[{t:"1. Vue d'ensemble",d:"Tout l'objet, de face, sur un fond dégagé.",i:"ens",req:1},{t:"2. De près",d:"La matière et les défauts.",i:"pres"},{t:"3. Mesure",d:"Le mètre déplié contre l'objet.",i:"mes"}];
+const S_SLOTS=[{t:"1. Vue d'ensemble",d:"Tout l'objet, de face, sur un fond dégagé.",i:"ens",req:1},{t:"2. De près",d:"La matière et les défauts.",i:"pres"}];
 const S_ETATS=["Neuf (emballé)","Bon état","Mauvais état"];
 // Libellés de Saïd → valeur enregistrée (la même que dans l'app d'Audrey)
 const S_PROV=[["Déposé ici","Dépôt"],["Cherché ailleurs","Collecte"],["Vient du container","Intradel"]];
@@ -633,7 +633,7 @@ function nomParlant(base){const r=cur.reco,c=MAT_NOM[base];let m="";
  if(c&&c.length===1)m=c[0];else if(c&&r)m=c.slice().sort((a,b)=>(r.mat[b]||0)-(r.mat[a]||0))[0];else if(!c&&r){const [x,p]=Object.entries(r.mat).sort((a,b)=>b[1]-a[1])[0];if(p>=.6)m=x}
  const d=[cur.L,cur.l,cur.h].filter(Boolean);return [base,base.toLowerCase().includes((MAT_EN[m]||"").slice(3))?"":MAT_EN[m]].filter(Boolean).join(" ")+(d.length?" – "+d.join(" × ")+" cm":"")}
 function wizSaid(a){
- if(!cur.slots){cur.slots=[0,1,2].map(i=>cur.photos[i]||null);cur.propose=cur.propose||{};cur.qual=cur.qual||[]}
+ if(!cur.slots){cur.slots=[0,1].map(i=>cur.photos[i]||null);cur.propose=cur.propose||{};cur.qual=cur.qual||[]}
  const last=S_STEPS.length-1;
  const head=`<div class="top"><span class="brand">Étape ${step+1} sur ${S_STEPS.length}</span><button class="chip" id="cancel">Annuler</button></div>
   <div class="steps">${S_STEPS.map((_,i)=>`<i class="${i<=step?"on":""}"></i>`).join("")}</div>`;
@@ -645,7 +645,7 @@ function wizSaid(a){
   const card=(s,i)=>{const p=cur.slots[i];return `<div class="slot ${s.req&&!p?"req":""}">${p?`<button class="pic" data-voir="${i}" style="border:0;padding:0"><img src="${p}" alt="${esc(s.t)}"></button>`:`<div class="pic">${ICO[s.i]}</div>`}
    <div><h3>${s.t}</h3><p>${s.d}</p>
    <div class="act">${p?`<button data-voir="${i}">Revoir</button><button data-shot="${i}">Reprendre</button>`:`<button class="go" data-shot="${i}" style="background:#ffd800;border-color:#ffd800">Prendre la photo</button>`}</div></div></div>`};
-  body=`<h2>Trois photos</h2><p class="hint">La première suffit pour continuer.</p>${S_SLOTS.map(card).join("")}`;
+  body=`<h2>Deux photos</h2><p class="hint">La première suffit pour continuer.</p>${S_SLOTS.map(card).join("")}`;
   ok=!!cur.slots[0];
  } else if(step===1){
   body=`<h2>Mesures et quantité</h2><p class="hint">En centimètres. Laissez vide ce qui ne se mesure pas.</p>
