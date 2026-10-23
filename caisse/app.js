@@ -1,6 +1,6 @@
 "use strict";
 // Caisse & stock du Comptoir des Matériaux. Tout est gardé sur l'appareil (IndexedDB) ; rien n'est écrit dans Impulsion.
-const VERSION="2.3 (essai)";
+const VERSION="2.4 (essai)";
 const CATS=[["SA","Sanitaire"],["PA","Parois de douche"],["CH","Châssis"],["PO","Portes"],["CAR","Carrelage"],["GRO","Gros œuvre"],["RA","Chauffage"],
  ["ELEC","Électricité"],["LUM","Luminaires"],["BOI","Bois"],["PAR","Parquet & bardage"],["LAM","Lambris"],["TOI","Toiture"],["ISO","Isolant"],
  ["Q","Quincaillerie"],["OUT","Outillage"],["ELECTRO","Électroménager"],["DIV","Divers"]];
@@ -10,7 +10,8 @@ const TVA=0.21;      // tous les articles sont à 21 % TVA comprise
 const PRIX_KM=0.5;   // livraison : 0,50 € / km (procédure, point 10)
 const MATIERES=Poids.MATIERES;
 // « carte » = QR code (clé gardée pour les ventes déjà enregistrées).
-const MODES={especes:"Espèces",carte:"QR code",virement:"Virement",facture:"Facture"};
+const MODES={especes:"Espèces",carte:"QR code",virement:"Virement",facture:"Facture",bon:"Bon d'achat"};
+const MODES_BTN=["especes","carte","virement","facture"];
 // Sorties de stock hors vente. « dechet » compte pour Intradel comme déchet, pas comme réemploi.
 const MOTIFS={dechet:"Casse / déchet",don:"Don",interne:"Usage interne / atelier",retour:"Rendu au donateur",autre:"Autre"};
 const IC={
@@ -157,11 +158,33 @@ function scanne(code){const r=lireCode(code);
  else ouvrirPanneau(r)}
 
 // ---------- Caisse ----------
-let q="",cat="",panier=[],pay={mode:"",recu:"",fnum:"",fpaye:""},derniere=null;
+let q="",cat="",panier=[],pay,remise,derniere=null;
+const CLI=[["nom","Nom ou société *"],["adr","Rue et n°"],["loc","Code postal et localité"],["tva","N° TVA / entreprise"],["mail","E-mail"],["tel","Téléphone"]];
+function payNeuf(){pay={mode:"",recu:"",fnum:"",fpaye:"",cli:{},bonOn:false,bonNum:"",bonMt:""};remise={type:"",val:""}}
+payNeuf();
 function resultats(){const mots=sans(q).split(/\s+/).filter(Boolean);
  return CAT.filter(a=>(!cat||a.c===cat)&&(!mots.length||mots.every(m=>a.k.includes(m))))
   .sort((a,b)=>((reste(a)??1)>0?0:1)-((reste(b)??1)>0?0:1))}
 const totalPanier=()=>r2(panier.reduce((t,l)=>t+(l.p||0)*(l.q||0),0));
+// Réduction en % (sur les articles, pas sur les bons d'achat vendus) ou arrondi : on tape le total voulu.
+const baseRemise=()=>r2(panier.filter(l=>!l.bon).reduce((t,l)=>t+(l.p||0)*(l.q||0),0));
+function remiseMt(){const st=totalPanier(),v=num(remise.val);if(v==null||v<0)return 0;
+ if(remise.type==="pct")return v>0&&v<=100?r2(baseRemise()*v/100):0;
+ if(remise.type==="arrondi")return v<st&&st-v<=baseRemise()?r2(st-v):0;return 0}
+const remiseNom=()=>remise.type==="pct"?`Réduction ${virg(num(remise.val))} %`:"Arrondi";
+const totalFinal=()=>r2(totalPanier()-remiseMt());
+// Bons d'achat : vendus comme une ligne du ticket (sans TVA, la TVA est due quand le bon sert), utilisés comme paiement.
+function bonsTous(){const B={};ventes.filter(v=>!v.annulee).sort((a,b)=>a.ts-b.ts).forEach(v=>{
+  v.lignes.forEach(l=>{if(l.bon&&l.bonNum){const b=B[l.bonNum]=B[l.bonNum]||{num:l.bonNum,montant:0,utilise:0,emis:v.date,usages:[]};b.montant=r2(b.montant+l.p*l.q);b.emis=v.date}});
+  if(v.bon){const b=B[v.bon.num]=B[v.bon.num]||{num:v.bon.num,montant:null,utilise:0,emis:null,usages:[]};b.utilise=r2(b.utilise+v.bon.mt);b.usages.push(v.date)}});
+ return B}
+const soldeBon=n=>{const b=bonsTous()[normBon(n)];return b&&b.montant!=null?r2(b.montant-b.utilise):null};
+const normBon=n=>String(n||"").trim().toUpperCase().replace(/\s+/g,"");
+function prochainBon(){const a=String(new Date().getFullYear()).slice(2),re=new RegExp("^B"+a+"-(\\d+)$");let mx=0;
+ Object.keys(bonsTous()).concat(panier.filter(l=>l.bon).map(l=>l.bonNum)).forEach(k=>{const m=k.match(re);if(m)mx=Math.max(mx,+m[1])});return "B"+a+"-"+String(mx+1).padStart(3,"0")}
+const bonPaye=()=>{const m=num(pay.bonMt);return pay.bonOn&&normBon(pay.bonNum)&&m>0?Math.min(m,totalFinal()):0};
+const aPayer=()=>r2(totalFinal()-bonPaye());
+const toutParBon=()=>bonPaye()>0&&aPayer()===0;
 const qSaisie=l=>l.u&&l.u!=="pièce";
 function ajouterAuPanier(a){const l=panier.find(x=>x.id===a.r);
  if(l){if(!qSaisie(l))l.q++}else panier.push({id:a.r,r:refAff(a),n:a.n,t:a.t,p:a.p||null,q:qSaisie(a)?null:1,u:a.u,c:a.c,m:a.m,kg:a.kg,kgEst:a.kgEst,L:a.L,l:a.l,h:a.h,pm:a.pm});
@@ -174,15 +197,14 @@ function ecranCaisse(){const res=resultats(),t=totalPanier();
    <span class="tx"><span class="nm">${esc(a.n)}</span><span class="rf">${esc(refAff(a))||"sans réf."}${a.e?" · "+esc(a.e):""}${r!=null&&r>0?" · stock "+virg(r)+m2Txt(a,r):""}</span>
    <span class="px">${a.p?eur(a.p):'<span class="pill jaune">prix ?</span>'}${a.u&&a.u!=="pièce"?` <small class="muted">/ ${esc(a.u)}</small>`:""}</span></span></button>`}).join("");
  const lignes=panier.map((l,i)=>`<div class="tl">
-  <div class="n">${l.id||l.liv?esc(l.n)+` <small>${esc(l.r)}</small>`+(l.pm?` <small class="muted m2">${m2Txt(l,l.q)}</small>`:""):`<input class="champ" data-nom="${i}" placeholder="Ce qui est vendu (ex. lot de planches)" value="${esc(l.n)}">`}</div>
+  <div class="n">${l.id||l.liv||l.bon?esc(l.n)+` <small>${esc(l.r)}</small>`+(l.pm?` <small class="muted m2">${m2Txt(l,l.q)}</small>`:""):`<input class="champ" data-nom="${i}" placeholder="Ce qui est vendu (ex. lot de planches)" value="${esc(l.n)}">`}</div>
   <div class="tot">${l.p==null||!l.q?"":eur(l.p*l.q)}</div>
-  <div class="ctl">${qSaisie(l)
+  <div class="ctl">${l.bon?'<span class="muted">montant du bon</span>':qSaisie(l)
    ?`<span class="qte"><input data-q="${i}" inputmode="decimal" value="${virg(l.q)}" aria-label="Quantité" class="${l.q>0?"":"need"}"></span><span class="muted">${esc(l.u)}</span>`
    :`<span class="qte"><button data-moins="${i}" aria-label="Un de moins">−</button><input data-q="${i}" inputmode="numeric" value="${l.q}" aria-label="Quantité"><button data-plus="${i}" aria-label="Un de plus">+</button></span>`}
    <span class="muted">×</span><input class="prix-in ${l.p==null?"need":""}" data-prix="${i}" inputmode="decimal" placeholder="Prix" value="${virg(l.p)}" aria-label="Prix à l'unité" ${l.liv?"readonly":""}><span class="muted">€</span>
    <button class="x" data-suppr="${i}" aria-label="Retirer" title="Retirer">×</button></div>
-  ${l.liv?"":`<div class="ctl mini">Poids <input data-kg="${i}" inputmode="decimal" placeholder="?" value="${virg(l.kg)}"> kg${qSaisie(l)?" / "+esc(l.u):l.q>1?" / pièce":""}${l.kgEst?" (estimé)":""}
-   <select data-mat="${i}" aria-label="Matière"><option value="">Matière ?</option>${MATIERES.map(m=>`<option ${l.m===m?"selected":""}>${m}</option>`).join("")}</select></div>`}
+  ${/* poids et matière : plus demandés à la vente (Jérôme, 23/10) ; estimés en arrière-plan pour les stats */""}
  </div>`).join("");
  return `<div class="caisse">
  <section>
@@ -195,14 +217,28 @@ function ecranCaisse(){const res=resultats(),t=totalPanier();
  <aside class="carte ticket">
   <div class="titre" style="margin-bottom:4px"><h2>Ticket en cours</h2>${panier.length?'<button class="lien rouge" id="vider">Vider</button>':""}</div>
   <div class="lignes">${lignes||'<div class="vide">Scannez ou touchez un article pour commencer.</div>'}</div>
-  <div class="chips" style="margin-top:10px"><button class="chip" id="libre">+ Article sans fiche</button>${panier.some(l=>l.liv)?"":`<button class="chip" id="livraison">+ Livraison (${nb(PRIX_KM)} €/km)</button>`}</div>
-  <div class="total"><span>Total</span><span id="total">${eur(t)}</span></div>
-  <div class="muted">dont TVA 21 % : ${eur(dontTva(t))} · pas de crédit : un article non payé va en zone « arrivages et commandes »</div>
-  <div class="modes">${Object.keys(MODES).map(m=>`<button class="mode ${pay.mode===m?"sel":""}" data-mode="${m}">${IC[m]}${MODES[m]}</button>`).join("")}</div>
-  <div id="payPlus">${payPlus(t)}</div>
+  <div class="chips" style="margin-top:10px"><button class="chip" id="libre">+ Article sans fiche</button>${panier.some(l=>l.liv)?"":`<button class="chip" id="livraison">+ Livraison (${nb(PRIX_KM)} €/km)</button>`}<button class="chip" id="bonVente">+ Vendre un bon d'achat</button></div>
+  ${panier.length?`<div class="remise"><span class="muted">Réduction</span><button class="chip ${remise.type==="pct"?"sel":""}" data-rem="pct">%</button><button class="chip ${remise.type==="arrondi"?"sel":""}" data-rem="arrondi">Arrondi</button>
+   ${remise.type?`<input class="champ" id="remVal" inputmode="decimal" value="${esc(remise.val)}" placeholder="${remise.type==="pct"?"ex. 10":"total voulu, ex. "+Math.floor(t/5)*5}"><span class="muted">${remise.type==="pct"?"%":"€"}</span><button class="x" id="remX" aria-label="Retirer la réduction" title="Retirer la réduction">×</button>`:""}</div>`:""}
+  <div id="totaux">${totauxHtml()}</div>
+  <div class="muted">pas de crédit : un article non payé va en zone « arrivages et commandes »</div>
+  <div class="bonpay">${pay.bonOn?`<div class="grille-f" style="margin-top:10px"><label class="f">N° du bon d'achat<input class="champ" id="bonNum" value="${esc(pay.bonNum)}" placeholder="ex. B26-001" autocomplete="off"></label>
+   <label class="f">Montant utilisé (€)<input class="champ" id="bonMt" inputmode="decimal" value="${esc(pay.bonMt)}"></label></div><div id="bonInfo" class="muted">${bonInfo()}</div>
+   <button class="lien" id="bonOff">Ne pas utiliser de bon</button>`:`<button class="chip" id="bonOn" style="margin-top:10px">Payé (en partie) avec un bon d'achat</button>`}</div>
+  <div class="modes" ${toutParBon()?"hidden":""}>${MODES_BTN.map(m=>`<button class="mode ${pay.mode===m?"sel":""}" data-mode="${m}">${IC[m]}${MODES[m]}</button>`).join("")}</div>
+  <div id="payPlus">${toutParBon()?"":payPlus(aPayer())}</div>
   <button class="btn gros" id="valider" style="margin-top:12px" ${peutValider()?"":"disabled"}>Valider la vente</button>
   <p class="muted" id="manque" style="text-align:center;margin:6px 0 0">${peutValider()?"":esc(manque())}</p>
  </aside></div>`}
+function totauxHtml(){const st=totalPanier(),rm=remiseMt(),t=totalFinal(),b=bonPaye();
+ return `${rm?`<div class="l"><span>Sous-total</span><span>${eur(st)}</span></div><div class="l"><span>${esc(remiseNom())}</span><span>− ${eur(rm)}</span></div>`:""}
+ <div class="total"><span>Total</span><span id="total">${eur(t)}</span></div>
+ ${b?`<div class="l"><span>Bon d'achat ${esc(normBon(pay.bonNum))}</span><span>− ${eur(b)}</span></div><div class="l" style="font-weight:700"><span>Reste à payer</span><span>${eur(aPayer())}</span></div>`:""}
+ <div class="muted">dont TVA 21 % : ${eur(dontTva(r2(t-totalBonsVendus())))}${totalBonsVendus()?" (bons d'achat vendus : sans TVA)":""}</div>`}
+const totalBonsVendus=()=>r2(panier.filter(l=>l.bon).reduce((t,l)=>t+(l.p||0)*(l.q||0),0));
+function bonInfo(){const n=normBon(pay.bonNum);if(!n)return "";const sb=soldeBon(n);
+ if(sb==null)return `Bon ${esc(n)} inconnu de la caisse (bon papier ?) : vérifiez-le avant d'accepter.`;
+ return sb>0?`Bon ${esc(n)} : il reste ${eur(sb)}.`:`<span class="bad">Bon ${esc(n)} déjà entièrement utilisé.</span>`}
 // QR de virement européen (EPC / « scan to pay ») : l'app bancaire du client le lit, montant et communication déjà remplis.
 const ibanNet=i=>String(i||"").replace(/\s/g,"").toUpperCase();
 function ibanOk(i){i=ibanNet(i);if(!/^[A-Z]{2}\d{2}[A-Z0-9]{8,30}$/.test(i))return false;
@@ -222,27 +258,38 @@ function payPlus(t){
   <div class="billets">${sugg.map(x=>`<button class="chip" data-recu="${x}">${x===t?"Compte juste":eur(x).replace(",00","")}</button>`).join("")}</div><div id="rendu">${renduHtml(t,num(pay.recu))}</div>`}
  if(pay.mode==="carte")return qrPaiementHtml(t);
  if(pay.mode==="facture")return `<div class="grille-f" style="margin-top:10px"><label class="f">N° de facture<input class="champ" id="fnum" placeholder="${esc(prochaineFacture())}" value="${esc(pay.fnum)}" autocomplete="off"></label></div>
+  <div class="cli">${CLI.map(([k,t])=>`<label class="f">${t}<input class="champ" data-cli="${k}" value="${esc(pay.cli[k]||"")}" ${k==="nom"?'list="clientsConnus"':""} autocomplete="off"></label>`).join("")}</div>
+  <datalist id="clientsConnus">${clientsConnus().map(c=>`<option value="${esc(c.nom)}">`).join("")}</datalist>
   <div class="chips" style="margin-top:8px"><button class="chip ${pay.fpaye==="banque"?"sel":""}" data-fp="banque">Payée par banque</button><button class="chip ${pay.fpaye==="especes"?"sel":""}" data-fp="especes">Payée en espèces</button><button class="chip ${pay.fpaye==="attente"?"sel":""}" data-fp="attente">En attente de paiement</button></div>`;
  return ""}
+// Clients déjà facturés : en tapant le nom, les autres champs se remplissent.
+function clientsConnus(){const C={};ventes.filter(v=>v.facture&&v.facture.client&&v.facture.client.nom).sort((a,b)=>a.ts-b.ts).forEach(v=>C[v.facture.client.nom.toLowerCase()]=v.facture.client);return Object.values(C)}
 // Numéro de facture proposé : celui d'après le dernier utilisé (F49-26 → F50-26).
 function prochaineFacture(){const d=REG.derniereFacture;const a=String(new Date().getFullYear()).slice(2);
  const m=d&&String(d).match(/^F?\s*(\d+)(.*)$/i);return m?"F"+(+m[1]+1)+(m[2]||"-"+a):"F1-"+a}
 function renduHtml(t,r){if(r==null)return"";return r<t?`<div class="rendu bad">Il manque ${eur(t-r)}</div>`:`<div class="rendu">À rendre : ${eur(r-t)}</div>`}
-const panierPret=()=>panier.length&&panier.every(l=>l.p!=null&&l.p>=0&&l.q>0&&(l.id||String(l.n).trim()));
+const panierPret=()=>panier.length&&panier.every(l=>l.p!=null&&l.p>=0&&l.q>0&&(l.id||String(l.n).trim())&&(!l.bon||l.p>0));
 // Ce qui manque encore pour valider, dit en clair sous le bouton.
 function manque(){if(!panier.length)return "Ajoutez un article au ticket.";
  const l=panier.find(l=>!(l.p!=null&&l.p>=0));if(l)return `Indiquez le prix de « ${l.n||"l'article sans fiche"} ».`;
  const q=panier.find(l=>!(l.q>0));if(q)return `Indiquez la quantité de « ${q.n} »${q.u?" (en "+q.u+")":""}.`;
  if(panier.some(l=>!l.id&&!l.liv&&!String(l.n).trim()))return "Décrivez l'article sans fiche.";
+ if(panier.some(l=>l.bon&&!(l.p>0)))return "Indiquez le montant du bon d'achat.";
+ if(pay.bonOn){const sb=soldeBon(pay.bonNum),m=num(pay.bonMt);if(!normBon(pay.bonNum))return "Indiquez le n° du bon d'achat.";if(!(m>0))return "Indiquez le montant pris sur le bon.";
+  if(sb!=null&&m>sb+0.001)return `Le bon n'a plus que ${eur(sb)}.`}
+ if(toutParBon())return "";
  if(!pay.mode)return "Choisissez le mode de paiement.";
  if(pay.mode==="especes"&&!peutValider())return "L'argent reçu est inférieur au total.";
+ if(pay.mode==="facture"&&!(pay.cli.nom||"").trim())return "Indiquez le nom du client pour la facture.";
  if(pay.mode==="facture"&&!pay.fpaye)return "Indiquez si la facture est payée ou en attente.";
  return ""}
 function majValider(){const b=$("#valider");if(!b)return;b.disabled=!peutValider();const m=$("#manque");if(m)m.textContent=b.disabled?manque():""}
-function peutValider(){const m=pay.mode;if(!m||!panierPret())return false;
- if(m==="especes"){const r=num(pay.recu);return pay.recu===""||(r!=null&&r>=totalPanier())}
- if(m==="facture")return !!pay.fpaye;return true}
-function brancherQr(){const g=$("#qrGrand");if(g)g.onclick=()=>{const t=totalPanier();
+function peutValider(){if(!panierPret())return false;
+ if(pay.bonOn){const sb=soldeBon(pay.bonNum),m=num(pay.bonMt);if(!normBon(pay.bonNum)||!(m>0)||(sb!=null&&m>sb+0.001))return false}
+ if(toutParBon())return true;const m=pay.mode;if(!m)return false;
+ if(m==="especes"){const r=num(pay.recu);return pay.recu===""||(r!=null&&r>=aPayer())}
+ if(m==="facture")return !!pay.fpaye&&!!(pay.cli.nom||"").trim();return true}
+function brancherQr(){const g=$("#qrGrand");if(g)g.onclick=()=>{const t=aPayer();
  modal(`<div style="text-align:center"><h2>${eur(t)}</h2><p class="muted">Scannez avec l'app de votre banque</p><div class="qr-grand">${qrEpc(t)}</div>
   <p class="muted">${esc(REG.beneficiaire||"La Pile asbl")} · ${esc(ibanNet(REG.iban).replace(/(.{4})/g,"$1 ").trim())}<br>${esc(communication())}</p><button class="btn" data-ferme>Fermer</button></div>`)}}
 function brancherCaisse(){const i=$("#scanIn");
@@ -253,8 +300,20 @@ function brancherCaisse(){const i=$("#scanIn");
  $$("[data-add]").forEach(b=>b.onclick=()=>ajouterAuPanier(parRef(b.dataset.add)));
  $("#libre").onclick=()=>{panier.push({r:"",n:"",p:null,q:1});render();const n=$$("[data-nom]");if(n.length)n[n.length-1].focus()};
  const lv=$("#livraison");if(lv)lv.onclick=()=>{panier.push({r:"",n:"Livraison",liv:1,u:"km",p:PRIX_KM,q:null});render();$(`[data-q="${panier.length-1}"]`).focus()};
- const v=$("#vider");if(v)v.onclick=()=>{if(confirm("Vider le ticket en cours ?")){panier=[];pay={mode:"",recu:"",fnum:"",fpaye:""};render()}};
- const majTot=()=>{$("#total").textContent=eur(totalPanier());majValider();if(pay.mode==="carte"){$("#payPlus").innerHTML=payPlus(totalPanier());brancherQr()}};
+ const v=$("#vider");if(v)v.onclick=()=>{if(confirm("Vider le ticket en cours ?")){panier=[];payNeuf();render()}};
+ const majTot=()=>{$("#totaux").innerHTML=totauxHtml();majValider();if(pay.mode==="carte"&&!toutParBon()){$("#payPlus").innerHTML=payPlus(aPayer());brancherQr()}
+  const r=$("#rendu");if(r)r.innerHTML=renduHtml(aPayer(),num(pay.recu))};
+ $("#bonVente").onclick=()=>{const n=prochainBon();panier.push({r:"",n:"Bon d'achat "+n,bon:1,bonNum:n,p:null,q:1});render();$(`[data-prix="${panier.length-1}"]`).focus()};
+ $$("[data-rem]").forEach(b=>b.onclick=()=>{remise={type:b.dataset.rem,val:remise.type===b.dataset.rem?remise.val:""};render();const x=$("#remVal");if(x)x.focus()});
+ const rv=$("#remVal");if(rv)rv.oninput=()=>{remise.val=rv.value;majTot()};
+ const rx=$("#remX");if(rx)rx.onclick=()=>{remise={type:"",val:""};render()};
+ const bo=$("#bonOn");if(bo)bo.onclick=()=>{pay.bonOn=true;render();$("#bonNum").focus()};
+ const bf=$("#bonOff");if(bf)bf.onclick=()=>{pay.bonOn=false;pay.bonNum="";pay.bonMt="";render()};
+ const bn=$("#bonNum");if(bn){bn.oninput=()=>{pay.bonNum=bn.value;$("#bonInfo").innerHTML=bonInfo();majTot()};
+  bn.onchange=()=>{const sb=soldeBon(pay.bonNum);if(sb>0&&!pay.bonMt){pay.bonMt=virg(Math.min(sb,totalFinal()))}render()}}
+ const bm=$("#bonMt");if(bm){bm.oninput=()=>{pay.bonMt=bm.value;majTot()};bm.onchange=()=>render()}
+ $$("[data-cli]").forEach(x=>{x.oninput=()=>{pay.cli[x.dataset.cli]=x.value;majValider()};
+  if(x.dataset.cli==="nom")x.onchange=()=>{const c=clientsConnus().find(c=>c.nom.toLowerCase()===x.value.trim().toLowerCase());if(c){pay.cli={...c};render()}}});
  brancherQr();
  $$("[data-plus]").forEach(b=>b.onclick=()=>{panier[b.dataset.plus].q++;render()});
  $$("[data-moins]").forEach(b=>b.onclick=()=>{const l=panier[b.dataset.moins];l.q--;if(l.q<=0)panier.splice(b.dataset.moins,1);render()});
@@ -262,7 +321,7 @@ function brancherCaisse(){const i=$("#scanIn");
  // Prix et quantité : mise à jour sur place, sans redessiner l'écran (sinon le clic suivant, sur un mode de paiement, se perd).
  const majLigne=i=>{const l=panier[i],el=$$(".tl")[i];if(el){el.querySelector(".tot").textContent=l.p==null||!l.q?"":eur(l.p*l.q);
   const m2=el.querySelector(".m2");if(m2)m2.textContent=m2Txt(l,l.q);const pr=el.querySelector("[data-prix]");if(pr)pr.classList.toggle("need",l.p==null);const qt=el.querySelector("[data-q]");if(qt&&qSaisie(l))qt.classList.toggle("need",!(l.q>0))}
-  majTot();const pp=$("#payPlus");if(pp&&pay.mode==="especes"){const r=$("#rendu");if(r)r.innerHTML=renduHtml(totalPanier(),num(pay.recu))}};
+  majTot()};
  $$("[data-prix]").forEach(x=>x.oninput=()=>{panier[x.dataset.prix].p=num(x.value);majLigne(+x.dataset.prix)});
  $$("[data-q]").forEach(x=>x.oninput=()=>{panier[x.dataset.q].q=num(x.value);majLigne(+x.dataset.q)});
  $$("[data-kg]").forEach(x=>x.oninput=()=>{const l=panier[x.dataset.kg];l.kg=num(x.value);l.kgEst=false});
@@ -272,29 +331,40 @@ function brancherCaisse(){const i=$("#scanIn");
  $$("[data-mode]").forEach(b=>b.onclick=()=>{pay.mode=b.dataset.mode;render();const r=$("#recu");if(r)r.focus()});
  $$("[data-recu]").forEach(b=>b.onclick=()=>{pay.recu=virg(b.dataset.recu);render()});
  $$("[data-fp]").forEach(b=>b.onclick=()=>{pay.fpaye=b.dataset.fp;render()});
- const r=$("#recu");if(r)r.oninput=()=>{pay.recu=r.value;$("#rendu").innerHTML=renduHtml(totalPanier(),num(pay.recu));majValider()};
+ const r=$("#recu");if(r)r.oninput=()=>{pay.recu=r.value;$("#rendu").innerHTML=renduHtml(aPayer(),num(pay.recu));majValider()};
  const f=$("#fnum");if(f)f.oninput=()=>{pay.fnum=f.value};
  $("#valider").onclick=valider}
-async function valider(){const now=new Date(),d=jour(now),t=totalPanier();
+async function valider(){const now=new Date(),d=jour(now),t=totalFinal(),rm=remiseMt(),b=bonPaye(),ap=aPayer();
  const n=ventes.filter(v=>v.date===d).length+1;
  const v={id:d+"-"+String(n).padStart(3,"0"),num:n,date:d,heure:now.toTimeString().slice(0,5),ts:now.getTime(),
-  lignes:panier.map(l=>({id:l.id||"",r:l.r,c:l.c||"",m:l.m||"",kg:l.liv?0:l.kg??null,kgEst:!!l.kgEst,n:String(l.n).trim(),q:l.q,p:l.p,u:l.u||""})),total:t,mode:pay.mode,annulee:false};
- if(pay.mode==="especes"&&num(pay.recu)!=null){v.recu=num(pay.recu);v.rendu=r2(v.recu-t)}
- if(pay.mode==="facture"){const fn=(pay.fnum.trim()||prochaineFacture()).toUpperCase();v.facture={num:fn,paye:pay.fpaye};await putSet("derniereFacture",fn)}
+  lignes:panier.map(l=>({id:l.id||"",r:l.r,c:l.c||"",m:l.m||"",kg:l.liv||l.bon?0:l.kg??null,kgEst:!!l.kgEst,n:String(l.n).trim(),q:l.q,p:l.p,u:l.u||"",...(l.bon?{bon:1,bonNum:l.bonNum}:{})})),
+  total:t,mode:toutParBon()?"bon":pay.mode,annulee:false};
+ if(rm){v.sousTotal=totalPanier();v.lignes.push({id:"",r:"",n:remiseNom(),q:1,p:-rm,u:"",kg:0,remise:1})}
+ if(b)v.bon={num:normBon(pay.bonNum),mt:b};
+ if(v.mode==="especes"&&num(pay.recu)!=null){v.recu=num(pay.recu);v.rendu=r2(v.recu-ap)}
+ if(v.mode==="facture"){const fn=(pay.fnum.trim()||prochaineFacture()).toUpperCase(),cli={};CLI.forEach(([k])=>{const x=(pay.cli[k]||"").trim();if(x)cli[k]=x});
+  v.facture={num:fn,paye:pay.fpaye,client:cli};await putSet("derniereFacture",fn)}
  try{await put("ventes",v)}catch(e){alert("La vente n'a pas pu être enregistrée. Notez-la dans le carnet papier.");return}
- ventes.push(v);calcStock();derniere=v;panier=[];q="";pay={mode:"",recu:"",fnum:"",fpaye:""};render();montrerTicket(v,true)}
+ ventes.push(v);calcStock();derniere=v;panier=[];q="";payNeuf();render();montrerTicket(v,true)}
 
 // Ticket (fenêtre)
-const qTxt=l=>virg(l.q)+(l.u&&l.u!=="pièce"?" "+l.u:" ×");
-const modeTxt=v=>v.mode==="facture"?`Facture ${v.facture.num} (${{banque:"par banque",especes:"en espèces",attente:"en attente"}[v.facture.paye]||""})`:MODES[v.mode];
-function ticketHtml(v){return `<div class="tk"><div class="tete"><img src="https://www.la-pile.be/img/logo-main.svg" alt="" onerror="this.remove()"><b>Comptoir des Matériaux · La Pile asbl</b><br><span class="muted">Ticket n° ${v.num} · ${dateBe(v.date)} ${v.heure}</span></div><hr>
- ${v.lignes.map(l=>`<div class="l"><span>${esc(qTxt(l))} ${esc(l.n)}${l.r?` <span class="muted">${esc(l.r)}</span>`:""}</span><span>${eur(l.p*l.q)}</span></div>`).join("")}<hr>
+const qTxt=l=>l.remise||l.bon?"":virg(l.q)+(l.u&&l.u!=="pièce"?" "+l.u:" ×");
+const modeSeul=v=>v.mode==="facture"?`Facture ${v.facture.num} (${{banque:"par banque",especes:"en espèces",attente:"en attente"}[v.facture.paye]||""})`:MODES[v.mode];
+const modeTxt=v=>v.bon?`bon d'achat ${v.bon.num} (${eur(v.bon.mt)})`+(v.mode!=="bon"?` + ${modeSeul(v)} (${eur(aPayerV(v))})`:""):modeSeul(v);
+// Montants d'une vente : payé hors bon, part des bons d'achat vendus (sans TVA), base et TVA.
+const aPayerV=v=>r2(v.total-(v.bon?v.bon.mt:0));
+const bonsVendusV=v=>r2(v.lignes.filter(l=>l.bon).reduce((t,l)=>t+l.p*l.q,0));
+const tvaV=v=>{const hors=bonsVendusV(v),base=r2(v.total-hors);return {ttc:v.total,ht:r2(htva(base)+hors),tva:dontTva(base)}};
+const cliTxt=c=>c?[c.nom,c.adr,c.loc,c.tva?"TVA "+c.tva:"",c.mail,c.tel].filter(Boolean):[];
+function ticketHtml(v){const T=tvaV(v);return `<div class="tk"><div class="tete"><img src="https://www.la-pile.be/img/logo-main.svg" alt="" onerror="this.remove()"><b>Comptoir des Matériaux · La Pile asbl</b><br><span class="muted">${v.facture?`Facture ${esc(v.facture.num)} · `:""}Ticket n° ${v.num} · ${dateBe(v.date)} ${v.heure}</span></div>
+ ${v.facture&&v.facture.client?`<div class="tk-cli">${cliTxt(v.facture.client).map(esc).join("<br>")}</div>`:""}<hr>
+ ${v.lignes.map(l=>`<div class="l"><span>${esc(qTxt(l))} ${esc(l.n)}${l.r?` <span class="muted">${esc(l.r)}</span>`:""}</span><span>${l.p<0?"− "+eur(-l.p*l.q):eur(l.p*l.q)}</span></div>`).join("")}<hr>
  <div class="l" style="font-size:18px;font-weight:800"><span>Total</span><span>${eur(v.total)}</span></div>
- <div class="l muted"><span>Hors TVA</span><span>${eur(htva(v.total))}</span></div><div class="l muted"><span>TVA 21 %</span><span>${eur(dontTva(v.total))}</span></div>
+ <div class="l muted"><span>Hors TVA</span><span>${eur(T.ht)}</span></div><div class="l muted"><span>TVA 21 %</span><span>${eur(T.tva)}</span></div>
  <div class="l muted"><span>Payé : ${esc(modeTxt(v))}</span><span>${v.recu!=null?"reçu "+eur(v.recu)+" · rendu "+eur(v.rendu):""}</span></div>
  ${v.annulee?'<div class="rendu bad" style="margin-top:10px">Vente annulée</div>':""}</div>`}
 function ticketTexte(v){return `Comptoir des Matériaux · La Pile asbl\nTicket n° ${v.num} · ${dateBe(v.date)} ${v.heure}\n\n`+
- v.lignes.map(l=>`${qTxt(l)} ${l.n}${l.r?" ("+l.r+")":""} : ${eur(l.p*l.q)}`).join("\n")+`\n\nTotal : ${eur(v.total)} (dont TVA 21 % : ${eur(dontTva(v.total))})\nPayé : ${modeTxt(v)}\nMerci pour le réemploi !\nRue Frédéric Lang 3, 4960 Malmedy · 0493 04 99 29`}
+ v.lignes.map(l=>`${l.remise?"":qTxt(l)+" "}${l.n}${l.r?" ("+l.r+")":""} : ${l.p<0?"− "+eur(-l.p*l.q):eur(l.p*l.q)}`).join("\n")+`\n\nTotal : ${eur(v.total)} (dont TVA 21 % : ${eur(tvaV(v).tva)})\nPayé : ${modeTxt(v)}\nMerci pour le réemploi !\nRue Frédéric Lang 3, 4960 Malmedy · 0493 04 99 29`}
 function modal(html){const m=$("#modal");m.innerHTML=`<div class="voile" data-ferme></div><div class="modal"><div class="boite">${html}</div></div>`;m.hidden=false;
  m.querySelectorAll("[data-ferme]").forEach(b=>b.onclick=fermerModal)}
 function fermerModal(){$("#modal").hidden=true;$("#modal").innerHTML="";const s=$("#scanIn");if(s)s.focus()}
@@ -466,6 +536,7 @@ function brancherMouv(){$("#mvMois").onchange=e=>{if(e.target.value){mvMois=e.ta
 
 // ---------- Carnet de caisse (comme le carnet papier) ----------
 const entreeCaisse=v=>v.mode==="especes"||(v.mode==="facture"&&v.facture.paye==="especes");
+// Un bon d'achat utilisé n'est pas de l'argent reçu : ligne négative dans les recettes (et dans la caisse si le reste est payé en espèces).
 let moisVu=moisDe(jour());
 function carnet(m){const lignes=[];
  const evts=[...ventes.filter(v=>moisDe(v.date)===m&&!v.annulee).map(v=>({ts:v.ts,v})),...sorties.filter(s=>moisDe(s.date)===m&&!s.annulee).map(s=>({ts:s.ts,s}))].sort((a,b)=>a.ts-b.ts);
@@ -473,9 +544,12 @@ function carnet(m){const lignes=[];
   if(e.v){const v=e.v,cash=entreeCaisse(v);
    v.lignes.forEach((l,i)=>{const mt=r2(l.p*l.q);lignes.push({date:i?"":v.date,client:!i,vid:v.id,
     lib:(l.q!==1||qSaisie(l)?qTxt(l)+" ":"")+(l.n||"article"),ref:l.r,
-    rec:v.mode==="facture"?null:mt,recTxt:v.mode==="facture"?v.facture.num:null,ent:cash?mt:null,sor:null})})}
+    rec:v.mode==="facture"?null:mt,recTxt:v.mode==="facture"?v.facture.num:null,ent:cash?mt:null,sor:null})});
+   if(v.bon)lignes.push({date:"",client:false,vid:v.id,lib:"payé par bon d'achat "+v.bon.num,ref:"",rec:v.mode==="facture"?null:-v.bon.mt,ent:cash?-v.bon.mt:null,sor:null})}
   else lignes.push({date:e.s.date,client:true,sid:e.s.id,lib:e.s.lib,ref:"",rec:null,ent:null,sor:e.s.montant})});
  const t={rec:0,ent:0,sor:0};lignes.forEach(l=>{t.rec+=l.rec||0;t.ent+=l.ent||0;t.sor+=l.sor||0});for(const k in t)t[k]=r2(t[k]);
+ // TVA : sur les articles (pas sur les bons d'achat vendus ; un bon utilisé paie des articles, la TVA est due à ce moment-là).
+ t.tva=r2(evts.filter(e=>e.v&&e.v.mode!=="facture").reduce((x,e)=>x+tvaV(e.v).tva,0));
  const rep=report(m);t.solde=r2(rep+t.ent-t.sor);t.clients=evts.filter(e=>e.v).length;
  return {lignes,t,rep}}
 function report(m,prof=0){const k="report-"+m;if(REG[k]!=null)return REG[k];if(prof>24)return 0;
@@ -499,7 +573,7 @@ function ecranCarnet(){const {lignes,t,rep}=carnet(moisVu),auj=jour(),cpt=REG["c
   <div class="grille-f" style="margin-top:14px"><label class="f">Sortie de caisse<input class="champ" id="sLib" value="Dépôt banque"></label><label class="f">Montant<input class="champ" id="sMt" inputmode="decimal" placeholder="€"></label></div>
   <button class="btn clair petit" id="sOk" style="margin-top:8px">Enregistrer la sortie</button></div>`:""}
  <div class="carte"><table class="t"><tbody><tr><td>Clients (passages caisse)</td><td class="r">${t.clients}</td></tr><tr><td>Recettes</td><td class="r">${eur(t.rec)}</td></tr>
-  <tr><td>dont TVA 21 %</td><td class="r">${eur(dontTva(t.rec))}</td></tr><tr class="tot"><td>Solde de la caisse</td><td class="r">${eur(t.solde)}</td></tr></tbody></table>
+  <tr><td>dont TVA 21 %</td><td class="r">${eur(t.tva)}</td></tr><tr class="tot"><td>Solde de la caisse</td><td class="r">${eur(t.solde)}</td></tr></tbody></table>
   <p class="muted">Recettes : sans les ventes sur facture (n° noté à la place). Cliquez une ligne pour voir le ticket.</p>
   <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn clair petit" id="csvMois">Carnet du mois (tableur)</button><button class="btn clair petit" id="prMois">Imprimer</button></div></div>
  </div></div>`}
@@ -519,8 +593,8 @@ function brancherCarnet(){
 // ---------- Rapports : statistiques, compta, Intradel, Impulsion, site ----------
 let rap="stats",rDu="",rAu="",chPoids="m",chHist=true;
 const venduesTout=()=>ventes.filter(v=>!v.annulee).concat(chHist?HIST:[]);
-const kgLigne=l=>l.kg==null?null:r2(l.kg*l.q);
-const catLigne=l=>{if(/^livraison$/i.test(l.n)&&!l.r)return "Livraison";const c=l.c||(parRef(l.id)||{}).c||((l.r||"").match(/^[A-Z]+/)||[""])[0];return catLabel(c)||(c?c:"Sans fiche")};
+const kgLigne=l=>l.remise||l.bon?0:l.kg==null?null:r2(l.kg*l.q);
+const catLigne=l=>{if(l.remise)return "Réductions";if(l.bon)return "Bons d'achat";if(/^livraison$/i.test(l.n)&&!l.r)return "Livraison";const c=l.c||(parRef(l.id)||{}).c||((l.r||"").match(/^[A-Z]+/)||[""])[0];return catLabel(c)||(c?c:"Sans fiche")};
 const JOURS=["Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi","Dimanche"];
 function moisListe(n){const m=[];let x=moisDe(jour());for(let i=0;i<n;i++){m.unshift(x);x=moisAvant(x)}return m}
 function hbars(rows,fmt){const mx=Math.max(...rows.map(r=>r[1]),0)||1;
@@ -549,14 +623,15 @@ function brancherRapports(){$$("[data-rap]").forEach(b=>b.onclick=()=>{rap=b.dat
  const h=$("#chHist");if(h)h.onchange=()=>{chHist=h.checked;render()};
  $$(".cols").forEach(c=>{const tip=c.parentNode.querySelector(".tip");c.querySelectorAll("[data-tip]").forEach(b=>b.onclick=()=>{c.querySelectorAll("button").forEach(x=>x.classList.remove("sel"));b.classList.add("sel");tip.textContent=b.dataset.tip})});
  $$("[data-dl]").forEach(b=>b.onclick=()=>EXPORTS[b.dataset.dl]());
+ $$("[data-tk]").forEach(r=>r.onclick=()=>{const v=ventes.find(x=>x.id===r.dataset.tk);if(v)montrerTicket(v,false)});
  const p=$("#imprimer");if(p)p.onclick=()=>print()}
 const actions=(...l)=>`<div class="outils no-print" style="margin-top:14px">${l.map(([k,t])=>`<button class="btn clair petit" data-dl="${k}">${t}</button>`).join("")}<button class="btn petit" id="imprimer">Imprimer / PDF</button></div>`;
 
 function rStats(){const V=venduesTout().filter(v=>dansPeriode(v.date));
- const ca=r2(V.reduce((t,v)=>t+v.total,0)),cl=V.length,art=V.reduce((t,v)=>t+v.lignes.reduce((s,l)=>s+(qSaisie(l)?1:l.q),0),0);
+ const ca=r2(V.reduce((t,v)=>t+v.total,0)),cl=V.length,art=V.reduce((t,v)=>t+v.lignes.reduce((s,l)=>s+(l.remise||l.bon?0:qSaisie(l)?1:l.q),0),0);
  const parCat={},parJour=JOURS.map(j=>[j,0]),parMode={},parPoids={};let kg=0,sansPoids=0;
  V.forEach(v=>{parJour[(new Date(v.date+"T12:00").getDay()+6)%7][1]++;parMode[MODES[v.mode]]=r2((parMode[MODES[v.mode]]||0)+v.total);
-  v.lignes.forEach(l=>{const c=catLigne(l);parCat[c]=r2((parCat[c]||0)+l.p*l.q);if(c==="Livraison")return;const k=kgLigne(l);if(k==null){sansPoids++;return}
+  v.lignes.forEach(l=>{const c=catLigne(l);parCat[c]=r2((parCat[c]||0)+l.p*l.q);if(c==="Livraison"||l.remise||l.bon)return;const k=kgLigne(l);if(k==null){sansPoids++;return}
    kg+=k;const g=chPoids==="m"?(l.m||"Non précisée"):c;parPoids[g]=r2((parPoids[g]||0)+k)})});
  const TOUT=venduesTout(),M=moisListe(12).map(m=>[m,r2(TOUT.filter(v=>moisDe(v.date)===m).reduce((t,v)=>t+v.total,0))]),
   MK=moisListe(12).map(m=>[m,r2(TOUT.filter(v=>moisDe(v.date)===m).reduce((t,v)=>t+v.lignes.reduce((s,l)=>s+(kgLigne(l)||0),0),0))]);
@@ -577,29 +652,42 @@ function rStats(){const V=venduesTout().filter(v=>dansPeriode(v.date));
 // Comptabilité : journal des recettes (un ticket par ligne) et récapitulatif par jour (Z de caisse).
 // Format standard en attendant le modèle de la comptable.
 function compta(){const V=ventes.filter(v=>!v.annulee&&dansPeriode(v.date)).sort((a,b)=>a.ts-b.ts),J={};
- V.forEach(v=>{const j=J[v.date]=J[v.date]||{n:0,especes:0,carte:0,virement:0,facture:0,tot:0};j.n++;j[v.mode]+=v.total;j.tot+=v.total});
+ V.forEach(v=>{const j=J[v.date]=J[v.date]||{n:0,especes:0,carte:0,virement:0,facture:0,bon:0,tot:0,ht:0,tva:0};const T=tvaV(v);j.n++;
+  if(v.mode!=="bon")j[v.mode]=r2(j[v.mode]+aPayerV(v));if(v.bon)j.bon=r2(j.bon+v.bon.mt);j.tot=r2(j.tot+v.total);j.ht=r2(j.ht+T.ht);j.tva=r2(j.tva+T.tva)});
  const S=sorties.filter(s=>!s.annulee&&dansPeriode(s.date));return {V,J,S}}
-function rCompta(){const {V,J,S}=compta(),T={especes:0,carte:0,virement:0,facture:0,tot:0};Object.values(J).forEach(j=>{for(const k in T)T[k]+=j[k]});
+function rCompta(){const {V,J,S}=compta(),T={especes:0,carte:0,virement:0,facture:0,bon:0,tot:0,ht:0,tva:0};Object.values(J).forEach(j=>{for(const k in T)T[k]+=j[k]});
  const att=V.filter(v=>v.mode==="facture"&&v.facture.paye==="attente");
  return `${enTete("Journal des recettes")}<div class="titre"><h2>Comptabilité</h2></div>${choixPeriode()}
- <div class="tuiles"><div class="tuile b"><b>${eur(T.tot)}</b><span>recettes TVAc</span></div><div class="tuile"><b>${eur(htva(T.tot))}</b><span>base HTVA</span></div>
-  <div class="tuile"><b>${eur(dontTva(T.tot))}</b><span>TVA 21 %</span></div><div class="tuile j"><b>${eur(S.reduce((t,s)=>t+s.montant,0))}</b><span>sorties de caisse (dépôts)</span></div></div>
+ <div class="tuiles"><div class="tuile b"><b>${eur(T.tot)}</b><span>recettes TVAc</span></div><div class="tuile"><b>${eur(T.ht)}</b><span>base HTVA</span></div>
+  <div class="tuile"><b>${eur(T.tva)}</b><span>TVA 21 %</span></div><div class="tuile j"><b>${eur(S.reduce((t,s)=>t+s.montant,0))}</b><span>sorties de caisse (dépôts)</span></div></div>
  <div class="sec">Récapitulatif par jour (Z de caisse)</div>
- <div class="tab-wrap"><table class="t"><thead><tr><th>Date</th><th class="r">Tickets</th><th class="r">Espèces</th><th class="r">QR code</th><th class="r">Virement</th><th class="r">Facture</th><th class="r">Total TVAc</th><th class="r">HTVA</th><th class="r">TVA 21 %</th></tr></thead><tbody>
- ${Object.entries(J).map(([d,j])=>`<tr><td>${dateBe(d)}</td><td class="r">${j.n}</td><td class="r">${nb(j.especes)}</td><td class="r">${nb(j.carte)}</td><td class="r">${nb(j.virement)}</td><td class="r">${nb(j.facture)}</td><td class="r"><b>${nb(j.tot)}</b></td><td class="r">${nb(htva(j.tot))}</td><td class="r">${nb(dontTva(j.tot))}</td></tr>`).join("")||'<tr><td colspan="9" class="vide">Aucune vente sur la période.</td></tr>'}
- <tr class="tot"><td>Total</td><td class="r">${V.length}</td><td class="r">${nb(T.especes)}</td><td class="r">${nb(T.carte)}</td><td class="r">${nb(T.virement)}</td><td class="r">${nb(T.facture)}</td><td class="r">${nb(T.tot)}</td><td class="r">${nb(htva(T.tot))}</td><td class="r">${nb(dontTva(T.tot))}</td></tr></tbody></table></div>
+ <div class="tab-wrap"><table class="t"><thead><tr><th>Date</th><th class="r">Tickets</th><th class="r">Espèces</th><th class="r">QR code</th><th class="r">Virement</th><th class="r">Facture</th><th class="r">Bon d'achat</th><th class="r">Total TVAc</th><th class="r">HTVA</th><th class="r">TVA 21 %</th></tr></thead><tbody>
+ ${Object.entries(J).map(([d,j])=>`<tr><td>${dateBe(d)}</td><td class="r">${j.n}</td><td class="r">${nb(j.especes)}</td><td class="r">${nb(j.carte)}</td><td class="r">${nb(j.virement)}</td><td class="r">${nb(j.facture)}</td><td class="r">${nb(j.bon)}</td><td class="r"><b>${nb(j.tot)}</b></td><td class="r">${nb(j.ht)}</td><td class="r">${nb(j.tva)}</td></tr>`).join("")||'<tr><td colspan="10" class="vide">Aucune vente sur la période.</td></tr>'}
+ <tr class="tot"><td>Total</td><td class="r">${V.length}</td><td class="r">${nb(T.especes)}</td><td class="r">${nb(T.carte)}</td><td class="r">${nb(T.virement)}</td><td class="r">${nb(T.facture)}</td><td class="r">${nb(T.bon)}</td><td class="r">${nb(T.tot)}</td><td class="r">${nb(T.ht)}</td><td class="r">${nb(T.tva)}</td></tr></tbody></table></div>
  <div class="sec">Journal des recettes</div>
  <div class="tab-wrap"><table class="t"><thead><tr><th>Date</th><th>Ticket</th><th>Articles</th><th>Paiement</th><th>Facture</th><th class="r">TVAc</th><th class="r">HTVA</th><th class="r">TVA</th></tr></thead><tbody>
- ${V.map(v=>`<tr class="cl" data-tk="${v.id}"><td>${dateBe(v.date)} ${v.heure}</td><td>${v.num}</td><td>${esc(v.lignes.map(l=>l.n).join(", ").slice(0,70))}</td><td>${MODES[v.mode]}</td><td>${v.facture?esc(v.facture.num)+(v.facture.paye==="attente"?' <span class="pill jaune">à encaisser</span>':""):""}</td>
-  <td class="r">${nb(v.total)}</td><td class="r">${nb(htva(v.total))}</td><td class="r">${nb(dontTva(v.total))}</td></tr>`).join("")||'<tr><td colspan="8" class="vide">Aucune vente sur la période.</td></tr>'}</tbody></table></div>
+ ${V.map(v=>`<tr class="cl" data-tk="${v.id}"><td>${dateBe(v.date)} ${v.heure}</td><td>${v.num}</td><td>${esc(v.lignes.map(l=>l.n).join(", ").slice(0,70))}</td><td>${esc(modeTxt(v))}</td><td>${v.facture?esc(v.facture.num)+(v.facture.client&&v.facture.client.nom?" · "+esc(v.facture.client.nom):"")+(v.facture.paye==="attente"?' <span class="pill jaune">à encaisser</span>':""):""}</td>
+  <td class="r">${nb(v.total)}</td><td class="r">${nb(tvaV(v).ht)}</td><td class="r">${nb(tvaV(v).tva)}</td></tr>`).join("")||'<tr><td colspan="8" class="vide">Aucune vente sur la période.</td></tr>'}</tbody></table></div>
  ${S.length?`<div class="sec">Sorties de caisse</div><div class="tab-wrap"><table class="t"><tbody>${S.map(s=>`<tr><td>${dateBe(s.date)}</td><td>${esc(s.lib)}</td><td class="r">${nb(s.montant)}</td></tr>`).join("")}</tbody></table></div>`:""}
  ${att.length?`<p class="muted"><b>${att.length} facture${att.length>1?"s":""} en attente de paiement</b> : ${att.map(v=>esc(v.facture.num)+" ("+eur(v.total)+")").join(", ")}.</p>`:""}
- ${actions(["journal","Journal des recettes (tableur)"],["z","Récapitulatif par jour (tableur)"])}
+ ${facturesHtml(V)}
+ ${bonsHtml()}
+ ${actions(["factures","Factures pour la compta (tableur)"],["journal","Journal des recettes (tableur)"],["z","Récapitulatif par jour (tableur)"])}
  <p class="muted">Format standard en attendant le modèle de la comptabilité : il sera adapté dès réception. Toutes les ventes sont à 21 % TVA comprise.</p>`}
 
+// Factures de la période : la liste à envoyer à la comptabilité chaque mois (période « Mois passé »).
+function facturesHtml(V){const F=V.filter(v=>v.facture);if(!F.length)return "";
+ return `<div class="sec">Factures à transmettre (${F.length})</div><div class="tab-wrap"><table class="t"><thead><tr><th>N°</th><th>Date</th><th>Client</th><th>N° TVA</th><th class="r">HTVA</th><th class="r">TVA</th><th class="r">TVAc</th><th>Paiement</th></tr></thead><tbody>
+ ${F.map(v=>{const c=v.facture.client||{},T=tvaV(v);return `<tr class="cl" data-tk="${v.id}"><td>${esc(v.facture.num)}</td><td>${dateBe(v.date)}</td><td>${esc(c.nom||"?")}${c.loc?`<br><small class="muted">${esc(c.loc)}</small>`:""}</td><td>${esc(c.tva||"")}</td>
+  <td class="r">${nb(T.ht)}</td><td class="r">${nb(T.tva)}</td><td class="r">${nb(T.ttc)}</td><td>${{banque:"payée par banque",especes:"payée en espèces",attente:'<span class="pill jaune">en attente</span>'}[v.facture.paye]||""}</td></tr>`}).join("")}</tbody></table></div>`}
+// Bons d'achat : tous ceux vendus ou utilisés, avec ce qu'il reste (toutes périodes).
+function bonsHtml(){const B=Object.values(bonsTous());if(!B.length)return "";
+ return `<div class="sec">Bons d'achat</div><div class="tab-wrap"><table class="t"><thead><tr><th>N°</th><th>Vendu le</th><th class="r">Montant</th><th class="r">Utilisé</th><th class="r">Reste</th></tr></thead><tbody>
+ ${B.map(b=>`<tr><td>${esc(b.num)}</td><td>${b.emis?dateBe(b.emis):"bon papier"}</td><td class="r">${b.montant==null?"?":nb(b.montant)}</td><td class="r">${nb(b.utilise)}</td><td class="r"><b>${b.montant==null?"?":nb(b.montant-b.utilise)}</b></td></tr>`).join("")}</tbody></table></div>
+ <p class="muted">Bon d'achat vendu : encaissé sans TVA ; la TVA est comptée quand il sert à payer des articles.</p>`}
 // Intradel : tonnages réemployés (vendus) et sortis comme déchets, par matière, sur la période.
 function intradel(){const T={};const add=(m,k,v)=>{const x=T[m]=T[m]||{vendu:0,don:0,interne:0,dechet:0,retour:0,autre:0,n:0,sans:0};x[k]+=v};
- ventes.filter(v=>!v.annulee&&dansPeriode(v.date)).forEach(v=>v.lignes.forEach(l=>{if(/^livraison$/i.test(l.n)&&!l.r)return;const m=l.m||"Non précisée",k=kgLigne(l);
+ ventes.filter(v=>!v.annulee&&dansPeriode(v.date)).forEach(v=>v.lignes.forEach(l=>{if(/^livraison$/i.test(l.n)&&!l.r||l.remise||l.bon)return;const m=l.m||"Non précisée",k=kgLigne(l);
   if(k==null)T[m]=T[m]||{vendu:0,don:0,interne:0,dechet:0,retour:0,autre:0,n:0,sans:0},T[m].sans++;else add(m,"vendu",k);T[m].n+=qSaisie(l)?1:l.q}));
  MVT.filter(x=>!x.annule&&x.type==="sortie"&&dansPeriode(x.date)).forEach(x=>{const a=parRef(x.r)||{};const m=a.m||"Non précisée";if(a.kg!=null)add(m,x.motif||"autre",r2(a.kg*x.q))});
  if(chHist)HIST.filter(v=>dansPeriode(v.date)).forEach(v=>v.lignes.forEach(l=>{if(l.kg!=null&&l.m)add(l.m,"vendu",l.kg*l.q)}));
@@ -654,17 +742,21 @@ const EXPORTS={
  articles(){const rows=[["Date","Ticket","Référence","Article","Quantité","Unité","Prix unitaire TVAc","Total ligne","Paiement","Statut"]];
   ventes.filter(v=>dansPeriode(v.date)).sort((a,b)=>a.ts-b.ts).forEach(v=>v.lignes.forEach(l=>rows.push([dateBe(v.date),v.num,l.r,l.n,virg(l.q),l.u||"pièce",dec(l.p),dec(l.p*l.q),modeTxt(v),v.annulee?"annulée":""])));
   telecharger(`articles-vendus-${perNom()}.csv`,csv(rows))},
- poids(){const t={};venduesTout().filter(v=>dansPeriode(v.date)).forEach(v=>v.lignes.forEach(l=>{if(/^livraison$/i.test(l.n)&&!l.r)return;
+ poids(){const t={};venduesTout().filter(v=>dansPeriode(v.date)).forEach(v=>v.lignes.forEach(l=>{if(/^livraison$/i.test(l.n)&&!l.r||l.remise||l.bon)return;
    const k=[moisDe(v.date),l.m||"Non précisée",catLigne(l)].join("|"),x=t[k]=t[k]||{kg:0,n:0,est:0,sans:0,eur:0};
    x.n+=qSaisie(l)?1:l.q;x.eur+=l.p*l.q;const p=kgLigne(l);if(p==null)x.sans++;else{x.kg+=p;if(l.kgEst)x.est+=p}}));
   const rows=[["Mois","Matière","Catégorie","Poids (kg)","dont estimé (kg)","Articles","Lignes sans poids","Vendu TVAc"]];
   Object.keys(t).sort().forEach(k=>{const[m,ma,c]=k.split("|"),x=t[k];rows.push([m.split("-").reverse().join("/"),ma,c,dec(x.kg),dec(x.est),virg(r2(x.n)),x.sans,dec(x.eur)])});
   telecharger(`poids-vendu-${perNom()}.csv`,csv(rows))},
- journal(){const {V}=compta(),rows=[["Date","Heure","Ticket","Articles","Paiement","N° facture","Facture payée","Total TVAc","Base HTVA","TVA 21 %"]];
-  V.forEach(v=>rows.push([dateBe(v.date),v.heure,v.num,v.lignes.map(l=>(l.r?l.r+" ":"")+l.n).join(" + "),MODES[v.mode],v.facture?v.facture.num:"",v.facture?v.facture.paye:"",dec(v.total),dec(htva(v.total)),dec(dontTva(v.total))]));
+ journal(){const {V}=compta(),rows=[["Date","Heure","Ticket","Articles","Paiement","N° facture","Client facture","Facture payée","Bon d'achat utilisé","Montant bon","Total TVAc","Base HTVA","TVA 21 %"]];
+  V.forEach(v=>{const T=tvaV(v);rows.push([dateBe(v.date),v.heure,v.num,v.lignes.map(l=>(l.r?l.r+" ":"")+l.n).join(" + "),modeTxt(v),v.facture?v.facture.num:"",v.facture&&v.facture.client?v.facture.client.nom||"":"",v.facture?v.facture.paye:"",v.bon?v.bon.num:"",v.bon?dec(v.bon.mt):"",dec(v.total),dec(T.ht),dec(T.tva)])});
   telecharger(`journal-recettes-${perNom()}.csv`,csv(rows))},
- z(){const {J,S}=compta(),rows=[["Date","Tickets","Espèces","QR code","Virement","Facture","Total TVAc","Base HTVA","TVA 21 %","Sorties de caisse"]];
-  Object.entries(J).forEach(([d,j])=>rows.push([dateBe(d),j.n,dec(j.especes),dec(j.carte),dec(j.virement),dec(j.facture),dec(j.tot),dec(htva(j.tot)),dec(dontTva(j.tot)),dec(S.filter(s=>s.date===d).reduce((t,s)=>t+s.montant,0))]));
+ factures(){const {V}=compta(),rows=[["N° facture","Date","Client","Adresse","Code postal et localité","N° TVA / entreprise","E-mail","Téléphone","Articles","Base HTVA","TVA 21 %","Total TVAc","Paiement","Ticket"]];
+  V.filter(v=>v.facture).forEach(v=>{const c=v.facture.client||{},T=tvaV(v);rows.push([v.facture.num,dateBe(v.date),c.nom||"",c.adr||"",c.loc||"",c.tva||"",c.mail||"",c.tel||"",
+   v.lignes.map(l=>(l.remise?"":virg(l.q)+" × ")+(l.r?l.r+" ":"")+l.n+" : "+dec(l.p*l.q)).join(" + "),dec(T.ht),dec(T.tva),dec(T.ttc),{banque:"payée par banque",especes:"payée en espèces",attente:"en attente"}[v.facture.paye]||"",v.num])});
+  telecharger(`factures-${perNom()}.csv`,csv(rows))},
+ z(){const {J,S}=compta(),rows=[["Date","Tickets","Espèces","QR code","Virement","Facture","Bon d'achat","Total TVAc","Base HTVA","TVA 21 %","Sorties de caisse"]];
+  Object.entries(J).forEach(([d,j])=>rows.push([dateBe(d),j.n,dec(j.especes),dec(j.carte),dec(j.virement),dec(j.facture),dec(j.bon),dec(j.tot),dec(j.ht),dec(j.tva),dec(S.filter(s=>s.date===d).reduce((t,s)=>t+s.montant,0))]));
   telecharger(`recap-jour-${perNom()}.csv`,csv(rows))},
  intradel(){const T=intradel(),rows=[["Matière","Vendu (kg)","Donné (kg)","Usage interne (kg)","Réemployé total (kg)","Déchet (kg)","Rendu au donateur (kg)","Pièces vendues","Lignes sans poids"]];
   Object.entries(T).forEach(([m,x])=>rows.push([m,dec(x.vendu),dec(x.don),dec(x.interne),dec(x.vendu+x.don+x.interne),dec(x.dechet),dec(x.retour),virg(r2(x.n)),x.sans]));
