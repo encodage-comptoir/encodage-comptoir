@@ -126,7 +126,7 @@ pre.txt{white-space:pre-wrap;font-family:var(--body);font-size:16px;background:v
 <script src="poids.js"></script>
 <script>
 "use strict";
-const VERSION="6.6 (provenance)";
+const VERSION="6.7 (provenance)";
 // ---------- Données de référence ----------
 // Préfixes et catégories : les noms doivent être identiques aux catégories du back-office Impulsion (vérifiés le 14/10/2026).
 const CATS=[
@@ -295,11 +295,11 @@ function render(){
    <span class="pill ${f.envoye?"ok":""}">${f.envoye?"envoyé le "+f.envoye:"à envoyer"}</span>${f.type==="maj"?` <span class="pill">${f.statut==="introuvable"?"introuvable":"annonce complétée"}</span>`:""}</div></button>`;
   a.innerHTML=`<div class="top"><span class="brand">Comptoir des Matériaux</span><button class="chip" id="set">Réglages</button></div>
    <h1>Matériaux reçus</h1><p class="hint">Un matériau arrive au comptoir ? Appuyez sur le bouton jaune et laissez-vous guider.</p>
-   <button class="big ghost" id="ann" style="margin-top:4px">Compléter les annonces existantes</button>
+   <button class="big" id="new" style="margin-top:4px">+ Nouveau</button>
    <p class="sec">À envoyer au bureau (${todo.length})</p><div class="list">${todo.map(row).join("")||'<p class="hint">Rien en attente.</p>'}</div>
    ${done.length?`<p class="sec">Déjà envoyés (${done.length})</p><div class="list">${done.map(row).join("")}</div>`:""}
    <p class="hint" style="text-align:center;font-size:14px;margin-top:28px">Version ${VERSION}</p>`;
-  bar((todo.length?`<button class="big ghost" id="exp" style="flex:0 0 42%">Envoyer (${todo.length})</button>`:"")+`<button class="big" id="new">+ Nouveau</button>`);
+  bar((todo.length?`<button class="big ghost" id="exp" style="flex:0 0 42%">Envoyer (${todo.length})</button>`:"")+`<button class="big ghost" id="ann">Compléter les annonces existantes</button>`);
   if($("#exp"))$("#exp").onclick=()=>{screen="export";render()};
   $("#set").onclick=()=>{screen="reglages";render()};
   $("#ann").onclick=()=>{screen="annonces";render()};
