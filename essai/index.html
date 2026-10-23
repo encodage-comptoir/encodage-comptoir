@@ -129,7 +129,7 @@ pre.txt{white-space:pre-wrap;font-family:var(--body);font-size:16px;background:v
 <script src="poids.js"></script>
 <script>
 "use strict";
-const VERSION="7.0 (Saïd / Audrey)";
+const VERSION="7.1 (Saïd / Audrey)";
 // ---------- Données de référence ----------
 // Préfixes et catégories : les noms doivent être identiques aux catégories du back-office Impulsion (vérifiés le 14/10/2026).
 const CATS=[
@@ -211,6 +211,12 @@ async function load(){fiches=(await dbAll()).sort((a,b)=>b.cree-a.cree);const l=
 let screen="home", cur=null, step=0, openId=null;
 // Qui encode : demandé à chaque ouverture. Saïd a un parcours simplifié, Audrey l'app complète.
 let qui=null;
+// Encodage en cours gardé sur le téléphone : si l'app se ferme (appel, appareil photo, batterie), on le retrouve à la réouverture.
+let brouillon=null;
+function garderBrouillon(){if((screen==="wiz"||screen==="wizs")&&cur)putSet("brouillon",{cur,step,screen,qui,quand:Date.now()}).catch(()=>{})}
+function oublierBrouillon(){brouillon=null;putSet("brouillon",null).catch(()=>{})}
+let garderT;document.addEventListener("input",()=>{clearTimeout(garderT);garderT=setTimeout(garderBrouillon,400)});
+document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")garderBrouillon()});
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function nextCode(cat){let n=LAST[cat]||0;fiches.forEach(f=>{if(f.cat===cat&&f.id!==cur?.id){const m=+f.code.slice(cat.length);if(m>n)n=m}});return cat+(n+1)}
@@ -294,6 +300,7 @@ function download(file){const u=URL.createObjectURL(file),a=document.createEleme
 // ---------- Écrans ----------
 function render(){
  const a=$("#app");window.scrollTo(0,0);
+ if(screen==="home"&&brouillon)return ecranBrouillon(a);
  if(screen==="home"&&!qui)return ecranQui(a);
  if(screen==="home"&&qui==="said")return accueilSaid(a);
  if(screen==="home"){
@@ -368,7 +375,18 @@ function render(){
  }
  else if(screen==="wizs")wizSaid(a);
  else wiz(a);
+ garderBrouillon();
 }
+function ecranBrouillon(a){
+ const c=brouillon.cur,ph=(c.slots||[]).find(Boolean)||c.photos[0],par=brouillon.qui==="said"?"Saïd":brouillon.qui==="audrey"?"Audrey":"";
+ a.innerHTML=`<div class="top"><span class="brand">Comptoir des Matériaux</span></div><h1>Un matériau était en cours</h1>
+  <p class="hint">L'app s'est fermée pendant l'encodage${par?" de "+par:""}, le ${new Date(brouillon.quand).toLocaleString("fr-BE",{day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"})}. Rien n'est perdu.</p>
+  <div class="item" style="cursor:default"><div class="thumb">${ph?`<img src="${ph}" alt="">`:esc(c.cat||"?")}</div>
+  <div><div class="n">${esc(c.nom||c.titreActuel||"(pas encore de nom)")}</div><div class="d">${c.cat?esc(label(c.cat))+" · ":""}étape ${brouillon.step+1}</div></div></div>
+  <button class="big ghost" id="abandon" style="margin-top:18px">Abandonner cet encodage</button>`;
+ bar(`<button class="big vif" id="reprise">Reprendre</button>`);
+ $("#reprise").onclick=()=>{cur=c;step=brouillon.step;qui=brouillon.qui;screen=brouillon.screen;if(cur.type==="maj"){annId=cur.annonce;chargerAnnonces()}brouillon=null;render()};
+ $("#abandon").onclick=()=>{const b=$("#abandon");if(!b.dataset.c){b.dataset.c=1;b.textContent="Appuyez encore pour abandonner";return}oublierBrouillon();render()}}
 const nouvelleFiche=par=>({id:Date.now()+"-"+Math.random().toString(36).slice(2,7),cree:Date.now(),par,code:"",cat:"",nom:"",etat:"",L:"",l:"",h:"",qte:1,unite:"pièce",prix:"",note:"",photos:[],envoye:"",matiere:"",couleur:"",lieu:"",empl:POIDS_EMPL?"R":"",propose:{},qual:[]});
 const ligneFiche=f=>`<button class="item" data-open="${f.id}"><div class="thumb">${f.photos[0]?`<img src="${f.photos[0]}" alt="">`:esc(f.cat)}</div>
    <div><div class="n">${esc(f.type==="maj"?(f.statut==="introuvable"?f.titreActuel:titrePropose(f)):f.nom)}</div>
@@ -581,10 +599,10 @@ function wiz(a){
  }
  a.innerHTML=head+body;
  bar((step>0?`<button class="big ghost back" id="prev">Retour</button>`:"")+`<button class="big" id="next" ${ok?"":"disabled"}>${step===last?"Enregistrer":"Suivant"}</button>`);
- $("#cancel").onclick=()=>{screen=cur.type==="maj"?"annonce":"home";render()};
+ $("#cancel").onclick=()=>{screen=cur.type==="maj"?"annonce":"home";oublierBrouillon();render()};
  if($("#prev"))$("#prev").onclick=()=>{step--;render()};
  $("#next").onclick=async()=>{trierDims(cur);if(step<last){step++;render()}else{cur.qte=Math.max(1,parseInt(cur.qte)||1);
-  cur.photos=cur.slots.filter(Boolean);const f={...cur};delete f.slots;delete f.qual;await dbPut(f);await load();toast("Matériau enregistré : "+cur.code);screen=cur.type==="maj"?"annonces":"home";render()}};
+  cur.photos=cur.slots.filter(Boolean);const f={...cur};delete f.slots;delete f.qual;await dbPut(f);oublierBrouillon();await load();toast("Matériau enregistré : "+cur.code);screen=cur.type==="maj"?"annonces":"home";render()}};
  const bind=k=>{const el=$("#"+k);if(el)el.oninput=()=>{cur[k]=el.value;if(k==="nom"){delete cur.propose.nom;$("#next").disabled=!el.value.trim();a.querySelectorAll("[data-nom]").forEach(c=>c.classList.toggle("sel",c.dataset.nom===el.value))}}};
  ["nom","L","l","h","qte","note","prix"].forEach(bind);
  ["L","l","h"].forEach(k=>{const el=$("#"+k);if(el)el.addEventListener("input",majPoids)});
@@ -668,11 +686,11 @@ function wizSaid(a){
  }
  a.innerHTML=head+body;
  bar(barre??((step>0?`<button class="big ghost back" id="prev">Retour</button>`:"")+`<button class="big vif" id="next" ${ok?"":"disabled"}>${step===last?"Enregistrer":"Suivant"}</button>`));
- $("#cancel").onclick=()=>{screen="home";render()};
+ $("#cancel").onclick=()=>{screen="home";oublierBrouillon();render()};
  if($("#prev"))$("#prev").onclick=()=>{step--;render()};
  if($("#reprendre")){$("#reprendre").onclick=()=>{slotCible=cur.revoir;$("#cam").click()};$("#valide").onclick=()=>{cur.revoir=null;render()}}
  if($("#next"))$("#next").onclick=async()=>{trierDims(cur);if(step<last){step++;render()}else{cur.qte=Math.max(1,parseInt(cur.qte)||1);
-  cur.photos=cur.slots.filter(Boolean);const f={...cur};delete f.slots;delete f.qual;delete f.revoir;delete f.reco;await dbPut(f);await load();toast("Matériau enregistré : "+cur.code);screen="home";render()}};
+  cur.photos=cur.slots.filter(Boolean);const f={...cur};delete f.slots;delete f.qual;delete f.revoir;delete f.reco;await dbPut(f);oublierBrouillon();await load();toast("Matériau enregistré : "+cur.code);screen="home";render()}};
  const bind=k=>{const el=$("#"+k);if(el)el.oninput=()=>{cur[k]=el.value;if(k==="nom")$("#next").disabled=!el.value.trim()}};
  ["nom","L","l","h","qte","note"].forEach(bind);
  a.querySelectorAll("[data-shot]").forEach(b=>b.onclick=()=>{slotCible=+b.dataset.shot;$("#cam").click()});
@@ -723,7 +741,7 @@ $("#cam").onchange=async e=>{
  if(screen==="wizs"&&i<3)f.revoir=i;
  render()};
 (async()=>{
- try{await openDb();await load();if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}
+ try{await openDb();await load();brouillon=await getSet("brouillon")||null;if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}
  catch(e){$("#app").innerHTML='<h1>Problème de stockage</h1><p class="hint">Le téléphone refuse d\'enregistrer les données. Ouvrez l\'app dans Chrome, pas en navigation privée.</p>';return}
  render();
  if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js");
