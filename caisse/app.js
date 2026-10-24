@@ -1,6 +1,6 @@
 "use strict";
 // Caisse & stock du Comptoir des Matériaux. Tout est gardé sur l'appareil (IndexedDB) ; rien n'est écrit dans Impulsion.
-const VERSION="2.5 (essai)";
+const VERSION="2.6 (essai)";
 const CATS=[["SA","Sanitaire"],["PA","Parois de douche"],["CH","Châssis"],["PO","Portes"],["CAR","Carrelage"],["GRO","Gros œuvre"],["RA","Chauffage"],
  ["ELEC","Électricité"],["LUM","Luminaires"],["BOI","Bois"],["PAR","Parquet & bardage"],["LAM","Lambris"],["TOI","Toiture"],["ISO","Isolant"],
  ["Q","Quincaillerie"],["OUT","Outillage"],["ELECTRO","Électroménager"],["DIV","Divers"]];
@@ -119,7 +119,7 @@ function render(){
  if(panneauRef)ouvrirPanneau(panneauRef,true);
  if(screen==="caisse")garderTicket();bandeau();
 }
-document.addEventListener("click",e=>{const b=e.target.closest("[data-go]");if(b){screen=b.dataset.go;fermerPanneau();render();scrollTo(0,0)}});
+document.addEventListener("click",e=>{const b=e.target.closest("[data-go]");if(b){screen=b.dataset.go;if(screen==="stock")ENVOIS=null;fermerPanneau();render();scrollTo(0,0)}});
 
 // ---------- Douchette QR / code-barres ----------
 // La douchette tape comme un clavier, très vite, puis Entrée. On reconnaît ces rafales partout dans l'app.
@@ -411,10 +411,35 @@ function stockListe(){const mots=sans(stQ).split(/\s+/).filter(Boolean);
  const cle={r:a=>a.r,n:a=>sans(a.n),e:a=>a.e||"~",s:a=>-(reste(a)??-1),p:a=>-(a.p||0)}[stTri];
  return L.sort((a,b)=>{const x=cle(a),y=cle(b);return x<y?-1:x>y?1:0})}
 function stockTotaux(){let n=0,val=0,kg=0;CAT.forEach(a=>{const r=reste(a);if(r>0){n++;val+=r*(a.p||0);if(a.kg!=null)kg+=r*a.kg}});return {n,val:r2(val),kg}}
+// ---------- Fiches envoyées par l'app d'encodage (provisoire, demande de Jérôme du 24/10/2026) ----------
+// L'app d'encodage dépose dans donnees/envois/ un fichier chiffré (même phrase secrète) avec les annonces et les photos.
+// Ici : juste la liste et un lien pour l'ouvrir, puis les placer dans Impulsion. « Placé » est noté sur cet appareil.
+let ENVOIS=null;
+const infoEnvoi=n=>{const m=/^(\d{4})-(\d\d)-(\d\d)-(\d\d)h(\d\d)-(.+?)-(\d+)f-/.exec(n);return m?{date:`${m[3]}/${m[2]}/${m[1]} à ${m[4]}h${m[5]}`,par:m[6].replace(/-/g," ").replace(/\bsaid\b/,"Saïd").replace(/\baudrey\b/,"Audrey"),n:+m[7]}:{date:n,par:"",n:0}};
+async function chargerEnvois(){if(!syncPret()){ENVOIS=[];return}
+ try{ENVOIS=((await gh(GH.dossier+"/envois"))||[]).filter(f=>f.type==="file"&&f.name.endsWith(".json")).sort((a,b)=>b.name.localeCompare(a.name))}catch(e){ENVOIS=ENVOIS||[]}
+ if(screen==="stock"&&!panneauRef)render()}
+function envoisHtml(){if(!syncPret())return "";if(ENVOIS===null){chargerEnvois();return ""}
+ const a=ENVOIS.filter(f=>!REG["envoiPlace:"+f.name]),faits=ENVOIS.length-a.length;
+ const ligne=f=>{const i=infoEnvoi(f.name);return `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--ligne,#ddd)">
+  <span style="flex:1;min-width:200px"><b>${i.n} fiche${i.n>1?"s":""}</b>${i.par?" de "+esc(i.par):""} <span class="muted">· ${esc(i.date)}</span></span>
+  <button class="btn petit" data-envoi="${esc(f.path)}">Ouvrir les annonces et photos</button>
+  ${REG["envoiPlace:"+f.name]?"":`<button class="btn clair petit" data-place="${esc(f.name)}">Placé dans Impulsion</button>`}</div>`};
+ return `<div class="carte" style="margin-bottom:14px"><h3>Fiches de l'app d'encodage à placer dans Impulsion (${a.length})</h3>
+  ${a.map(ligne).join("")||'<p class="muted">Rien en attente.</p>'}
+  ${faits?`<details class="muted"><summary>Déjà placés (${faits})</summary>${ENVOIS.filter(f=>REG["envoiPlace:"+f.name]).map(ligne).join("")}</details>`:""}</div>`}
+function brancherEnvois(){
+ $$("[data-envoi]").forEach(b=>b.onclick=async()=>{const w=window.open("","_blank");b.disabled=true;const t=b.textContent;b.textContent="Ouverture…";
+  try{const o=await dechiffrer(await gh(b.dataset.envoi,{},true)),u=URL.createObjectURL(new Blob([o.html],{type:"text/html"}));
+   if(w)w.location.href=u;else{const x=document.createElement("a");x.href=u;x.download=o.fichier||"comptoir.html";x.click()}}
+  catch(e){if(w)w.close();toast(e.status?"GitHub répond "+e.status:"Impossible d'ouvrir : vérifiez la phrase secrète",true)}
+  b.disabled=false;b.textContent=t});
+ $$("[data-place]").forEach(b=>b.onclick=async()=>{await putSet("envoiPlace:"+b.dataset.place,new Date().toISOString());render()})}
+
 function ecranStock(){const L=stockListe(),T=stockTotaux(),PAR=100,pages=Math.ceil(L.length/PAR);if(stPage>=pages)stPage=0;
  const filtres={"":"Tous les statuts",ok:"En stock",vendu:"Vendus",rupture:"Plus en stock",hors:"Hors ligne",nouveau:"Nouvelles fiches",sansprix:"Sans prix",sanspoids:"Sans poids",sansempl:"Sans emplacement"};
  const th=(k,t,cl="")=>`<th class="${cl}"><button class="lien" data-tri="${k}" style="color:inherit;text-decoration:${stTri===k?"underline":"none"}">${t}</button></th>`;
- return `<div class="tuiles"><div class="tuile b"><b>${T.n}</b><span>articles en stock</span></div><div class="tuile j"><b>${eur0(T.val)}</b><span>valeur au prix de vente</span></div>
+ return envoisHtml()+`<div class="tuiles"><div class="tuile b"><b>${T.n}</b><span>articles en stock</span></div><div class="tuile j"><b>${eur0(T.val)}</b><span>valeur au prix de vente</span></div>
   <div class="tuile v"><b>${kgTxt(T.kg)}</b><span>en stock (poids connus)</span></div><div class="tuile"><b>${CAT.filter(a=>!a.p).length}</b><span>articles sans prix</span></div></div>
  <div class="outils"><input class="champ" id="stq" type="search" placeholder="Rechercher : nom, référence, emplacement (ou scanner)" value="${esc(stQ)}" autocomplete="off">
   <select class="champ" id="stCat"><option value="">Toutes les catégories</option>${CATS.map(c=>`<option value="${c[0]}" ${stCat===c[0]?"selected":""}>${c[1]}</option>`).join("")}</select>
@@ -429,7 +454,7 @@ function ecranStock(){const L=stockListe(),T=stockTotaux(),PAR=100,pages=Math.ce
  </tbody></table></div>
  <div class="outils" style="margin-top:10px"><span class="muted">${L.length} article${L.length>1?"s":""}</span>${pages>1?`<span style="flex:1"></span><button class="btn clair petit" data-pg="-1" ${stPage?"":"disabled"}>‹ Précédents</button><span class="muted">page ${stPage+1} / ${pages}</span><button class="btn clair petit" data-pg="1" ${stPage<pages-1?"":"disabled"}>Suivants ›</button>`:""}</div>
  <p class="muted">Cliquez un article pour le modifier, noter une entrée, une sortie ou un comptage. ${nbFiches?`${nbFiches} fiche${nbFiches>1?"s":""} de l'app d'encodage ajoutée${nbFiches>1?"s":""}.`:""}</p>`}
-function brancherStock(){const i=$("#stq");
+function brancherStock(){brancherEnvois();const i=$("#stq");
  i.oninput=()=>{stQ=i.value;stPage=0;const pos=i.selectionStart;render();const j=$("#stq");j.focus();j.setSelectionRange(pos,pos)};
  $("#stCat").onchange=e=>{stCat=e.target.value;stPage=0;render()};
  $("#stStat").onchange=e=>{stStat=e.target.value;stPage=0;render()};
