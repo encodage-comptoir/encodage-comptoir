@@ -134,7 +134,7 @@ body.said .steps i.on{background:#ffd800}
 <script src="essai/poids.js"></script>
 <script>
 "use strict";
-const VERSION="7.6 (envoi à la caisse)";
+const VERSION="7.7 (envoi à la caisse)";
 // ---------- Données de référence ----------
 // Préfixes et catégories : les noms doivent être identiques aux catégories du back-office Impulsion (vérifiés le 14/10/2026).
 const CATS=[
@@ -463,10 +463,11 @@ function ecranQui(a){
  bar("");
  a.querySelectorAll("[data-qui]").forEach(b=>b.onclick=()=>{qui=b.dataset.qui;screen="home";render()})}
 function accueilSaid(a){
- const todo=fiches.filter(f=>!f.envoye);
+ const todo=fiches.filter(f=>!f.envoye), done=fiches.filter(f=>f.envoye);
  a.innerHTML=`<div class="top"><span class="brand">Bonjour Saïd</span><button class="chip" id="qui">Changer</button></div>
   <button class="big vif" id="new" style="min-height:130px;font-size:28px;margin-top:6px">Encoder un matériau</button>
   <p class="sec">À envoyer au bureau (${todo.length})</p><div class="list">${todo.map(ligneFiche).join("")||'<p class="hint">Rien en attente.</p>'}</div>
+  ${done.length?`<p class="sec">Déjà envoyées (${done.length})</p><div class="list">${done.map(ligneFiche).join("")}</div>`:""}
   <p class="hint" style="text-align:center;font-size:14px;margin-top:28px">Version ${VERSION}</p>`;
  bar(todo.length?`<button class="big ghost" id="exp">Envoyer au bureau (${todo.length})</button>`:"");
  $("#qui").onclick=()=>{qui=null;render()};
