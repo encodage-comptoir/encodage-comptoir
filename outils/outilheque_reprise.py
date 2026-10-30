@@ -42,8 +42,8 @@ for i, it in sorted(items.items()):
                 'source': f'https://outils.la-pile.be/items/{i}'})
 out += [
     {'ref': 'CAMION', 'type': 'camionnette', 'nom': 'Camionnette partagée', 'cat': 'Transport',
-     'descr': "Pour transporter vos achats du Comptoir ou pour vos besoins personnels, réservée aux membres de La Pile.\nClé dans la boîte à clé à l'entrée du Comptoir, accessible 7 jours sur 7 : le code arrive avec la confirmation.\nÀ rendre avec le plein fait.\nModèle, volume de chargement et tarifs à compléter par l'équipe.",
-     'prix_jour': None, 'prix_we': None, 'prix_periode': None, 'tarif': None, 'caution': None, 'qte': 1, 'etat': '', 'photos': [], 'en_ligne': 1},
+     'descr': "Pour transporter vos achats du Comptoir ou pour vos besoins personnels, réservée aux membres de La Pile.\nClé dans la boîte à clé à l'entrée du Comptoir, accessible 7 jours sur 7 : le code arrive avec la confirmation.\nÀ rendre avec le plein fait.\nFiat Ducato aux couleurs du Comptoir. Volume de chargement et tarifs à compléter par l'équipe.",
+     'prix_jour': None, 'prix_we': None, 'prix_periode': None, 'tarif': None, 'caution': None, 'qte': 1, 'etat': '', 'photos': ['img/camionnette.jpg'], 'en_ligne': 1},
     {'ref': 'ATELIER', 'type': 'atelier', 'nom': 'Atelier partagé', 'cat': 'Atelier',
      'descr': "Un atelier équipé et son parc machines, à réserver à la demi-journée ou à la journée.\nListe des machines, règles de sécurité et tarifs à compléter par l'équipe.",
      'prix_jour': None, 'prix_we': None, 'prix_periode': None, 'tarif': None, 'caution': None, 'qte': 1, 'etat': '', 'photos': [], 'en_ligne': 1},

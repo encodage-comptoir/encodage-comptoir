@@ -870,7 +870,7 @@
   "type": "camionnette",
   "nom": "Camionnette partagée",
   "cat": "Transport",
-  "descr": "Pour transporter vos achats du Comptoir ou pour vos besoins personnels, réservée aux membres de La Pile.\nClé dans la boîte à clé à l'entrée du Comptoir, accessible 7 jours sur 7 : le code arrive avec la confirmation.\nÀ rendre avec le plein fait.\nModèle, volume de chargement et tarifs à compléter par l'équipe.",
+  "descr": "Pour transporter vos achats du Comptoir ou pour vos besoins personnels, réservée aux membres de La Pile.\nClé dans la boîte à clé à l'entrée du Comptoir, accessible 7 jours sur 7 : le code arrive avec la confirmation.\nÀ rendre avec le plein fait.\nFiat Ducato aux couleurs du Comptoir. Volume de chargement et tarifs à compléter par l'équipe.",
   "prix_jour": null,
   "prix_we": null,
   "prix_periode": null,
@@ -878,7 +878,9 @@
   "caution": null,
   "qte": 1,
   "etat": "",
-  "photos": [],
+  "photos": [
+   "img/camionnette.jpg"
+  ],
   "en_ligne": 1
  },
  {
