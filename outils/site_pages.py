@@ -6,7 +6,7 @@ import sys, os, re, glob, html
 
 out = sys.argv[1]
 PILE = 'https://www.la-pile.be'
-VER = 'p3'
+VER = 'p4'
 esc = lambda s: html.escape(str(s or ''), quote=True)
 # Coordonnées du Comptoir (pas celles de La Pile). INSTAGRAM : à remplir quand le compte du Comptoir est connu.
 TEL, TEL_LIEN = '+32 (0)455 10 09 21', '+32455100921'
@@ -295,18 +295,19 @@ def inserer(nom, apres, bloc, marque):
 
 # Accueil : la recherche, puis directement les services (photos dans img/services/, sinon une photo de repli).
 SERVICES = [
-    ('catalogue.html', 'materiaux', 'Catalogue matériaux', 'Sanitaires, portes, châssis, carrelage, bois… de réemploi, jusqu’à 90 % moins chers que le neuf.', '🏷️', f'{PILE}/sites/lapile/gallery_images/thumbs/6958f28b6442e.jpg'),
-    ('depot.html', 'depot', 'Donner des matériaux', 'Vous rénovez ? Proposez-nous ce qui est encore bon : quelques photos suffisent.', '📦', f'{PILE}/sites/lapile/gallery_images/thumbs/684bdfcf9abef.jpg'),
-    ('outils.html', 'outillage', 'Location d’outillage', 'Perceuses, scies, ponceuses, échelles… louées à la période, au tarif conscient.', '🔧', 'https://lapilebucket.s3.eu-west-3.amazonaws.com/production/item/scv-6a1942ef45853.webp'),
-    ('outil.html?r=CAMION', 'camionnette', 'Location de la camionnette', 'Pour vos achats ou vos déménagements : clé en boîte à clé, 7 jours sur 7.', '🚐', ''),
-    ('outil.html?r=ATELIER', 'atelier', 'Location de l’atelier', 'Un atelier partagé et son parc machines, à la demi-journée ou à la journée.', '🪚', ''),
-    ('inspiration.html', 'inspirer', 'S’inspirer', 'Des réalisations en réemploi, en photos, et des projets pas à pas.', '🌱', ''),
+    ('catalogue.html', 'materiaux', 'Catalogue matériaux', 'Sanitaires, portes, châssis, carrelage, bois… de réemploi, à prix doux.', '🏷️', f'{PILE}/sites/lapile/gallery_images/thumbs/6958f28b6442e.jpg'),
+    ('outils.html', 'outillage', 'Location d’outillage', 'Perceuses, scies, échelles… louées à la période, au tarif conscient.', '🔧', 'https://lapilebucket.s3.eu-west-3.amazonaws.com/production/item/scv-6a1942ef45853.webp'),
+    ('reserver.html', 'camionnette', 'Camionnette & atelier', 'La camionnette 7j/7 et l’atelier partagé, à réserver en ligne.', '🚐', ''),
+    ('inspiration.html', 'inspirer', 'S’inspirer', 'Des réalisations en réemploi, en photos.', '🌱', ''),
 ]
 def accueil():
     f = os.path.join(out, 'index.html'); t = open(f).read()
     tuiles = ''.join(f"""<a class="service" href="{h}"><div class="img"><img src="img/services/{n}.jpg" alt="" loading="lazy" data-repli="{esc(r)}" onerror="if(this.dataset.repli){{this.src=this.dataset.repli;this.dataset.repli=''}}else{{this.remove()}}"><span class="ic">{ic}</span></div><div class="txt"><h3>{esc(ti)}</h3><p>{esc(d)}</p></div></a>""" for h, n, ti, d, ic, r in SERVICES)
-    bloc = f'<section class="contenu"><h2 class="sr">Nos services</h2><div class="services">{tuiles}</div></section>\n'
-    a = t.index('</form></div></section>') + len('</form></div></section>')
+    don = '<a class="bandeau-don" href="depot.html"><span aria-hidden="true">📦</span><span><b>Vous rénovez ?</b> Donnez-nous vos matériaux encore bons : quelques photos suffisent.</span><span class="bouton jaune">Proposer un don</span></a>'
+    bloc = f'<section class="contenu"><h2 class="sr">Nos services</h2><div class="services">{tuiles}</div>{don}</section>\n'
+    t = re.sub(r'(<section class="hero"><div class="hero-in">)<h1>.*?</h1>', r'\1<h1 class="hero-logo"><img src="img/logo-comptoir.png" alt="Comptoir des Matériaux" width="735" height="275"></h1>', t, flags=re.S)
+    t = re.sub(r'<form action="catalogue.html" class="cherche">.*?</form>', '', t, flags=re.S)  # plus de recherche sur l'accueil
+    a = t.index('</div></section>', t.index('<section class="hero">')) + len('</div></section>')
     b = t.index('<section class="contenu" id="infos">')
     t = t[:a] + '\n' + bloc + t[b:]
     t = t.replace('<p>Matériaux de construction de réemploi à Malmedy : sanitaires, portes, châssis, carrelage, bois… jusqu’à 90 % moins chers que le neuf.</p>', '<p>Matériaux de construction de réemploi, outils et camionnette à louer, atelier partagé : à Malmedy, on fait avec ce qui existe déjà.</p>')
