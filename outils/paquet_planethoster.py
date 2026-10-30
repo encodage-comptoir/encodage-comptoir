@@ -11,7 +11,7 @@ racine = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sortie = sys.argv[1]
 os.makedirs(sortie, exist_ok=True)
 zp = os.path.join(sortie, 'comptoir-materiaux.zip')
-cle = secrets.token_urlsafe(24)
+cle = os.environ.get('CLE_CAISSE') or secrets.token_urlsafe(24)   # garder la même clé d'un paquet à l'autre
 
 HTACCESS = """# www.comptoir-materiaux.be : https et adresse avec www.
 RewriteEngine On
