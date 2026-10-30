@@ -326,3 +326,6 @@ button.lien{background:none;border:0;padding:0;font:inherit;font-size:14px;color
 .infos-top .gros a{font-weight:700;color:var(--encre);text-decoration:none}
 .infos-top p{margin:0}
 .photo-lieu img{aspect-ratio:auto!important;height:auto}
+/* Le plan prend toute la hauteur à côté du montage d'accès */
+.trouver .encart{display:flex;flex-direction:column}
+.trouver .encart iframe{flex:1;aspect-ratio:auto;min-height:320px}

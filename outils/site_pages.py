@@ -329,7 +329,7 @@ def accueil():
     t = re.sub(r'<h2 style="margin-top:32px">Infos pratiques</h2><div class="infos-prat">.*?</div></div></section>', '</section>', t, flags=re.S)
     # Accès : montage des photos du chemin (img/acces.jpg), s'il existe.
     if os.path.exists(os.path.join(out, 'img', 'acces.jpg')):
-        t = re.sub(r'<div class="encart photo-lieu">.*?</div></div>', '<div class="encart photo-lieu"><a href="img/acces.jpg"><img src="img/acces.jpg" alt="Le chemin vers le Comptoir, en photos" loading="lazy"></a><p>ACCES_LEGENDE</p></div></div>', t, count=1, flags=re.S)
+        t = re.sub(r'<div class="encart photo-lieu">.*?</div></div>', '<div class="encart photo-lieu"><a href="img/acces.jpg"><img src="img/acces.jpg" alt="Le chemin vers le Comptoir, en photos" loading="lazy"></a><p><b>Le chemin en 4 photos</b> : depuis le panneau 3b, longez Malmedy Expo, le Comptoir est derrière. <a href="img/acces.jpg">Agrandir</a></p></div></div>', t, count=1, flags=re.S)
     open(f, 'w').write(t)
 accueil()
 
