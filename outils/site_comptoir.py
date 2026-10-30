@@ -198,7 +198,7 @@ def page(titre, desc, corps, prof='', image='', canon='', extra_head=''):
 {corps}
 <footer class="pied"><div class="pied-in">
 <img src="{PILE}/img/footer-logo.svg" alt="La Pile" class="pied-logo">
-<div><b>Comptoir des Matériaux</b><br>Rue Frédéric Lang 3, 4960 Malmedy<br>Tél. <a href="tel:+32493049929">+32 (0)493 04 99 29</a><br><a href="mailto:info@la-pile.be">info@la-pile.be</a></div>
+<div><b>Comptoir des Matériaux</b><br>Rue Frédéric Lang 3, 4960 Malmedy<br>Tél. <a href="tel:+32493049929">+32 (0)493 04 99 29</a><br><a href="mailto:info@comptoir-materiaux.be">info@comptoir-materiaux.be</a></div>
 <div>Un projet de <a href="{PILE}">La Pile asbl</a><br><a href="https://www.instagram.com/lapile_malmedy/">Instagram</a> · <a href="https://www.facebook.com/LaPileMalmedy/">Facebook</a></div>
 </div></footer></body></html>'''
 
@@ -251,7 +251,7 @@ for a in pub:
 <div class="infos"><h1>{esc(a['titre'])}</h1><p class="accroche">{esc(a['accroche'])}</p>
 <p class="prix-gros">{esc(a['_prix_txt'])}{f'<small class="prix-m2">{esc(a["_prix_m2"])}</small>' if a['_prix_m2'] else ''}</p>{neuf}{eco}
 <div class="actions"><button class="bouton" data-ajout="{esc(json.dumps(a['_ajout'], ensure_ascii=False))}">Ajouter à ma liste</button>
-<a class="bouton clair" href="mailto:info@la-pile.be?subject={esc('Article ' + a['ref'])}&body={esc(msg)}">Poser une question</a></div>
+<a class="bouton clair" href="mailto:info@comptoir-materiaux.be?subject={esc('Article ' + a['ref'])}&body={esc(msg)}">Poser une question</a></div>
 <div class="partage"><span>Partager :</span><a href="https://wa.me/?text={esc(a['titre'] + ' ' + lien)}">WhatsApp</a>
 <a href="https://www.facebook.com/sharer/sharer.php?u={esc(lien)}">Facebook</a><button onclick="navigator.clipboard.writeText('{esc(lien)}');this.textContent='Lien copié'">Copier le lien</button></div>
 <p class="descr">{esc(a['description'])}</p>
@@ -505,7 +505,7 @@ for p in PROJ.values():
 <div class="projet-tete"><div class="illus">{p['illus']}</div><div><h1>{esc(p['nom'])}</h1><p class="accroche">{esc(p['desc'])}</p>
 {f'<p class="score">{n_ok} postes sur {len(p["postes"])} trouvables au Comptoir aujourd’hui</p>' if p['postes'] else ''}
 <div class="actions"><button class="bouton" data-liste-projet="{esc(p['nom'])}" data-vers="../panier.html">Créer ma liste « {esc(p['nom'])} »</button>
-<a class="bouton clair" href="mailto:info@la-pile.be?subject={esc('Être guidé : ' + p['nom'])}&body={esc(mail)}">Être guidé par l’équipe</a></div>
+<a class="bouton clair" href="mailto:info@comptoir-materiaux.be?subject={esc('Être guidé : ' + p['nom'])}&body={esc(mail)}">Être guidé par l’équipe</a></div>
 {''.join(f'<a class="puce" href="../faire-avec.html#{esc(f)}">{ILLUS_F.get(f, "")}{esc(f)}</a>' for f in fonctions)}</div></div>
 {ex}
 {f'<section><h2>Ce qu’il faut, poste par poste</h2>{postes}</section>' if postes else ''}

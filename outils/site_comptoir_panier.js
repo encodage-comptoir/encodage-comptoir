@@ -1,6 +1,6 @@
 // Listes « ma liste » : plusieurs listes nommées (une par projet), gardées dans le navigateur du visiteur, envoyées par mail pour réservation.
 (function(){
-const CLE='comptoir-listes',ANCIENNE='comptoir-panier',MAIL='info@la-pile.be';
+const CLE='comptoir-listes',ANCIENNE='comptoir-panier',MAIL='info@comptoir-materiaux.be';
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'})[c]);
 const eur=v=>(Math.round(v*100)/100).toFixed(2).replace('.',',').replace(',00','')+' €';
 let memo=null;

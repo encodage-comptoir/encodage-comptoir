@@ -11,7 +11,7 @@ esc = lambda s: html.escape(str(s or ''), quote=True)
 # Coordonnées du Comptoir (pas celles de La Pile). INSTAGRAM : à remplir quand le compte du Comptoir est connu.
 TEL, TEL_LIEN = '+32 (0)455 10 09 21', '+32455100921'
 WHATSAPP = 'https://wa.me/32455100921'
-MAIL = 'info@la-pile.be'
+MAIL = 'info@comptoir-materiaux.be'
 FACEBOOK = 'https://www.facebook.com/p/Comptoir-des-mat%C3%A9riaux-PILE-61557432835398/'
 INSTAGRAM = ''
 
@@ -228,7 +228,7 @@ page('inspiration.html', 'Inspirations – Faire avec – Comptoir des Matériau
 <div class="filtres-tags" id="tags"></div>
 <div class="blog" id="liste"></div>
 <article class="billet-plein" id="billet" hidden></article>
-<p class="centre"><a class="bouton jaune" href="mailto:info@la-pile.be?subject=Ma%20r%C3%A9alisation%20en%20r%C3%A9emploi">Proposer ma réalisation</a></p>
+<p class="centre"><a class="bouton jaune" href="mailto:info@comptoir-materiaux.be?subject=Ma%20r%C3%A9alisation%20en%20r%C3%A9emploi">Proposer ma réalisation</a></p>
 </main>''', r'''
 const $=id=>document.getElementById(id);let B=[],tag='';
 const carte=b=>`<a class="billet" href="#${encodeURIComponent(b.id)}"><div class="img">${b.photos&&b.photos[0]?`<img loading="lazy" src="${escH(b.photos[0])}" alt="">`:`<div class="sans-photo">${b.icone||'🌱'}</div>`}</div><div class="txt"><p class="petit">${escH((b.tags||[]).join(' · '))}</p><h3>${escH(b.titre)}</h3><p>${escH(b.chapo)}</p></div></a>`;
