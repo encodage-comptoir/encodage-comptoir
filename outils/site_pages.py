@@ -157,7 +157,7 @@ page('reserver.html', 'Camionnette et atelier partagé – Comptoir des Matéria
 <div class="deux-grand" id="ress"><p>Chargement…</p></div>
 <h2 style="margin-top:40px">Comment ça marche ?</h2>
 <div class="infos-prat">
-<div><h3>1. Devenir membre</h3><p>Créez votre compte en ligne. Pour la camionnette : pièce d'identité et permis de conduire, adhésion 30 €/an. L'équipe active ensuite votre compte.</p></div>
+<div><h3>1. Devenir membre</h3><p>Créez votre compte en ligne : l'adhésion est de 30 €/an. Pour la camionnette, il faut aussi votre pièce d'identité et votre permis de conduire. L'équipe active ensuite votre compte.</p></div>
 <div><h3>2. Réserver</h3><p>Choisissez vos dates sur le calendrier et envoyez la demande. Vous recevez la confirmation par e-mail.</p></div>
 <div><h3>3. Camionnette : sauf jeudi et vendredi</h3><p>Elle s'ouvre avec l'appli Wibee, même quand le Comptoir est fermé. Le jeudi et le vendredi, elle sert à La Pile et au Comptoir.</p></div>
 <div><h3>4. Au retour</h3><p>Notez les kilomètres : le carburant est compris dans le prix au km. Le paiement se fait au Comptoir (espèces, QR code ou virement).</p></div></div>
@@ -177,7 +177,7 @@ const $=id=>document.getElementById(id);const retour=new URLSearchParams(locatio
 function connexion(){ $('zone').innerHTML=bandeauDemo()+`<h1>Mon compte</h1><div class="deux-grand">
  <form id="fc" class="form-res"><h2>J'ai un compte</h2><label>E-mail <input type="email" id="ce" required autocomplete="email"></label><label>Mot de passe <input type="password" id="cm" required autocomplete="current-password"></label><button class="bouton">Me connecter</button><p class="retour" id="rc"></p><p class="petit">Mot de passe oublié ? Appelez le Comptoir, l'équipe vous aide.</p></form>
  <form id="fi" class="form-res"><h2>Devenir membre</h2><label>Nom et prénom <input id="in" required autocomplete="name"></label><label>E-mail <input type="email" id="ie" required autocomplete="email"></label><label>Téléphone <input type="tel" id="it" autocomplete="tel"></label><label>Adresse <input id="ia" autocomplete="street-address"></label><label>Mot de passe (8 caractères au moins) <input type="password" id="im" minlength="8" required autocomplete="new-password"></label>
- <p class="petit">L'adhésion à La Pile se règle au Comptoir ; l'équipe active alors votre compte. En attendant, vous pouvez déjà envoyer des demandes.</p><button class="bouton jaune">Créer mon compte</button><p class="retour" id="ri"></p></form></div>`;
+ <p class="petit">L'adhésion (30 €/an) se règle au Comptoir ; l'équipe active alors votre compte. En attendant, vous pouvez déjà envoyer des demandes.</p><button class="bouton jaune">Créer mon compte</button><p class="retour" id="ri"></p></form></div>`;
  $('fc').onsubmit=e=>envoi(e,'connexion',{email:$('ce').value,mdp:$('cm').value},'rc');
  $('fi').onsubmit=e=>envoi(e,'inscription',{nom:$('in').value,email:$('ie').value,tel:$('it').value,adresse:$('ia').value,mdp:$('im').value},'ri')}
 async function envoi(e,a,c,r){e.preventDefault();try{const j=await Compte.api(a,c);Compte.membre=j.membre;if(retour&&/^https?:/.test(retour)&&new URL(retour).origin===location.origin)location.href=retour;else espace()}catch(x){$(r).className='retour bad';$(r).textContent=x.message}}
