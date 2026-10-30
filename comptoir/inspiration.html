@@ -4,11 +4,11 @@
 <meta name="robots" content="noindex"><!-- maquette : à retirer à la mise en ligne réelle -->
 <meta property="og:title" content="Inspirations – Faire avec – Comptoir des Matériaux"><meta property="og:description" content="Réalisations en réemploi : idées et photos pour faire avec les matériaux du Comptoir.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=p2"><script src="panier.js?v=p2" defer></script><script src="compte.js?v=p2"></script>
+<link rel="stylesheet" href="style.css?v=p3"><script src="panier.js?v=p3" defer></script><script src="compte.js?v=p3"></script>
 </head><body>
 <div class="maquette">Maquette : textes, prix et photos à valider par l'équipe.</div>
 <header class="haut"><div class="haut-in">
-<a class="logo" href="index.html"><img src="https://www.la-pile.be/img/logo-main.svg" alt="La Pile"></a>
+<a class="logo" href="index.html"><img src="img/logo-comptoir.png" alt="Comptoir des Matériaux" width="168" height="63"></a>
 <nav><a href="index.html">Accueil</a><a href="catalogue.html">Matériaux</a><a href="outils.html">Outilthèque</a><a href="reserver.html">Camionnette &amp; atelier</a><a href="faire-avec.html">Faire avec</a><a href="comprendre.html">Comprendre</a><a href="compte.html" class="lien-compte">Mon compte</a><a href="panier.html" class="lien-panier">Mes listes <span class="nb-panier" hidden>0</span></a></nav>
 </div></header>
 
@@ -36,7 +36,7 @@ const route=()=>{const h=decodeURIComponent(location.hash.slice(1));h?billet(h):
 addEventListener('hashchange',route);
 fetch('inspiration.json',{cache:'no-cache'}).then(r=>r.json()).then(j=>{B=j;route()});</script>
 <footer class="pied"><div class="pied-in">
-<img src="https://www.la-pile.be/img/footer-logo.svg" alt="La Pile" class="pied-logo">
-<div><b>Comptoir des Matériaux</b><br>Rue Frédéric Lang 3, 4960 Malmedy<br>Tél. <a href="tel:+32493049929">+32 (0)493 04 99 29</a><br><a href="mailto:info@la-pile.be">info@la-pile.be</a></div>
-<div>Un projet de <a href="https://www.la-pile.be">La Pile asbl</a><br><a href="https://www.instagram.com/lapile_malmedy/">Instagram</a> · <a href="https://www.facebook.com/LaPileMalmedy/">Facebook</a></div>
+<img src="img/logo-comptoir.png" alt="Comptoir des Matériaux" class="pied-logo">
+<div><b>Comptoir des Matériaux</b><br>Rue Frédéric Lang 3, 4960 Malmedy<br>Magasin : mercredi et samedi, 9 h – 16 h<br>Tél. <a href="tel:+32455100921">+32 (0)455 10 09 21</a> · <a href="https://wa.me/32455100921">WhatsApp</a><br><a href="mailto:info@la-pile.be">info@la-pile.be</a></div>
+<div><a href="depot.html">Donner des matériaux</a><br><a href="comprendre.html">Pourquoi le réemploi ?</a><br><a href="https://www.facebook.com/p/Comptoir-des-mat%C3%A9riaux-PILE-61557432835398/">Facebook</a><br><span class="petit-pied">Un projet de <a href="https://www.la-pile.be">La Pile asbl</a></span></div>
 </div></footer></body></html>

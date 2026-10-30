@@ -6,8 +6,25 @@ import sys, os, re, glob, html
 
 out = sys.argv[1]
 PILE = 'https://www.la-pile.be'
-VER = 'p2'
+VER = 'p3'
 esc = lambda s: html.escape(str(s or ''), quote=True)
+# Coordonnées du Comptoir (pas celles de La Pile). INSTAGRAM : à remplir quand le compte du Comptoir est connu.
+TEL, TEL_LIEN = '+32 (0)455 10 09 21', '+32455100921'
+WHATSAPP = 'https://wa.me/32455100921'
+MAIL = 'info@la-pile.be'
+FACEBOOK = 'https://www.facebook.com/p/Comptoir-des-mat%C3%A9riaux-PILE-61557432835398/'
+INSTAGRAM = ''
+
+def logo(prof=''):
+    return f'<a class="logo" href="{prof}index.html"><img src="{prof}img/logo-comptoir.png" alt="Comptoir des Matériaux" width="168" height="63"></a>'
+
+def pied(prof=''):
+    res = ' · '.join(x for x in [f'<a href="{FACEBOOK}">Facebook</a>' if FACEBOOK else '', f'<a href="{INSTAGRAM}">Instagram</a>' if INSTAGRAM else ''] if x)
+    return f'''<footer class="pied"><div class="pied-in">
+<img src="{prof}img/logo-comptoir.png" alt="Comptoir des Matériaux" class="pied-logo">
+<div><b>Comptoir des Matériaux</b><br>Rue Frédéric Lang 3, 4960 Malmedy<br>Magasin : mercredi et samedi, 9 h – 16 h<br>Tél. <a href="tel:{TEL_LIEN}">{TEL}</a> · <a href="{WHATSAPP}">WhatsApp</a><br><a href="mailto:{MAIL}">{MAIL}</a></div>
+<div><a href="{prof}depot.html">Donner des matériaux</a><br><a href="{prof}comprendre.html">Pourquoi le réemploi ?</a><br>{res}<br><span class="petit-pied">Un projet de <a href="{PILE}">La Pile asbl</a></span></div>
+</div></footer>'''
 
 def nav(prof=''):
     return (f'<nav><a href="{prof}index.html">Accueil</a><a href="{prof}catalogue.html">Matériaux</a>'
@@ -27,16 +44,12 @@ def page(nom, titre, desc, corps, script='', compte=True):
 </head><body>
 <div class="maquette">Maquette : textes, prix et photos à valider par l'équipe.</div>
 <header class="haut"><div class="haut-in">
-<a class="logo" href="index.html"><img src="{PILE}/img/logo-main.svg" alt="La Pile"></a>
+{logo()}
 {nav()}
 </div></header>
 {corps}
 {f'<script>{script}</script>' if script else ''}
-<footer class="pied"><div class="pied-in">
-<img src="{PILE}/img/footer-logo.svg" alt="La Pile" class="pied-logo">
-<div><b>Comptoir des Matériaux</b><br>Rue Frédéric Lang 3, 4960 Malmedy<br>Tél. <a href="tel:+32493049929">+32 (0)493 04 99 29</a><br><a href="mailto:info@la-pile.be">info@la-pile.be</a></div>
-<div>Un projet de <a href="{PILE}">La Pile asbl</a><br><a href="https://www.instagram.com/lapile_malmedy/">Instagram</a> · <a href="https://www.facebook.com/LaPileMalmedy/">Facebook</a></div>
-</div></footer></body></html>'''
+{pied()}</body></html>'''
     open(os.path.join(out, nom), 'w').write(t)
 
 # ——— Outilthèque : catalogue ———
@@ -227,11 +240,47 @@ const route=()=>{const h=decodeURIComponent(location.hash.slice(1));h?billet(h):
 addEventListener('hashchange',route);
 fetch('inspiration.json',{cache:'no-cache'}).then(r=>r.json()).then(j=>{B=j;route()});''', compte=True)
 
+
+# ——— Dépôt : proposer ses matériaux ———
+page('depot.html', 'Donner des matériaux – Comptoir des Matériaux', "Vous rénovez ? Proposez vos matériaux de construction en bon état au Comptoir des Matériaux de Malmedy : envoyez quelques photos, on vous répond.", f"""
+<main class="contenu etroit"><h1>Donner des matériaux</h1>
+<p class="intro">Vous rénovez, vous videz un garage, il vous reste des carrelages ? Ce qui est encore en bon état peut resservir ici, au lieu de partir au conteneur.</p>
+<div class="etapes"><div><b>1</b>Envoyez-nous quelques photos et une description, ici ou par WhatsApp</div><div><b>2</b>On vous répond : oui, non, ou une question</div><div><b>3</b>Vous apportez les matériaux un jour d'ouverture, ou on organise un enlèvement</div></div>
+<p class="note-tarif"><b>Merci de ne pas venir déposer sans nous avoir contactés :</b> la place est comptée et certains matériaux ne se revendent pas.</p>
+<div class="deux-grand">
+<div><h2>Ce qu'on accepte</h2><ul class="acceptes"><li>Bois, panneaux, poutres</li><li>Carrelage, parquet, bardage</li><li>Sanitaires (éviers, lavabos, WC, baignoires, douches)</li><li>Portes, châssis, verre</li><li>Isolation (propre et sèche)</li><li>Tubes, quincaillerie, accessoires électriques</li><li>Radiateurs, luminaires</li><li>Outils (pour l'outilthèque : bon de location en échange)</li></ul>
+<h2>Ce qu'on refuse</h2><ul class="refuses"><li>Matériaux cassés, pourris ou incomplets</li><li>Amiante (vieilles plaques ondulées, Eternit…)</li><li>Pots de peinture, produits chimiques</li><li>Déchets de démolition en vrac</li></ul>
+<p>Plus rapide : <a class="bouton jaune" href="{WHATSAPP}">Photos par WhatsApp</a></p><p class="petit">Ou par téléphone : <a href="tel:{TEL_LIEN}">{TEL}</a></p></div>
+<form id="fd" class="form-res"><h2>Proposer mes matériaux</h2>
+<label>Quoi ? <textarea id="dq" rows="3" required placeholder="ex. 12 m² de carrelage gris 30 × 30, 3 portes intérieures en chêne 83 cm…"></textarea></label>
+<label>Photos (jusqu'à 5) <input type="file" id="dp" accept="image/*" multiple></label><div id="apercu" class="apercu"></div>
+<label>Où sont-ils ? <input id="dl" placeholder="Commune"></label>
+<label><span><input type="checkbox" id="de"> J'aurais besoin d'un enlèvement</span></label>
+<label>Nom <input id="dn" required autocomplete="name"></label>
+<div class="deux"><label>Téléphone <input id="dt" type="tel" autocomplete="tel"></label><label>E-mail <input id="dm" type="email" autocomplete="email"></label></div>
+<input id="dh" class="cache" tabindex="-1" autocomplete="off" aria-hidden="true">
+<button class="bouton">Envoyer ma proposition</button><p class="retour" id="dr"></p></form></div>
+</main>""", r"""
+const $=id=>document.getElementById(id);let P=[];
+// Photos réduites dans le navigateur (1600 px) : envoi rapide même depuis un GSM.
+function reduire(f){return new Promise(ok=>{const i=new Image();i.onload=()=>{const k=Math.min(1,1600/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*k;c.height=i.height*k;c.getContext('2d').drawImage(i,0,0,c.width,c.height);c.toBlob(b=>ok(b),'image/jpeg',.82)};i.onerror=()=>ok(null);i.src=URL.createObjectURL(f)})}
+$('dp').onchange=async e=>{P=(await Promise.all([...e.target.files].slice(0,5).map(reduire))).filter(Boolean);$('apercu').innerHTML=P.map(b=>`<img src="${URL.createObjectURL(b)}" alt="">`).join('')};
+$('fd').onsubmit=async e=>{e.preventDefault();const r=$('dr');r.className='retour';
+ if(!$('dt').value&&!$('dm').value){r.className='retour bad';r.textContent='Indiquez un téléphone ou un e-mail pour qu\'on puisse vous répondre.';return}
+ const d={quoi:$('dq').value,lieu:$('dl').value,enlevement:$('de').checked?1:0,nom:$('dn').value,tel:$('dt').value,email:$('dm').value,site:$('dh').value};
+ if(Compte.demo===null)await Compte.sonder();
+ if(Compte.demo){r.innerHTML='Maquette : sur comptoir-materiaux.be, la proposition et les photos arriveront dans la caisse du Comptoir. En attendant, <a href="'+WA+'">envoyez-les par WhatsApp</a>.';return}
+ const fd=new FormData();Object.entries(d).forEach(([k,v])=>fd.append(k,v));P.forEach((b,i)=>fd.append('photos[]',b,'photo'+i+'.jpg'));
+ try{const x=await fetch(API+'?a=depot',{method:'POST',body:fd});const j=await x.json();if(!x.ok||j.erreur)throw new Error(j.erreur||'Erreur');
+  r.textContent='✓ Merci ! Nous revenons vers vous rapidement.';e.target.reset();P=[];$('apercu').innerHTML=''}catch(x){r.className='retour bad';r.textContent=x.message}};""".replace('WA', repr(WHATSAPP)))
+
 # ——— Même menu partout ———
 for f in glob.glob(os.path.join(out, '*.html')) + glob.glob(os.path.join(out, '*', '*.html')):
     prof = '../' if os.path.dirname(f) != out.rstrip('/') else ''
     t = open(f).read()
     n = re.sub(r'<nav>.*?</nav>', lambda m: nav(prof), t, count=1, flags=re.S)
+    n = re.sub(r'<a class="logo".*?</a>', lambda m: logo(prof), n, count=1, flags=re.S)
+    n = re.sub(r'<footer class="pied">.*?</footer>', lambda m: pied(prof), n, count=1, flags=re.S)
     n = re.sub(r'(style\.css|panier\.js)\?v=[\w]+', rf'\1?v={VER}', n)
     if n != t:
         open(f, 'w').write(n)
@@ -244,12 +293,35 @@ def inserer(nom, apres, bloc, marque):
     if apres in t:
         open(f, 'w').write(t.replace(apres, apres + f'<!--{marque}-->{bloc}<!--/{marque}-->', 1))
 
-inserer('index.html', '<a class="bouton jaune" href="faire-avec.html">Trouver des idées</a></div></section>', '''
-<section class="contenu"><h2>Au Comptoir, on peut aussi…</h2><div class="quatre">
-<a href="outils.html"><span>🔧</span><b>Louer un outil</b>Perceuse, ponceuse, échelle… à petit prix plutôt que de l'acheter.</a>
-<a href="reserver.html"><span>🚐</span><b>Réserver la camionnette</b>Clé en boîte à clé, 7 jours sur 7, pour les membres.</a>
-<a href="reserver.html"><span>🪚</span><b>Travailler à l'atelier</b>Un atelier partagé et son parc machines.</a>
-<a href="comprendre.html"><span>♻️</span><b>Comprendre le réemploi</b>Pourquoi réemployer, et comment s'y mettre.</a></div></section>''', 'services')
+# Accueil : la recherche, puis directement les services (photos dans img/services/, sinon une photo de repli).
+SERVICES = [
+    ('catalogue.html', 'materiaux', 'Catalogue matériaux', 'Sanitaires, portes, châssis, carrelage, bois… de réemploi, jusqu’à 90 % moins chers que le neuf.', '🏷️', f'{PILE}/sites/lapile/gallery_images/thumbs/6958f28b6442e.jpg'),
+    ('depot.html', 'depot', 'Donner des matériaux', 'Vous rénovez ? Proposez-nous ce qui est encore bon : quelques photos suffisent.', '📦', f'{PILE}/sites/lapile/gallery_images/thumbs/684bdfcf9abef.jpg'),
+    ('outils.html', 'outillage', 'Location d’outillage', 'Perceuses, scies, ponceuses, échelles… louées à la période, au tarif conscient.', '🔧', 'https://lapilebucket.s3.eu-west-3.amazonaws.com/production/item/scv-6a1942ef45853.webp'),
+    ('outil.html?r=CAMION', 'camionnette', 'Location de la camionnette', 'Pour vos achats ou vos déménagements : clé en boîte à clé, 7 jours sur 7.', '🚐', ''),
+    ('outil.html?r=ATELIER', 'atelier', 'Location de l’atelier', 'Un atelier partagé et son parc machines, à la demi-journée ou à la journée.', '🪚', ''),
+    ('inspiration.html', 'inspirer', 'S’inspirer', 'Des réalisations en réemploi, en photos, et des projets pas à pas.', '🌱', ''),
+]
+def accueil():
+    f = os.path.join(out, 'index.html'); t = open(f).read()
+    tuiles = ''.join(f"""<a class="service" href="{h}"><div class="img"><img src="img/services/{n}.jpg" alt="" loading="lazy" data-repli="{esc(r)}" onerror="if(this.dataset.repli){{this.src=this.dataset.repli;this.dataset.repli=''}}else{{this.remove()}}"><span class="ic">{ic}</span></div><div class="txt"><h3>{esc(ti)}</h3><p>{esc(d)}</p></div></a>""" for h, n, ti, d, ic, r in SERVICES)
+    bloc = f'<section class="contenu"><h2 class="sr">Nos services</h2><div class="services">{tuiles}</div></section>\n'
+    a = t.index('</form></div></section>') + len('</form></div></section>')
+    b = t.index('<section class="contenu" id="infos">')
+    t = t[:a] + '\n' + bloc + t[b:]
+    t = t.replace('<p>Matériaux de construction de réemploi à Malmedy : sanitaires, portes, châssis, carrelage, bois… jusqu’à 90 % moins chers que le neuf.</p>', '<p>Matériaux de construction de réemploi, outils et camionnette à louer, atelier partagé : à Malmedy, on fait avec ce qui existe déjà.</p>')
+    t = t.replace('<div><h3>Quand ?</h3><p>Horaires à compléter par l’équipe.</p></div>', '<div><h3>Quand ?</h3><p>Magasin ouvert le mercredi et le samedi, de 9 h à 16 h. En dehors, sur rendez-vous.</p></div>')
+    t = t.replace('<div><h3>Donner ?</h3><p>Vous avez des matériaux en bon état ? Contactez-nous avant de les apporter.</p></div>', '<div><h3>Donner ?</h3><p>Vous avez des matériaux en bon état ? <a href="depot.html">Proposez-les ici</a> avant de les apporter.</p></div>')
+    open(f, 'w').write(t)
+accueil()
+
+# Catalogue : les rayons en boutons de couleur, au-dessus de la recherche.
+inserer('catalogue.html', '<main class="contenu"><h1>Catalogue</h1>', """
+<div class="rayons" id="rayons" aria-label="Rayons"></div><p class="petit lien-depot">Vous avez des matériaux à donner ? <a href="depot.html">Proposez-les</a></p>
+<script>addEventListener('DOMContentLoaded',()=>{const s=document.getElementById('cat'),r=document.getElementById('rayons');if(!s)return;
+ const dess=()=>{r.innerHTML=[...s.options].map(o=>`<button type="button" data-r="${o.value}" class="${o.value===s.value?'sel':''}">${o.value?o.text:'Tout'}</button>`).join('')};
+ r.onclick=e=>{const b=e.target.closest('[data-r]');if(!b)return;s.value=b.dataset.r;s.dispatchEvent(new Event('input'));dess()};
+ s.addEventListener('input',dess);dess()});</script>""", 'rayons')
 
 inserer('faire-avec.html', 'Partez d’un projet ou de ce que vous voulez faire.</p>', '''
 <a class="encart-inspi" href="inspiration.html"><div><h2>Inspirations</h2><p>Des réalisations en réemploi, en photos : une serre en vieux châssis, un plan de travail en parquet, une cloison en portes… De quoi donner envie de faire avec.</p><span class="bouton jaune">Voir les inspirations</span></div><div class="inspi-icones" aria-hidden="true">🪟🌱🚪🪵</div></a>''', 'inspi')

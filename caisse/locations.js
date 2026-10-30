@@ -13,6 +13,13 @@ async function siteApi(a,corps,get={},brut){
  const r=await fetch(u,{method:"POST",headers:{"X-Cle-Caisse":REG.siteCle,"Content-Type":"application/json"},body:brut??JSON.stringify(corps||{})});
  const j=await r.json().catch(()=>({erreur:"Réponse illisible du site ("+r.status+")"}));
  if(!r.ok||j.erreur)throw new Error(j.erreur||"Erreur "+r.status);return j}
+// Photo réduite à 1600 px avant l'envoi au site.
+async function envoyerPhoto(f){const i=await createImageBitmap(f),k=Math.min(1,1600/Math.max(i.width,i.height)),c=document.createElement("canvas");
+ c.width=Math.round(i.width*k);c.height=Math.round(i.height*k);c.getContext("2d").drawImage(i,0,0,c.width,c.height);
+ const b=await new Promise(ok=>c.toBlob(ok,"image/jpeg",.85)),fd=new FormData();fd.append("photo",b,"photo.jpg");
+ const u=new URL(REG.siteApi.replace(/\/?(index\.php)?$/,"/index.php"));u.searchParams.set("a","c_photo");
+ const r=await fetch(u,{method:"POST",headers:{"X-Cle-Caisse":REG.siteCle},body:fd}),j=await r.json().catch(()=>({erreur:"Réponse illisible"}));
+ if(!r.ok||j.erreur)throw new Error(j.erreur||"Erreur "+r.status);return j.url}
 async function chargerLoc(){if(!siteApiPret()||Loc.charge)return;Loc.charge=true;
  try{Loc.d=await siteApi("c_tout");Loc.err=""}catch(e){Loc.err=navigator.onLine?e.message:"Hors ligne : les locations ont besoin d'internet."}
  Loc.charge=false;if(screen==="locations")render()}
@@ -30,7 +37,8 @@ function ecranLocations(){
  if(!siteApiPret())return `<div class="titre"><h2>Locations</h2></div><div class="carte" style="max-width:640px">${formSite()}</div>`;
  if(!Loc.d){if(!Loc.err)chargerLoc();return `<div class="titre"><h2>Locations</h2></div><p class="muted">${Loc.err?esc(Loc.err)+` <button class="btn petit clair" id="locRe">Réessayer</button>`:"Chargement des locations…"}</p>`}
  const R=Loc.d.reservations,dem=R.filter(r=>r.statut==="demandee"),att=Loc.d.membres.filter(m=>m.statut==="en_attente");
- const V={demandes:[`Demandes${dem.length?` (${dem.length})`:""}`,vueDemandes],planning:["Planning",vuePlanning],outils:[`Outils (${Loc.d.outils.length})`,vueOutils],membres:[`Membres${att.length?` (${att.length} à valider)`:""}`,vueMembres]};
+ const dep=(Loc.d.depots||[]).filter(d=>d.statut==="nouveau");
+ const V={demandes:[`Demandes${dem.length?` (${dem.length})`:""}`,vueDemandes],planning:["Planning",vuePlanning],depots:[`Dépôts proposés${dep.length?` (${dep.length})`:""}`,vueDepots],outils:[`Outils (${Loc.d.outils.length})`,vueOutils],membres:[`Membres${att.length?` (${att.length} à valider)`:""}`,vueMembres]};
  return `<div class="titre"><h2>Locations</h2><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn petit clair" id="locRe">Actualiser</button><button class="btn petit" id="locNouv">+ Réservation au comptoir</button></div></div>
  ${Loc.err?`<p class="muted" style="color:var(--rouge)">${esc(Loc.err)}</p>`:""}
  <div class="onglets-loc">${Object.entries(V).map(([k,[t]])=>`<button data-lv="${k}" class="${Loc.vue===k?"sel":""}">${t}</button>`).join("")}</div>${V[Loc.vue][1]()}`}
@@ -51,6 +59,13 @@ function vuePlanning(){const R=Loc.d.reservations,auj=jour();
  return `<h3>Dehors en ce moment (${dehors.length})</h3>${dehors.map(r=>ligneRes(r,[["rendue","Retour"],["encaisser","Encaisser","jaune"]])).join("")||`<p class="muted">Rien n'est sorti.</p>`}
  <h3>À sortir (${asortir.length})</h3>${asortir.map(r=>ligneRes(r,[["en_cours",r.debut.slice(0,10)<=auj?"Sortie":"Sortie (en avance)"],["encaisser","Encaisser","jaune"],["annulee","Annuler","rouge"]])).join("")||`<p class="muted">Aucune réservation confirmée à venir.</p>`}
  <details><summary class="muted">Terminées récemment</summary>${fin.map(r=>ligneRes(r,[])).join("")}</details>`}
+const DEP_ST={nouveau:["Nouveau","jaune"],accepte:["Accepté, à venir","ok"],refuse:["Refusé","bad"],recu:["Reçu",""]};
+function vueDepots(){const L=(Loc.d.depots||[]);
+ if(!L.length)return `<p class="muted">Aucune proposition. Les dons proposés depuis la page « Donner des matériaux » du site arrivent ici (et par e-mail).</p>`;
+ return L.map(d=>`<div class="carte res-loc"><div><div><b>${esc(d.nom)}</b> <span class="pill ${DEP_ST[d.statut][1]}">${DEP_ST[d.statut][0]}</span>${+d.enlevement?` <span class="pill violet">Enlèvement demandé</span>`:""}</div>
+ <div style="white-space:pre-wrap">${esc(d.quoi)}</div><div class="muted">${d.lieu?esc(d.lieu)+" · ":""}${d.tel?`<a href="tel:${esc(d.tel)}">${esc(d.tel)}</a> · `:""}${d.email?`<a href="mailto:${esc(d.email)}">${esc(d.email)}</a> · `:""}reçu le ${dateBe(d.cree.slice(0,10))}</div>
+ ${d.photos.length?`<div class="dep-photos">${d.photos.map(p=>`<a href="${esc(p)}" target="_blank"><img src="${esc(p)}" alt=""></a>`).join("")}</div>`:""}${d.note?`<div class="muted">Note : ${esc(d.note)}</div>`:""}</div>
+ <div class="res-btns">${d.statut==="nouveau"?`<button class="btn petit" data-dep="${d.id}" data-v="accepte">Accepter</button><button class="btn petit rouge" data-dep="${d.id}" data-v="refuse">Refuser</button>`:""}${d.statut==="accepte"?`<button class="btn petit" data-dep="${d.id}" data-v="recu">Reçu</button>`:""}</div></div>`).join("")}
 function vueOutils(){const mots=sans(Loc.q).split(/\s+/).filter(Boolean);
  const L=Loc.d.outils.filter(o=>mots.every(w=>sans([o.ref,o.nom,o.cat].join(" ")).includes(w)));
  const dehors={};Loc.d.reservations.filter(r=>r.statut==="en_cours").forEach(r=>dehors[r.ref]=r);
@@ -86,9 +101,12 @@ function formOutil(o){o=o||{type:"outil",en_ligne:1,qte:1,photos:[]};const n=!o.
  ${F("oEtat","État",o.etat,"Neuf, Bon état, Usagé…")}
  <label class="f">Description<textarea class="champ" id="oDescr" rows="4">${esc(o.descr||"")}</textarea></label>
  <label class="f">Photos (une adresse par ligne)<textarea class="champ" id="oPhotos" rows="2">${esc((o.photos||[]).join("\n"))}</textarea></label>
+ <label class="f">Ajouter une photo<input type="file" class="champ" id="oFichier" accept="image/*"></label>
  <label style="display:flex;gap:8px;align-items:center;font-weight:600"><input type="checkbox" id="oLigne" ${o.en_ligne?"checked":""}> Visible sur le site</label></div>
  <div style="display:flex;gap:8px;margin-top:12px"><button class="btn" id="oOk">Enregistrer</button><button class="btn clair" data-ferme>Fermer</button></div>`);
  if(!n)$("#oRef").readOnly=true;
+ $("#oFichier").onchange=async e=>{const f=e.target.files[0];if(!f)return;toast("Envoi de la photo…");
+  try{const url=await envoyerPhoto(f);const t=$("#oPhotos");t.value=(t.value.trim()?t.value.trim()+"\n":"")+url;toast("Photo ajoutée : pensez à enregistrer")}catch(x){toast(x.message,true)}e.target.value=""};
  $("#oOk").onclick=async()=>{const v=id=>$("#"+id).value.trim();
   try{await siteApi("c_outil",{ref:v("oRef"),type:v("oType"),nom:v("oNom"),cat:v("oCat"),tarif:v("oTarif"),prix_periode:v("oPer"),prix_jour:v("oJour"),prix_we:v("oDemi"),
    caution:v("oCaution"),qte:v("oQte"),etat:v("oEtat"),descr:$("#oDescr").value,photos:v("oPhotos").split(/\n+/).map(s=>s.trim()).filter(Boolean),en_ligne:$("#oLigne").checked?1:0});
@@ -127,5 +145,7 @@ function brancherLocations(){brancherSite();
  const ao=$("#locAjOutil");if(ao)ao.onclick=()=>formOutil();
  const im=$("#locImport");if(im)im.onclick=async()=>{try{const o=await (await fetch("../comptoir/outils.json",{cache:"no-cache"})).json();const j=await siteApi("c_outils",{outils:o});toast(j.ajoutes+" outils repris");Loc.d=null;render()}catch(e){toast(e.message,true)}};
  const am=$("#locAjMembre");if(am)am.onclick=formMembre;
+ $$("[data-dep]").forEach(b=>b.onclick=async()=>{let note="";if(b.dataset.v==="refuse"){note=prompt("Motif (pour mémoire, facultatif) :","");if(note===null)return}
+  try{await siteApi("c_depot",{id:+b.dataset.dep,statut:b.dataset.v,note});Loc.d=null;render()}catch(e){toast(e.message,true)}});
  $$("[data-adh]").forEach(b=>b.onclick=async()=>{const m=membreDe(b.dataset.adh);try{await siteApi("c_membre",{id:m.id,statut:"actif",jusqua:unAn(m.statut==="actif"?m.jusqua:null)});toast("Adhésion enregistrée jusqu'au "+dateBe(unAn(m.statut==="actif"?m.jusqua:null)));Loc.d=null;render()}catch(e){toast(e.message,true)}});
  $$("[data-msus]").forEach(b=>b.onclick=async()=>{try{await siteApi("c_membre",{id:+b.dataset.msus,statut:b.dataset.v});Loc.d=null;render()}catch(e){toast(e.message,true)}})}

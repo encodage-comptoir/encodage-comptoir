@@ -1,5 +1,5 @@
-/* Charte de La Pile : bleu canard, jaune, violet, police Poppins, bandes en biais. */
-:root{--bleu:#449ca8;--bleu-f:#2f7c87;--jaune:#fec300;--violet:#7b2382;--encre:#1f2a2c;--gris:#5f6b6d;--fond:#ffffff;--clair:#f4f7f7;--ligne:#dde5e6}
+/* Charte du Comptoir des Matériaux : vert turquoise et jaune (logo), police Poppins, bandes en biais. */
+:root{--bleu:#009fac;--bleu-f:#007a84;--jaune:#f6c213;--violet:#00646c;--encre:#1f2a2c;--gris:#5f6b6d;--fond:#ffffff;--clair:#f4f7f7;--ligne:#dde5e6}
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;font:16px/1.55 Poppins,system-ui,sans-serif;color:var(--encre);background:var(--fond)}
@@ -11,7 +11,7 @@ h2{font-size:clamp(1.3rem,3.5vw,1.8rem);font-weight:700}
 .maquette{background:var(--violet);color:#fff;text-align:center;font-size:13px;padding:6px 16px}
 .haut{background:var(--bleu);color:#fff}
 .haut-in{max-width:1180px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;justify-content:space-between;gap:16px}
-.logo img{height:56px;width:auto;background:#fff;padding:6px 10px;border-radius:0 0 10px 10px}
+.logo img{height:64px;width:auto}
 nav{display:flex;gap:6px 18px;flex-wrap:wrap;justify-content:flex-end}
 nav a{color:#fff;text-decoration:none;font-weight:600;font-size:15px}
 nav a:hover{color:var(--jaune)}
@@ -89,14 +89,14 @@ nav a:hover{color:var(--jaune)}
 .pied{background:var(--violet);color:#fff;margin-top:40px}
 .pied a{color:#fff}
 .pied-in{max-width:1180px;margin:0 auto;padding:32px 16px;display:grid;gap:20px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));align-items:start;font-size:14px}
-.pied-logo{height:70px;width:auto}
+.pied-logo{height:80px;width:auto}
 /* panier « ma liste » */
 .lien-panier{background:var(--jaune);color:var(--encre)!important;padding:2px 12px;border-radius:20px}
 .nb-panier{display:inline-block;min-width:20px;text-align:center;background:var(--violet);color:#fff;border-radius:10px;font-size:12px;padding:0 6px;margin-left:2px}
 .actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:14px 0}
 .bouton.clair{background:#fff;color:var(--bleu-f);border:2px solid var(--bleu)}
 .bouton.ok{background:var(--jaune);color:var(--encre)}
-.bouton.parti{background:var(--violet,#7b2382);color:#fff;cursor:default}
+.bouton.parti{background:var(--violet);color:#fff;cursor:default}
 .carte-w{display:flex;flex-direction:column;gap:6px}
 .carte-w .carte{flex:1}
 .ajout-mini{font:inherit;font-size:14px;font-weight:600;border:2px solid var(--bleu);background:#fff;color:var(--bleu-f);border-radius:20px;padding:6px 10px;cursor:pointer}
@@ -209,7 +209,7 @@ nav a:hover{color:var(--jaune)}
 .estim{font-weight:700;color:var(--bleu-f);margin:0}
 .retour{margin:0;font-weight:600;color:#3f7d3a}.retour.bad{color:#b3261e}
 .note{background:#fff8dc;border-radius:8px;padding:8px 12px;font-size:14px;margin:0}
-.note-demo{background:#f3e8f4;color:var(--violet);border-radius:8px;padding:8px 12px;font-size:13px}
+.note-demo{background:#e0f4f5;color:var(--violet);border-radius:8px;padding:8px 12px;font-size:13px}
 .encart-compte{background:var(--clair);border-radius:16px;padding:18px;margin:16px 0}
 .periodes{display:grid;gap:6px}
 .periode{display:flex!important;flex-direction:row!important;align-items:center;gap:10px!important;background:#fff;border:2px solid var(--ligne);border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:500!important}
@@ -274,3 +274,31 @@ button.lien{background:none;border:0;padding:0;font:inherit;font-size:14px;color
 .billet .txt{padding:12px 16px 16px}.billet h3{font-size:1.1rem}.billet p{margin:4px 0;font-size:14px}
 .billet-plein{max-width:760px}
 .billet-plein .galerie{margin:16px 0}
+/* logo du Comptoir (blanc et jaune sur turquoise) */
+.haut-in{padding:8px 16px}
+.pied{background:var(--bleu-f)}
+.petit-pied{font-size:12px;opacity:.85}
+/* accueil : services */
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.services{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.service{display:flex;flex-direction:column;border-radius:18px;overflow:hidden;text-decoration:none;color:var(--encre);background:#fff;border:2px solid var(--ligne);transition:border-color .15s,transform .15s}
+.service:hover{border-color:var(--bleu);transform:translateY(-2px)}
+.service .img{position:relative;aspect-ratio:16/10;background:linear-gradient(135deg,var(--bleu),var(--bleu-f));display:grid;place-items:center}
+.service .img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.service .ic{font-size:56px}
+.service .txt{padding:14px 18px 18px;border-top:5px solid var(--jaune)}
+.service h3{font-size:1.15rem;font-weight:700;margin:0 0 4px}
+.service p{margin:0;font-size:14px;color:var(--gris)}
+/* catalogue : rayons */
+.rayons{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 16px}
+.rayons button{font:inherit;font-weight:600;font-size:14px;border:0;background:var(--jaune);color:var(--encre);border-radius:30px;padding:8px 16px;cursor:pointer}
+.rayons button:hover{background:#ffd74a}
+.rayons button.sel{background:var(--bleu);color:#fff}
+#filtres #cat{display:none}
+.lien-depot{margin:-8px 0 12px}
+/* dépôt */
+.acceptes li::marker{content:"✓  ";color:#3f7d3a}
+.refuses li::marker{content:"✗  ";color:#b3261e}
+.apercu{display:flex;gap:6px;flex-wrap:wrap}.apercu img{width:72px;height:72px;object-fit:cover;border-radius:8px}
+.form-res label span{display:flex;gap:8px;align-items:center;font-weight:600}.form-res label span input{width:auto}
+.cache{position:absolute;left:-9999px}
