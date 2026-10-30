@@ -1,6 +1,6 @@
 "use strict";
 // Caisse & stock du Comptoir des Matériaux. Tout est gardé sur l'appareil (IndexedDB) ; rien n'est écrit dans Impulsion.
-const VERSION="3.3 (essai)";
+const VERSION="3.4 (essai)";
 const CATS=[["SA","Sanitaire"],["PA","Parois de douche"],["CH","Châssis"],["PO","Portes"],["CAR","Carrelage"],["GRO","Gros œuvre"],["RA","Chauffage"],
  ["ELEC","Électricité"],["LUM","Luminaires"],["BOI","Bois"],["PAR","Parquet & bardage"],["LAM","Lambris"],["TOI","Toiture"],["ISO","Isolant"],
  ["Q","Quincaillerie"],["OUT","Outillage"],["ELECTRO","Électroménager"],["DIV","Divers"]];
@@ -433,7 +433,7 @@ async function integrerEnvois(){if(!syncPret())return 0;let n=0;
    if(neuf)for(const p of x.photos||[]){try{ph.push(await envoyerPhoto(await (await fetch(p)).blob(),"stock"))}catch(e){if(!navigator.onLine)throw e}}
    fiches.push({...x,photos:ph})}
   const avant=CAT.length;n+=ajouterFiches(fiches,"app");
-  for(const a of CAT.slice(avant)){a.aVerif=REG["envoiPlace:"+f.name]?"":f.name;const x={...a};delete x.k;x.modifie=Date.now();ARTS[a.r]=x;await put("articles",x)}
+  for(const a of CAT.slice(avant)){a.aVerif=REG["envoiPlace:"+f.name]?"":f.name;a.envoi=f.name;const x={...a};delete x.k;x.modifie=Date.now();ARTS[a.r]=x;await put("articles",x)}
   // fiches « annonce existante » : emplacement et prix repris sur l'article
   for(const x of fiches.filter(x=>x.type==="maj")){const a=parRef(norm(x.annonce));if(a){const y={...(ARTS[a.r]||{r:a.r}),modifie:Date.now()};if(a.e)y.e=a.e;if(a.p)y.p=a.p;ARTS[a.r]=y;await put("articles",y)}}
   await putSet("envoiStock:"+f.name,new Date().toISOString())}
@@ -447,22 +447,40 @@ function envoisHtml(){if(!syncPret())return "";if(ENVOIS===null){chargerEnvois()
  const a=ENVOIS.filter(f=>!REG["envoiPlace:"+f.name]),faits=ENVOIS.length-a.length;
  const ligne=f=>{const i=infoEnvoi(f.name);return `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--ligne,#ddd)">
   <span style="flex:1;min-width:200px"><b>${i.n} fiche${i.n>1?"s":""}</b>${i.par?" de "+esc(i.par):""} <span class="muted">· ${esc(i.date)}</span></span>
-  <button class="btn petit" data-envoi="${esc(f.path)}">Ouvrir les annonces et photos</button>
+  <button class="btn petit" data-envoi="${esc(f.path)}">Voir les fiches et photos</button>
   ${REG["envoiPlace:"+f.name]?"":`<button class="btn clair petit" data-place="${esc(f.name)}">Vérifié</button>`}</div>`};
  return `<div class="carte" style="margin-bottom:14px"><h3>Envois de l'app d'encodage (${a.length} à vérifier)</h3>
   <p class="muted">Les nouvelles fiches entrent toutes seules dans le stock (filtre « Nouvelles fiches »). Elles ne passent sur le site qu'après « Vérifié » et si elles ont un prix. Ouvrez l'envoi pour revoir les annonces et les photos.</p>
   ${a.map(ligne).join("")||'<p class="muted">Rien en attente.</p>'}
   ${faits?`<details class="muted"><summary>Déjà vérifiés (${faits})</summary>${ENVOIS.filter(f=>REG["envoiPlace:"+f.name]).map(ligne).join("")}</details>`:""}</div>`}
+// Fiches d'un envoi, revues dans la caisse avant de passer sur le site.
+function verifEnvoi(nom){const L=CAT.filter(a=>a.envoi===nom),i=infoEnvoi(nom),fait=REG["envoiPlace:"+nom];
+ const ph=a=>(a.fs&&a.fs.length?a.fs:[a.f]).filter(Boolean);
+ const dims=a=>[a.L,a.l,a.h].filter(x=>x!=null&&x!=="").join(" × ");
+ modal(`<h3 style="margin-top:0">${L.length} fiche${L.length>1?"s":""}${i.par?" de "+esc(i.par):""} <span class="muted" style="font-weight:400">· ${esc(i.date)}</span></h3>
+  ${L.map(a=>`<div style="border-top:1px solid var(--ligne,#ddd);padding:12px 0">
+   <div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:8px">${ph(a).map(u=>`<a href="${esc(u)}" target="_blank"><img src="${esc(u)}" alt="" style="height:110px;border-radius:8px;display:block"></a>`).join("")||'<span class="muted">Pas de photo</span>'}</div>
+   <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap"><div style="flex:1;min-width:220px">
+    <b>${esc(a.n||"")}</b> <span class="muted">${esc(a.r)} · ${esc(catLabel(a.c)||a.c||"")}</span><br>
+    ${a.p?eur(a.p)+" / "+esc(a.u||"pièce"):'<b style="color:#b00020">Sans prix : n\'ira pas sur le site</b>'} · ${(q=>esc(String(q).replace(".",","))+" "+esc((a.u||"pièce")+((a.u||"pièce")==="pièce"&&q>1?"s":"")))(reste(a)??a.s??0)}
+    ${dims(a)?" · "+esc(dims(a))+" cm":""}${a.et?" · "+esc(a.et):""}${a.m?" · "+esc(a.m):""}
+    ${a.d?`<div class="muted" style="margin-top:4px;white-space:pre-line">${esc(a.d)}</div>`:""}</div>
+    <button class="btn clair petit" data-modif="${esc(a.r)}">Modifier</button></div></div>`).join("")}
+  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px"><button class="btn clair" data-ferme>Fermer</button>
+   ${fait?'<span class="muted" style="align-self:center">Déjà vérifié</span>':`<button class="btn" data-verifie>Vérifié : mettre en ligne</button>`}</div>`);
+ $$("#modal [data-modif]").forEach(b=>b.onclick=()=>{fermerModal();ouvrirPanneau(b.dataset.modif)});
+ const v=$("#modal [data-verifie]");if(v)v.onclick=()=>{fermerModal();marquerVerifie(nom)}}
+async function marquerVerifie(nom){await putSet("envoiPlace:"+nom,new Date().toISOString());
+ // vérifié : les fiches de cet envoi peuvent passer sur le site
+ for(const a of CAT.filter(a=>a.aVerif===nom)){a.aVerif="";const x={...(ARTS[a.r]||{r:a.r}),aVerif:"",modifie:Date.now()};ARTS[a.r]=x;await put("articles",x)}
+ if(typeof planifierSync==="function")planifierSync(2e3);render()}
 function brancherEnvois(){
- $$("[data-envoi]").forEach(b=>b.onclick=async()=>{const w=window.open("","_blank");b.disabled=true;const t=b.textContent;b.textContent="Ouverture…";
+ $$("[data-envoi]").forEach(b=>b.onclick=async()=>{const nom=b.dataset.envoi.split("/").pop();if(CAT.some(a=>a.envoi===nom))return verifEnvoi(nom);const w=window.open("","_blank");b.disabled=true;const t=b.textContent;b.textContent="Ouverture…";
   try{const o=await dechiffrer(await ficLire(b.dataset.envoi)),u=URL.createObjectURL(new Blob([o.html],{type:"text/html"}));
    if(w)w.location.href=u;else{const x=document.createElement("a");x.href=u;x.download=o.fichier||"comptoir.html";x.click()}}
   catch(e){if(w)w.close();toast(e.status?"Le site répond "+e.status:"Impossible d'ouvrir : ancien envoi chiffré, entrez l'ancienne phrase secrète (Réglages)",true)}
   b.disabled=false;b.textContent=t});
- $$("[data-place]").forEach(b=>b.onclick=async()=>{const nom=b.dataset.place;await putSet("envoiPlace:"+nom,new Date().toISOString());
-  // vérifié : les fiches de cet envoi peuvent passer sur le site
-  for(const a of CAT.filter(a=>a.aVerif===nom)){a.aVerif="";const x={...(ARTS[a.r]||{r:a.r}),aVerif:"",modifie:Date.now()};ARTS[a.r]=x;await put("articles",x)}
-  if(typeof planifierSync==="function")planifierSync();render()})}
+ $$("[data-place]").forEach(b=>b.onclick=()=>marquerVerifie(b.dataset.place))}
 
 function ecranStock(){const L=stockListe(),T=stockTotaux(),PAR=100,pages=Math.ceil(L.length/PAR);if(stPage>=pages)stPage=0;
  const filtres={"":"Tous les statuts",ok:"En stock",vendu:"Vendus",rupture:"Plus en stock",hors:"Hors ligne",nouveau:"Nouvelles fiches",sansprix:"Sans prix",sanspoids:"Sans poids",sansempl:"Sans emplacement"};
