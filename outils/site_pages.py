@@ -54,13 +54,15 @@ def page(nom, titre, desc, corps, script='', compte=True):
 
 # ——— Outilthèque : catalogue ———
 page('outils.html', 'Outilthèque – Comptoir des Matériaux', "Louez plutôt qu'acheter : perceuses, ponceuses, scies, échelles… à petit prix, pour les membres de La Pile à Malmedy.", '''
-<main class="contenu"><h1>Outilthèque</h1>
+<main class="contenu"><div class="tete-outils"><div><h1>Outilthèque</h1>
 <p class="intro">Une perceuse sert en moyenne quelques minutes dans sa vie. Plutôt que de l'acheter, louez-la : c'est moins cher, ça prend moins de place, et chaque outil partagé est un outil de moins à fabriquer.</p>
-<div class="etapes"><div><b>1</b>Choisissez un outil et une période : du mercredi au samedi, ou du samedi au mercredi</div><div><b>2</b>Envoyez la demande depuis votre compte membre</div><div><b>3</b>On vous confirme par e-mail</div><div><b>4</b>Retrait et retour au Comptoir, paiement sur place</div></div>
+<div class="etapes"><div><b>1</b>Choisissez un outil et une période : du mercredi au samedi, ou du samedi au mercredi</div><div><b>2</b>Envoyez la demande depuis votre compte membre</div><div><b>3</b>On vous confirme par e-mail</div><div><b>4</b>Retrait et retour au Comptoir, paiement sur place</div></div></div>
+<img class="photo-outils" src="img/outiltheque.jpg" alt="L'outilthèque du Comptoir, sous la mezzanine" width="800" height="1000"></div>
 <p class="note-tarif"><b>Tarif conscient.</b> Notre outilthèque se veut solidaire : vous choisissez votre tarif, solidaire, normal ou soutien, sans justificatif. Les outils sont classés en 2 catégories selon leur valeur ; le prix affiché est le tarif normal.</p>
 <form class="filtres" id="filtres" onsubmit="return false">
 <input id="q" type="search" placeholder="Rechercher un outil (ponceuse, échelle…)" aria-label="Rechercher">
-<select id="cat" aria-label="Famille"><option value="">Toutes les familles</option></select></form>
+<select id="cat" aria-label="Famille" hidden><option value="">Toutes les familles</option></select></form>
+<div class="rayons" id="familles" aria-label="Familles d'outils"></div>
 <p id="nb" class="nb"></p><div class="grille" id="liste"></div>
 <div class="encart-don"><h2>Vous avez un outil qui dort ?</h2><p>Donnez-le à l'outilthèque : vous recevez un bon de location équivalent à sa valeur estimée.</p><a class="bouton jaune" href="index.html#infos">Nous contacter</a></div>
 </main>''', r'''
@@ -70,7 +72,12 @@ function prixCourt(o){return o.prix_periode!=null?`${eurs(o.prix_periode)} / pé
 function maj(){const mots=sans($('q').value).split(/\s+/).filter(Boolean),c=$('cat').value;
  const r=O.filter(o=>(!c||o.cat===c)&&mots.every(w=>sans([o.nom,o.cat,o.descr,o.ref].join(' ')).includes(w)));
  $('nb').textContent=r.length+' outil'+(r.length>1?'s':'');
- $('liste').innerHTML=r.map(o=>`<a class="carte" href="outil.html?r=${encodeURIComponent(o.ref)}"><div class="img">${o.photos[0]?`<img loading="lazy" src="${escH(o.photos[0])}" alt="${escH(o.nom)}">`:'<div class="sans-photo">🔧</div>'}</div><div class="txt"><h3>${escH(o.nom)}</h3><p class="prix">${prixCourt(o)}</p><p class="petit">${escH(o.cat||'')}${o.tarif?` · catégorie ${o.tarif}`:''}</p></div></a>`).join('')}
+ // rangés par famille, une rubrique par famille
+ const fam=[...new Set(r.map(o=>o.cat||'Autres'))].sort((a,b)=>a.localeCompare(b,'fr'));
+ $('liste').className='';$('liste').innerHTML=fam.map(f=>`<h2 class="famille">${escH(f)}</h2><div class="grille">${r.filter(o=>(o.cat||'Autres')===f).map(carteOutil).join('')}</div>`).join('');
+ $('familles').innerHTML=[['','Tout'],...[...new Set(O.map(o=>o.cat).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fr')).map(x=>[x,x])].map(([v,l])=>`<button type="button" data-f="${escH(v)}" class="${v===c?'sel':''}">${escH(l)}</button>`).join('')}
+const carteOutil=o=>`<a class="carte" href="outil.html?r=${encodeURIComponent(o.ref)}"><div class="img">${o.photos[0]?`<img loading="lazy" src="${escH(o.photos[0])}" alt="${escH(o.nom)}">`:'<div class="sans-photo">🔧</div>'}</div><div class="txt"><h3>${escH(o.nom)}</h3><p class="prix">${prixCourt(o)}</p><p class="petit">${escH(o.cat||'')}${o.tarif?` · catégorie ${o.tarif}`:''}</p></div></a>`;
+$('familles').onclick=e=>{const b=e.target.closest('[data-f]');if(!b)return;$('cat').value=b.dataset.f;maj()};
 Compte.outils().then(l=>{O=l.filter(o=>(o.type||'outil')==='outil');
  [...new Set(O.map(o=>o.cat).filter(Boolean))].sort().forEach(c=>$('cat').add(new Option(c,c)));
  const P=new URLSearchParams(location.search);if(P.get('q'))$('q').value=P.get('q');maj()});
@@ -78,7 +85,12 @@ document.querySelectorAll('#filtres input,#filtres select').forEach(e=>e.addEven
 
 # ——— Fiche d'un outil, de la camionnette ou de l'atelier (même modèle que les matériaux) ———
 FICHE_JS = r'''
+// Tarifs de la camionnette et de l'atelier (Jérôme, 30/10/2026). Camionnette : pas le jeudi ni le vendredi.
+const TARIFS={camionnette:{court:'2,50 €/heure + 0,60 €/km',lignes:[['Location','2,50 € / heure'],['Kilomètres','0,60 € / km, carburant compris'],['Adhésion','30 € / an']],note:'Réservée aux membres : compte en ligne avec pièce d\'identité et permis de conduire. Pas de location le jeudi ni le vendredi.',ferme:[4,5]},
+ atelier:{court:'25 € les 3 h · 50 € la journée',lignes:[['3 heures','25 €'],['Journée','50 €']],note:'Demi-tarif pour les associations. Consommables non compris.',ferme:[]}};
 const $=id=>document.getElementById(id);const P=new URLSearchParams(location.search);let O=null,choix=null,PRIS=[];
+const FERME=()=>(TARIFS[O.type]||{}).ferme||[];
+function jourFerme(b){const f=FERME();if(!f.length)return false;const d=new Date(b.debut.slice(0,10)+'T00:00'),e=new Date(b.fin.replace(' ','T'));for(;d<e;d.setDate(d.getDate()+1))if(f.includes(d.getDay()))return true;return false}
 function heures(){let h='';for(let i=7;i<=20;i++)h+=`<option>${String(i).padStart(2,'0')}:00</option>`;return h}
 const occupe=(d,f)=>PRIS.filter(p=>['confirmee','en_cours'].includes(p.statut)&&p.debut<f&&p.fin>d).length>=(O.qte||1);
 const demande=(d,f)=>PRIS.some(p=>p.statut==='demandee'&&p.debut<f&&p.fin>d);
@@ -101,19 +113,24 @@ function formRess(m){if(!m)return '<h2>Réserver</h2>'+blocConnexion();
 function bornes(){if(O.type==='outil'){const r=document.querySelector('[name=per]:checked');if(!r)return null;const p=periodes()[+r.value];return {debut:p.debut,fin:p.fin}}
  const d1=$('d1').value,d2=$('d2').value||d1;return d1?{debut:d1+' '+$('h1').value,fin:d2+' '+$('h2').value}:null}
 function estimer(){const b=bornes();if(!b||!$('estim'))return;const h=(Date.parse(b.fin.replace(' ','T'))-Date.parse(b.debut.replace(' ','T')))/36e5;
+ if(h>0&&jourFerme(b)){$('estim').textContent='La camionnette n\'est pas disponible le jeudi ni le vendredi.';return}
+ if(h>0&&O.type==='camionnette'){$('estim').textContent=`${h} h : ${eurs(h*2.5)} + 0,60 €/km, à régler au Comptoir`;return}
+ if(h>0&&O.type==='atelier'){const j=Math.ceil(h/24),p=h<=3?25:h<=24?50:j*50;$('estim').textContent=`${h<=3?'3 heures':j+' jour'+(j>1?'s':'')} : ${eurs(p)} (demi-tarif pour les associations), consommables en plus, à régler au Comptoir`;return}
  const t=h<=0?'':h<=5&&O.prix_we!=null?`Demi-journée : ${eurs(O.prix_we)}`:O.prix_jour!=null?`${Math.ceil(h/24)} jour${h>24?'s':''} : ≈ ${eurs(Math.ceil(h/24)*O.prix_jour)}`:'';
  $('estim').textContent=t?t+(O.caution?` + caution ${eurs(O.caution)}`:'')+', à régler au Comptoir':''}
 async function dessiner(){const [m,dispo]=await Promise.all([Compte.moi(),Compte.dispo(O.ref).catch(()=>({pris:[]}))]);PRIS=dispo.pris||[];
- $('cal').innerHTML=O.type==='outil'?'':calendrierHtml(PRIS,choix);$('form').innerHTML=bandeauDemo()+(O.type==='outil'?formOutil(m):formRess(m));
+ $('cal').innerHTML=O.type==='outil'?'':calendrierHtml(PRIS,choix,FERME());$('form').innerHTML=bandeauDemo()+(O.type==='outil'?formOutil(m):formRess(m));
  $('cal').querySelectorAll('[data-jour]').forEach(b=>b.onclick=()=>{choix=b.dataset.jour;if($('d1')){if(!$('d1').value||$('d2').value){$('d1').value=choix;$('d2').value=''}else if(choix>=$('d1').value)$('d2').value=choix;else $('d1').value=choix;estimer()}
   $('cal').querySelectorAll('.sel').forEach(x=>x.classList.remove('sel'));b.classList.add('sel')});
  const f=$('dem');if(!f||!m)return;['d1','d2','h1','h2'].forEach(i=>$(i)&&$(i).addEventListener('change',estimer));
  if($('h1')){$('h1').value='09:00';$('h2').value='17:00'}
  f.onsubmit=async e=>{e.preventDefault();const b=bornes();$('retour').className='retour';
   if(!b){$('retour').className='retour bad';$('retour').textContent=O.type==='outil'?'Choisissez une période.':'Choisissez une date.';return}
+  if(jourFerme(b)){$('retour').className='retour bad';$('retour').textContent='La camionnette n\'est pas disponible le jeudi ni le vendredi : choisissez d\'autres jours.';return}
   try{await Compte.api('reserver',{ref:O.ref,nom:O.nom,...b,message:$('msg').value});$('retour').innerHTML='✓ Demande envoyée. Nous vous confirmons par e-mail. <a href="compte.html">Voir mes réservations</a>';f.querySelector('button').disabled=true;setTimeout(dessiner,2500)}
   catch(x){$('retour').className='retour bad';$('retour').textContent=x.message}}}
 function tarifsHtml(){if(O.type==='outil')return O.prix_periode!=null?`<p class="prix-gros">${eurs(O.prix_periode)} <small>la période</small></p><p class="petit">Tarif normal${O.tarif?` (catégorie ${O.tarif})`:''}. Tarif conscient : solidaire, normal ou soutien, vous choisissez sans justificatif.</p>`:'<p class="prix-gros">Prix sur demande</p>';
+ const T=TARIFS[O.type];if(T)return `<table class="tarifs">${T.lignes.map(x=>`<tr><th>${x[0]}</th><td>${x[1]}</td></tr>`).join('')}</table><p class="petit">${T.note}</p>`;
  const l=[['Demi-journée',O.prix_we],['Journée',O.prix_jour],['Caution',O.caution]].filter(x=>x[1]!=null);
  return l.length?`<table class="tarifs">${l.map(x=>`<tr><th>${x[0]}</th><td>${eurs(x[1])}</td></tr>`).join('')}</table>`:'<p class="prix-gros">Tarifs à venir</p>'}
 function afficher(){document.title=O.nom+' – Comptoir des Matériaux';const ic=O.type==='camionnette'?'🚐':O.type==='atelier'?'🪚':'🔧';
@@ -134,21 +151,24 @@ page('outil.html', 'Outil – Comptoir des Matériaux', "Fiche d'un outil de l'o
      '<main class="article" id="fiche"><p>Chargement…</p></main>', FICHE_JS)
 
 # ——— Camionnette et atelier partagé ———
-page('reserver.html', 'Camionnette et atelier partagé – Comptoir des Matériaux', "Réservez en ligne la camionnette partagée (clé en boîte à clé, 7j/7) ou l'atelier partagé de La Pile, à Malmedy.", '''
+page('reserver.html', 'Camionnette et atelier partagé – Comptoir des Matériaux', "Réservez en ligne la camionnette partagée (2,50 €/h + 0,60 €/km) ou l'atelier partagé (25 € les 3 h), à Malmedy.", '''
 <main class="contenu"><h1>Camionnette &amp; atelier partagé</h1>
 <p class="intro">Deux outils en commun pour les membres de La Pile : une camionnette pour transporter vos matériaux, et un atelier équipé pour les travailler.</p>
 <div class="deux-grand" id="ress"><p>Chargement…</p></div>
 <h2 style="margin-top:40px">Comment ça marche ?</h2>
 <div class="infos-prat">
-<div><h3>1. Devenir membre</h3><p>Créez votre compte en ligne. L'adhésion à La Pile se règle au Comptoir : l'équipe active alors votre compte.</p></div>
+<div><h3>1. Devenir membre</h3><p>Créez votre compte en ligne. Pour la camionnette : pièce d'identité et permis de conduire, adhésion 30 €/an. L'équipe active ensuite votre compte.</p></div>
 <div><h3>2. Réserver</h3><p>Choisissez vos dates sur le calendrier et envoyez la demande. Vous recevez la confirmation par e-mail.</p></div>
-<div><h3>3. Camionnette : 7j/7</h3><p>La clé vous attend dans la boîte à clé à l'entrée du Comptoir, même quand il est fermé. Le code vous est envoyé avec la confirmation.</p></div>
-<div><h3>4. Au retour</h3><p>Plein fait, clé remise dans la boîte. Le paiement se fait au Comptoir (espèces, QR code ou virement).</p></div></div>
+<div><h3>3. Camionnette : sauf jeudi et vendredi</h3><p>Elle s'ouvre avec l'appli Wibee, même quand le Comptoir est fermé. Le jeudi et le vendredi, elle sert à La Pile et au Comptoir.</p></div>
+<div><h3>4. Au retour</h3><p>Notez les kilomètres : le carburant est compris dans le prix au km. Le paiement se fait au Comptoir (espèces, QR code ou virement).</p></div></div>
 </main>''', r'''
 const $=id=>document.getElementById(id);
+// Tarifs de la camionnette et de l'atelier (Jérôme, 30/10/2026). Camionnette : pas le jeudi ni le vendredi.
+const TARIFS={camionnette:{court:'2,50 €/heure + 0,60 €/km',lignes:[['Location','2,50 € / heure'],['Kilomètres','0,60 € / km, carburant compris'],['Adhésion','30 € / an']],note:'Réservée aux membres : compte en ligne avec pièce d\'identité et permis de conduire. Pas de location le jeudi ni le vendredi.',ferme:[4,5]},
+ atelier:{court:'25 € les 3 h · 50 € la journée',lignes:[['3 heures','25 €'],['Journée','50 €']],note:'Demi-tarif pour les associations. Consommables non compris.',ferme:[]}};
 Compte.outils().then(l=>{const R=l.filter(o=>o.type==='camionnette'||o.type==='atelier');
  $('ress').innerHTML=R.length?R.map(o=>`<a class="carte ress" href="outil.html?r=${encodeURIComponent(o.ref)}"><div class="img">${o.photos[0]?`<img src="${escH(o.photos[0])}" alt="">`:`<div class="sans-photo">${o.type==='camionnette'?'🚐':'🪚'}</div>`}</div>
- <div class="txt"><h2>${escH(o.nom)}</h2><p>${escH((o.descr||'').split('\n')[0])}</p><p class="prix">${o.prix_jour!=null?eurs(o.prix_jour)+' / jour':'Tarifs à venir'}${o.prix_we!=null?` · ${eurs(o.prix_we)} la demi-journée`:''}</p><span class="bouton">Voir les disponibilités</span></div></a>`).join(''):'<p>Bientôt disponible.</p>'});''')
+ <div class="txt"><h2>${escH(o.nom)}</h2><p>${escH((o.descr||'').split('\n')[0])}</p><p class="prix">${(TARIFS[o.type]||{}).court||(o.prix_jour!=null?eurs(o.prix_jour)+' / jour':'Tarifs à venir')}</p><span class="bouton">Voir les disponibilités</span></div></a>`).join(''):'<p>Bientôt disponible.</p>'});''')
 
 # ——— Compte membre ———
 page('compte.html', 'Mon compte – Comptoir des Matériaux', "Connexion, inscription et réservations des membres de La Pile.", '''
@@ -306,7 +326,7 @@ def inserer(nom, apres, bloc, marque):
 SERVICES = [
     ('catalogue.html', 'materiaux', 'Catalogue matériaux', 'Sanitaires, portes, châssis, carrelage, bois… de réemploi, à prix doux.', 'Explorer ›', '🏷️', f'{PILE}/sites/lapile/gallery_images/thumbs/6958f28b6442e.jpg'),
     ('outils.html', 'outillage', 'Location d’outillage', 'Perceuses, scies, échelles… louées à la période, au tarif conscient.', 'Réserver', '🔧', 'https://lapilebucket.s3.eu-west-3.amazonaws.com/production/item/scv-6a1942ef45853.webp'),
-    ('reserver.html', 'camionnette-atelier', 'Camionnette & atelier', 'La camionnette 7j/7 et l’atelier partagé, à réserver en ligne.', 'Réserver', '🚐', ''),
+    ('reserver.html', 'camionnette-atelier', 'Camionnette & atelier', 'La camionnette et l’atelier partagé, à réserver en ligne.', 'Réserver', '🚐', ''),
     ('inspiration.html', 'inspirer', 'S’inspirer', 'Des réalisations en réemploi, en photos.', 'Découvrir ›', '🌱', ''),
 ]
 def accueil():

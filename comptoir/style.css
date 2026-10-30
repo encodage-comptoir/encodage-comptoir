@@ -332,3 +332,11 @@ button.lien{background:none;border:0;padding:0;font:inherit;font-size:14px;color
 /* Bandeau dons : bouton en contour, plus discret que les boutons des services */
 .bandeau-don .bouton.jaune{background:transparent;color:var(--bleu-f);border:2px solid var(--bleu-f);box-shadow:none}
 .bandeau-don:hover .bouton.jaune{background:var(--bleu-f);color:#fff}
+/* Outilthèque : photo à côté de l'intro, outils rangés par famille */
+.tete-outils{display:grid;gap:24px;align-items:start}
+@media(min-width:860px){.tete-outils{grid-template-columns:1fr 300px}}
+.photo-outils{width:100%;height:auto;border-radius:18px;display:block;max-height:420px;object-fit:cover}
+@media(max-width:859px){.photo-outils{aspect-ratio:16/10;max-height:none}}
+h2.famille{font-size:1.25rem;margin:28px 0 12px;padding-bottom:6px;border-bottom:3px solid var(--jaune)}
+.cal-j.ferme,.cal-legende .ferme{background:#eceff0;color:#9aa6a8;cursor:not-allowed}
+.carte.ress .img{aspect-ratio:4/3;overflow:hidden}.carte.ress .img img{width:100%;height:100%;object-fit:cover}

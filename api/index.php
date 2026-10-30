@@ -190,6 +190,9 @@ switch ($a) {
     $d = date_ok(champ('debut', 40)); $f = date_ok(champ('fin', 40));
     if (!$d || !$f || $f <= $d) err('Dates invalides.');
     if ($d < date('Y-m-d H:i:s', strtotime('-1 hour'))) err('La date de début est passée.');
+    // La camionnette sert à La Pile et au Comptoir le jeudi et le vendredi.
+    if ($o['type'] === 'camionnette') for ($j = strtotime(substr($d, 0, 10)); $j < strtotime($f); $j += 86400)
+      if (in_array((int)date('N', $j), [4, 5])) err('La camionnette n\'est pas disponible le jeudi ni le vendredi.');
     if (pris($o['ref'], $d, $f) >= (int)$o['qte']) err('Déjà réservé sur cette période : choisissez d\'autres dates.', 409);
     q('INSERT INTO reservations (membre, ref, debut, fin, message, cree, maj) VALUES (?,?,?,?,?,?,?)',
       [$m['id'], $o['ref'], $d, $f, champ('message', 1000), maintenant(), maintenant()]);
