@@ -313,3 +313,16 @@ button.lien{background:none;border:0;padding:0;font:inherit;font-size:14px;color
 
 .plan-camion{margin-top:20px}.plan-camion h2{font-size:1.25rem}.plan-camion img{display:block;width:100%;height:auto;max-width:900px;background:#fff;border:2px solid var(--ligne);border-radius:18px;padding:8px;margin:12px 0 16px}
 .plan-camion .tarifs{max-width:520px}
+/* Accueil : boutons centrés sous les tuiles ; infos pratiques, horaires et contact bien visibles */
+.service .cta{align-self:center}.service .txt{text-align:center}
+.infos-top{display:grid;gap:16px;grid-template-columns:1fr}
+@media(min-width:760px){.infos-top{grid-template-columns:1fr 1fr}}
+.infos-top>div{display:flex;gap:16px;align-items:flex-start;background:var(--clair);border-radius:18px;padding:20px 22px;border-left:6px solid var(--jaune)}
+.infos-top .contact{border-left-color:var(--bleu)}
+.infos-top .ic{font-size:34px;line-height:1}
+.infos-top h3{margin:0 0 6px;font-size:1.05rem}
+.infos-top .gros{font-size:1.35rem;line-height:1.35;margin:0 0 6px}
+.infos-top .gros b{color:var(--bleu-f)}
+.infos-top .gros a{font-weight:700;color:var(--encre);text-decoration:none}
+.infos-top p{margin:0}
+.photo-lieu img{aspect-ratio:auto!important;height:auto}

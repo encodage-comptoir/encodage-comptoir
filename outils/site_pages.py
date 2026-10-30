@@ -6,7 +6,7 @@ import sys, os, re, glob, html
 
 out = sys.argv[1]
 PILE = 'https://www.la-pile.be'
-VER = 'p7'
+VER = 'p8'
 esc = lambda s: html.escape(str(s or ''), quote=True)
 # Coordonnées du Comptoir (pas celles de La Pile). INSTAGRAM : à remplir quand le compte du Comptoir est connu.
 TEL, TEL_LIEN = '+32 (0)455 10 09 21', '+32455100921'
@@ -306,7 +306,7 @@ def inserer(nom, apres, bloc, marque):
 SERVICES = [
     ('catalogue.html', 'materiaux', 'Catalogue matériaux', 'Sanitaires, portes, châssis, carrelage, bois… de réemploi, à prix doux.', 'Explorer ›', '🏷️', f'{PILE}/sites/lapile/gallery_images/thumbs/6958f28b6442e.jpg'),
     ('outils.html', 'outillage', 'Location d’outillage', 'Perceuses, scies, échelles… louées à la période, au tarif conscient.', 'Réserver', '🔧', 'https://lapilebucket.s3.eu-west-3.amazonaws.com/production/item/scv-6a1942ef45853.webp'),
-    ('reserver.html', 'camionnette', 'Camionnette & atelier', 'La camionnette 7j/7 et l’atelier partagé, à réserver en ligne.', 'Réserver', '🚐', ''),
+    ('reserver.html', 'camionnette-atelier', 'Camionnette & atelier', 'La camionnette 7j/7 et l’atelier partagé, à réserver en ligne.', 'Réserver', '🚐', ''),
     ('inspiration.html', 'inspirer', 'S’inspirer', 'Des réalisations en réemploi, en photos.', 'Découvrir ›', '🌱', ''),
 ]
 def accueil():
@@ -320,8 +320,16 @@ def accueil():
     b = t.index('<section class="contenu" id="infos">')
     t = t[:a] + '\n' + bloc + t[b:]
     t = t.replace('<p>Matériaux de construction de réemploi à Malmedy : sanitaires, portes, châssis, carrelage, bois… jusqu’à 90 % moins chers que le neuf.</p>', '<p>Matériaux de construction de réemploi, outils et camionnette à louer, atelier partagé : à Malmedy, on fait avec ce qui existe déjà.</p>')
-    t = t.replace('<div><h3>Quand ?</h3><p>Horaires à compléter par l’équipe.</p></div>', '<div><h3>Quand ?</h3><p>Magasin ouvert le mercredi et le samedi, de 9 h à 16 h. En dehors, sur rendez-vous.</p></div>')
-    t = t.replace('<div><h3>Donner ?</h3><p>Vous avez des matériaux en bon état ? Contactez-nous avant de les apporter.</p></div>', '<div><h3>Donner ?</h3><p>Vous avez des matériaux en bon état ? <a href="depot.html">Proposez-les ici</a> avant de les apporter.</p></div>')
+    # Infos pratiques : horaires et contact en premier, bien visibles (Comment ? et Donner ? retirés, le don a son bandeau).
+    infos = f"""<h2>Infos pratiques</h2><div class="infos-top">
+<div class="horaires"><span class="ic" aria-hidden="true">🕘</span><div><h3>Horaires du magasin</h3><p class="gros">Mercredi et samedi<br><b>9 h – 16 h</b></p><p class="petit">En dehors de ces heures, sur rendez-vous.</p></div></div>
+<div class="contact"><span class="ic" aria-hidden="true">📞</span><div><h3>Nous contacter</h3><p class="gros"><a href="tel:{TEL_LIEN}">{TEL}</a></p><p><a href="{WHATSAPP}">WhatsApp</a> · <a href="mailto:{MAIL}">{MAIL}</a></p></div></div></div>
+<h2 style="margin-top:32px">Où nous trouver</h2>"""
+    t = re.sub(r'(<section class="contenu" id="infos">)<h2>Où nous trouver</h2>', lambda m: m.group(1) + infos, t)
+    t = re.sub(r'<h2 style="margin-top:32px">Infos pratiques</h2><div class="infos-prat">.*?</div></div></section>', '</section>', t, flags=re.S)
+    # Accès : montage des photos du chemin (img/acces.jpg), s'il existe.
+    if os.path.exists(os.path.join(out, 'img', 'acces.jpg')):
+        t = re.sub(r'<div class="encart photo-lieu">.*?</div></div>', '<div class="encart photo-lieu"><a href="img/acces.jpg"><img src="img/acces.jpg" alt="Le chemin vers le Comptoir, en photos" loading="lazy"></a><p>ACCES_LEGENDE</p></div></div>', t, count=1, flags=re.S)
     open(f, 'w').write(t)
 accueil()
 
