@@ -6,7 +6,7 @@ import sys, os, re, glob, html
 
 out = sys.argv[1]
 PILE = 'https://www.la-pile.be'
-VER = 'p5'
+VER = 'p6'
 esc = lambda s: html.escape(str(s or ''), quote=True)
 # Coordonnées du Comptoir (pas celles de La Pile). INSTAGRAM : à remplir quand le compte du Comptoir est connu.
 TEL, TEL_LIEN = '+32 (0)455 10 09 21', '+32455100921'
@@ -118,11 +118,11 @@ function tarifsHtml(){if(O.type==='outil')return O.prix_periode!=null?`<p class=
  return l.length?`<table class="tarifs">${l.map(x=>`<tr><th>${x[0]}</th><td>${eurs(x[1])}</td></tr>`).join('')}</table>`:'<p class="prix-gros">Tarifs à venir</p>'}
 function afficher(){document.title=O.nom+' – Comptoir des Matériaux';const ic=O.type==='camionnette'?'🚐':O.type==='atelier'?'🪚':'🔧';
  $('fiche').innerHTML=`<p class="fil"><a href="${O.type==='outil'?'outils.html':'reserver.html'}">${O.type==='outil'?'Outilthèque':'Camionnette & atelier'}</a>${O.cat&&O.type==='outil'?' › '+escH(O.cat):''}</p>
- <div class="art-grille"><div class="galerie">${O.photos.length?O.photos.map(p=>`<img src="${escH(p)}" alt="${escH(O.nom)}">`).join(''):`<div class="sans-photo grand">${ic}<small>Photo à venir</small></div>`}</div>
+ <div class="art-grille"><div><div class="galerie">${O.photos.length?O.photos.map(p=>`<img src="${escH(p)}" alt="${escH(O.nom)}">`).join(''):`<div class="sans-photo grand">${ic}<small>Photo à venir</small></div>`}</div>${O.type==='camionnette'?PLAN_CAMION:''}</div>
  <div><h1>${escH(O.nom)}</h1>${tarifsHtml()}${O.caution&&O.type==='outil'?`<p>Caution : ${eurs(O.caution)}</p>`:''}
  ${O.etat?`<p><b>État :</b> ${escH(O.etat)}</p>`:''}${O.descr?`<div class="descr">${escH(O.descr).replace(/\n/g,'<br>')}</div>`:''}
  <p class="petit">Réf. ${escH(O.ref)}${O.qte>1?` · ${O.qte} exemplaires`:''}</p>
- ${O.type==='outil'?'':'<h2>Disponibilités</h2>'}<div id="cal"></div><div id="form"></div></div></div>${O.type==='camionnette'?PLAN_CAMION:''}`;dessiner()}
+ ${O.type==='outil'?'':'<h2>Disponibilités</h2>'}<div id="cal"></div><div id="form"></div></div></div>`;dessiner()}
 // Plan de chargement de la camionnette (Fiat Ducato L2H2, cotes du constructeur).
 const PLAN_CAMION=`<section class="plan-camion"><h2>Dimensions de chargement</h2>
  <img src="img/camionnette-plan.svg" alt="Plan de la camionnette avec les cotes de chargement" width="900" height="470">
