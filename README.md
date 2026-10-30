@@ -49,3 +49,20 @@ Adresse : https://encodage-comptoir.github.io/encodage-comptoir/caisse/
 ## Version en ligne (23/10/2026)
 L'app à la racine est la 6.6 : copie de `essai/index.html` dont les chemins `poids.js`, `vendor/`, `modeles/` et `annonces.json` pointent vers `essai/` (pas de doublon des 35 Mo du modèle). Elle garde les fiches déjà encodées (même base « comptoir » sur le téléphone). L'ancienne 5.2 reste disponible dans `v5/`.
 Pour remettre la dernière version d'essai en ligne : refaire la copie avec ces chemins, et changer le nom du cache dans `sw.js`.
+
+## Site comptoir-materiaux.be (PlanetHoster, 30/10/2026)
+Décision de Jérôme avec l'accord de La Pile : le site du Comptoir est hébergé chez PlanetHoster, hors du site de La Pile,
+à l'adresse www.comptoir-materiaux.be. En plus des matériaux et de « Faire avec » :
+- **Outilthèque** (`outils.html`, `outil.html?r=`) : les 45 outils repris de outils.la-pile.be (`comptoir/outils.json`,
+  via `outils/outilheque.mjs` puis `outils/outilheque_reprise.py`), location par période mercredi → samedi ou samedi →
+  mercredi, tarif conscient (catégories 1 et 2).
+- **Camionnette & atelier** (`reserver.html`) : calendrier et demande en ligne ; **Mon compte** (`compte.html`).
+- **Comprendre** (`comprendre.html`) : économie circulaire et réemploi ; **Inspirations** (`inspiration.html`, billets
+  dans `inspiration.json`), relié depuis « Faire avec ».
+- Comptes et réservations passent par `api/` (PHP, voir `api/LISEZMOI.md`). Sur la maquette GitHub Pages il n'y a
+  pas de serveur : les pages passent en « démo » (tout reste dans le navigateur).
+- Caisse 2.7 : onglet **Locations** (demandes à confirmer, planning sorties / retours, encaissement sur le ticket,
+  fiches outils, membres et adhésions) ; le stock est aussi publié sur le site PlanetHoster.
+
+Après `outils/site_comptoir.py`, relancer `python3 outils/site_pages.py comptoir/` : il refait ces pages, le menu
+de toutes les pages et les encarts ajoutés à l'accueil et à « Faire avec ».

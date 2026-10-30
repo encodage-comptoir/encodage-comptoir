@@ -18,9 +18,7 @@ p.on('response', async r => {
 await p.goto(URL, { waitUntil: 'networkidle', timeout: 60000 });
 await p.waitForTimeout(3000);
 for (let i = 0; i < 30; i++) { await p.mouse.wheel(0, 3000); await p.waitForTimeout(700); }
-fs.writeFileSync(OUT + '/page.html', await p.content());
 fs.writeFileSync(OUT + '/texte.txt', await p.innerText('body'));
-await p.screenshot({ path: OUT + '/page.png', fullPage: true });
 const liens = await p.$$eval('a', as => as.map(a => ({ t: a.textContent.trim(), h: a.href })));
 fs.writeFileSync(OUT + '/liens.json', JSON.stringify(liens, null, 1));
 // Ouvrir quelques fiches d'outils pour voir le détail (prix, caution, description).
@@ -33,6 +31,5 @@ for (const h of fiches) {
     detail.push({ h, texte: await p.innerText('body'), imgs: await p.$$eval('img', is => is.map(i => i.src)) });
   } catch (e) { detail.push({ h, erreur: String(e) }); }
 }
-fs.writeFileSync(OUT + '/fiches.json', JSON.stringify(detail, null, 1));
 fs.writeFileSync(OUT + '/requetes.json', JSON.stringify(reqs, null, 1));
 await b.close();

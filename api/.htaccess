@@ -1,0 +1,5 @@
+# Seul index.php répond ; la base et la configuration ne sont jamais servies.
+<FilesMatch "^(config.*\.php|.*\.sqlite|.*\.md)$">
+  Require all denied
+</FilesMatch>
+Options -Indexes

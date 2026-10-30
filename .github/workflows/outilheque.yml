@@ -1,8 +1,6 @@
 name: Lire l'outilthèque actuelle
+# À lancer à la main (onglet Actions) pour relire l'ancienne outilthèque, puis : python3 outils/outilheque_reprise.py …
 on:
-  push:
-    branches: [claude/project-thread-e2tqbe]
-    paths: [outils/outilheque.mjs, .github/workflows/outilheque.yml]
   workflow_dispatch:
 permissions:
   contents: write
