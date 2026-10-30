@@ -134,7 +134,7 @@ body.said .steps i.on{background:#ffd800}
 <script src="essai/poids.js"></script>
 <script>
 "use strict";
-const VERSION="8.2 (fiches directement dans le stock)";
+const VERSION="8.3 (références libres reprises du stock)";
 // ---------- Données de référence ----------
 // Préfixes et catégories : les noms doivent être identiques aux catégories du back-office Impulsion (vérifiés le 14/10/2026).
 const CATS=[
@@ -224,6 +224,10 @@ let garderT;document.addEventListener("input",()=>{clearTimeout(garderT);garderT
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")garderBrouillon()});
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+// Dernières références réellement prises (stock publié par la caisse sur le site) : évite de redonner une référence existante.
+async function majLastStock(){try{const j=await (await fetch("../stock.json",{cache:"no-cache"})).json(),l={...LAST};let ch=false;
+ (j.articles||[]).forEach(x=>{const m=/^([A-Z]+)(\d+)$/.exec(x.r||"");if(m&&+m[2]>(l[m[1]]||0)&&+m[2]<1e5){l[m[1]]=+m[2];ch=true}});
+ if(ch){LAST=l;await putSet("last",l)}}catch(e){}}
 function nextCode(cat){let n=LAST[cat]||0;fiches.forEach(f=>{if(f.cat===cat&&f.id!==cur?.id){const m=+f.code.slice(cat.length);if(m>n)n=m}});return cat+(n+1)}
 function dimTxt(f){const d=[f.L,f.l,f.h].filter(Boolean);return d.length?d.join(" × ")+" cm":""}
 // L1 ≥ L2 ≥ L3 : les mesures sont toujours rangées de la plus grande à la plus petite (cm)
@@ -814,7 +818,7 @@ $("#cam").onchange=async e=>{
 (async()=>{
  try{await openDb();await load();brouillon=await getSet("brouillon")||null;if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}
  catch(e){$("#app").innerHTML='<h1>Problème de stockage</h1><p class="hint">Le téléphone refuse d\'enregistrer les données. Ouvrez l\'app dans Chrome, pas en navigation privée.</p>';return}
- render();
+ render();majLastStock();
  if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js");
 })();
 

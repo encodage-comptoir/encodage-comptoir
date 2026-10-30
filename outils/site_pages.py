@@ -394,12 +394,15 @@ def nouvelles_fiches():
     if 'carteNouvelle' in t:
         # version précédente : nouvelles fiches en fin de liste → les remettre en tête
         t = t.replace(".concat((j.articles||[]).filter(x=>nouvelle(x)&&!d.some(a=>a.r===x.r)).sort((x,y)=>(y.cree||0)-(x.cree||0)).map(carteNouvelle))};", "};")
-        if '.map(carteNouvelle)' in t: return
+        if '.map(carteNouvelle)' in t and 'a.nv=1}return a}))};' in t: return
         t = t.replace(CODES_JS + '\n', '')
     t = t.replace("const vivant=(d,j)=>{", CODES_JS + "\nconst vivant=(d,j)=>{", 1)
     # les nouvelles fiches s'ajoutent en tête du catalogue
     NV = "(j.articles||[]).filter(x=>nouvelle(x)&&!d.some(a=>a.r===x.r)).sort((x,y)=>String(y.cree||'').localeCompare(String(x.cree||''))).map(carteNouvelle)"
     t = t.replace(" return d.filter(a=>!['vendu'", " return " + NV + ".concat(d.filter(a=>!['vendu'", 1).replace("if(x.e)a.o=x.e;return a})};", "if(x.e)a.o=x.e;return a}))};", 1)
+    # annonce existante remplacée par une fiche de l'app (vérifiée dans la caisse) : titre, photo et lien vers fiche.html
+    if 'a.nv=1}return a}))};' not in t:
+        t = t.replace("if(x.e)a.o=x.e;return a}))};", "if(x.e)a.o=x.e;if(nouvelle(x)){const z=carteNouvelle(x);a.t=z.t;if(z.v)a.v=z.v;a.k+=' '+z.k;a.nv=1}return a}))};", 1)
     t = t.replace('<a class="carte" href="article/${a.r}.html">', '<a class="carte" href="${a.nv?\'fiche.html?r=\'+encodeURIComponent(a.r):\'article/\'+a.r+\'.html\'}">', 1)
     assert '.map(carteNouvelle)' in t and 'fiche.html?r=' in t
     open(f, 'w').write(t)

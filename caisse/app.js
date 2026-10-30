@@ -1,6 +1,6 @@
 "use strict";
 // Caisse & stock du Comptoir des Matériaux. Tout est gardé sur l'appareil (IndexedDB) ; rien n'est écrit dans Impulsion.
-const VERSION="3.5 (essai)";
+const VERSION="3.6 (essai)";
 const CATS=[["SA","Sanitaire"],["PA","Parois de douche"],["CH","Châssis"],["PO","Portes"],["CAR","Carrelage"],["GRO","Gros œuvre"],["RA","Chauffage"],
  ["ELEC","Électricité"],["LUM","Luminaires"],["BOI","Bois"],["PAR","Parquet & bardage"],["LAM","Lambris"],["TOI","Toiture"],["ISO","Isolant"],
  ["Q","Quincaillerie"],["OUT","Outillage"],["ELECTRO","Électroménager"],["DIV","Divers"]];
@@ -80,17 +80,28 @@ function ajouterFiches(fiches,source){let n=0;
   const a=parRef(r);if(a){if(empl&&!a.e)a.e=empl;if(prix&&!a.p)a.p=prix;return}
   const fs=(f.photos||[]).filter(p=>typeof p==="string"&&/^https?:/.test(p));
   ajouterArticle({r,n:f.titre||f.nom,t:f.nom,p:prix||0,s:num(f.qte)??1,u:f.unite||"pièce",c:f.cat,e:empl,f:photo1(f),src:source,cree:f.cree,m:f.matiere||"",
-   kg:num(f.poids),kgEst:!!f.poidsEst,L:f.L,l:f.l,h:f.h,...(fs.length?{fs}:{}),...(f.descr?{d:f.descr}:{}),...(f.etat?{et:f.etat}:{}),...(f.par?{par:f.par}:{})});n++});
+   kg:f.poidsEst||!num(f.poids)?(Poids.estimer({nom:f.nom,titre:f.titre,cat:f.cat,matiere:f.matiere,unite:f.unite,L:f.L,l:f.l,h:f.h})||{kg:num(f.poids)}).kg:num(f.poids),kgEst:!!f.poidsEst||!num(f.poids),L:f.L,l:f.l,h:f.h,...(fs.length?{fs}:{}),...(f.descr?{d:f.descr}:{}),...(f.etat?{et:f.etat}:{}),...(f.par?{par:f.par}:{})});n++});
  return n}
 
 // ---------- Données ----------
-let CAT=[], IDX={}, HIST=[], ventes=[], sorties=[], MVT=[], ARTS={}, REG={}, INV={}, nbFiches=0, STK={};
+let BASE={}, CAT=[], IDX={}, HIST=[], ventes=[], sorties=[], MVT=[], ARTS={}, REG={}, INV={}, nbFiches=0, STK={};
 const parRef=r=>IDX[r];
 function ajouterArticle(a){CAT.push(a);IDX[a.r]=a;a.k=sans([a.n,a.t,a.r,a.e,catLabel(a.c)].join(" "))}
 function indexer(a){a.k=sans([a.n,a.t,a.r,a.e,catLabel(a.c)].join(" "))}
 const refAff=a=>a.x?"":a.r;
 // Modifications faites dans le module stock : elles passent par-dessus le catalogue.
-function appliquerArticles(){Object.values(ARTS).forEach(o=>{const a=parRef(o.r);if(a){Object.assign(a,o);indexer(a)}else ajouterArticle({...o})})}
+// Fiche de l'app entrée sous une référence qui existait déjà au catalogue (articles du site ajoutés à la caisse en 3.6) :
+// elle reçoit la référence libre suivante et l'article du catalogue redevient lui-même.
+async function separerCollisions(){let n=0;
+ for(const o of Object.values(ARTS)){if(o.src!=="app"||!o.envoi||!BASE[o.r])continue;
+  const pre=(o.r.match(/^[A-Z]+/)||["DIV"])[0];let k=0;CAT.forEach(a=>{const m=/^([A-Z]+)(\d+)$/.exec(a.r);if(m&&m[1]===pre&&+m[2]>k)k=+m[2]});
+  const nv={...o,r:pre+(k+1),refApp:o.r,aVerif:o.aVerif||o.envoi,modifie:Date.now()};delete nv.k;ARTS[nv.r]=nv;await put("articles",nv);
+  const neutre={r:o.r,modifie:Date.now()};ARTS[o.r]=neutre;await put("articles",neutre);
+  const a=parRef(o.r);Object.keys(a).forEach(x=>delete a[x]);Object.assign(a,BASE[o.r]);indexer(a);ajouterArticle({...nv});n++}
+ return n}
+function appliquerArticles(){Object.values(ARTS).forEach(o=>{const a=parRef(o.r);if(a){Object.assign(a,o);indexer(a)}else ajouterArticle({...o})});
+ // poids estimés des fiches de l'app : recalculés avec l'estimation à jour (ex. évier inox)
+ CAT.forEach(a=>{if(a.src&&a.kgEst){const r=Poids.estimer({nom:a.n,titre:a.t,cat:a.c,matiere:a.m,unite:a.u,L:a.L,l:a.l,h:a.h});if(r)a.kg=r.kg}})}
 
 // Stock = stock de départ, puis chaque mouvement dans l'ordre : entrée +, vente −, sortie −, comptage = remise à la valeur comptée.
 function calcStock(){STK={};const ev={};
@@ -430,30 +441,45 @@ function lireCsv(t){const R=[];let r=[],v="",q=false;t=t.replace(/^\uFEFF/,"");
  for(let i=0;i<t.length;i++){const c=t[i];if(q){if(c==='"'){if(t[i+1]==='"'){v+='"';i++}else q=false}else v+=c}
   else if(c==='"')q=true;else if(c===";"){r.push(v);v=""}else if(c==="\n"){r.push(v.replace(/\r$/,""));R.push(r);r=[];v=""}else v+=c}
  if(v||r.length){r.push(v);R.push(r)}return R}
-function fichesAncienEnvoi(o){const h=o&&o.html||"",b64=re=>{const m=re.exec(h);return m?Uint8Array.from(atob(m[1]),c=>c.charCodeAt(0)):null};
- const imp=b64(/"data:text\/csv;base64,([A-Za-z0-9+\/=]+)"/),car=b64(/"data:text\/csv;charset=utf-8;base64,([A-Za-z0-9+\/=]+)"/);
- if(!imp)return [];
+function fichesAncienEnvoi(o){const h=o&&o.html||"",b64=id=>{const m=new RegExp('getElementById\\("'+id+'"\\)\\.onclick=\\(\\)=>dl\\([^,]*,"data:text/csv;(?:charset=utf-8;)?base64,([A-Za-z0-9+/=]+)"').exec(h);return m?Uint8Array.from(atob(m[1]),c=>c.charCodeAt(0)):null};
+ const imp=b64("csv"),car=b64("fiches"),maj=b64("maj");
  const P=(()=>{const m=/const P=(\{.*?\});\s*function dl/s.exec(h);try{return m?JSON.parse(m[1]):{}}catch(e){return {}}})();
  const C={};if(car){const L=lireCsv(new TextDecoder().decode(car)),H=L[0]||[];L.slice(1).forEach(r=>{const x={};H.forEach((k,i)=>x[k]=r[i]);C[norm(r[0])]=x})}
- return lireCsv(new TextDecoder("windows-1252").decode(imp)).slice(1).filter(r=>r[0]).map(r=>{const code=norm(r[0]),c=C[code]||{},pre=(code.match(/^[A-Z]+/)||[""])[0];
+ // annonces existantes vérifiées au comptoir : titre, description et photos proposés
+ const M=maj?lireCsv(new TextDecoder("windows-1252").decode(maj)).slice(1).filter(r=>r[0]&&!/^Introuvable/.test(r[1])).map(r=>{const code=norm(r[0]),c=C[code]||{};
+  return {type:"maj",code,annonce:code,nom:r[3]||r[2],titre:r[3]||r[2],descr:r[6]||"",L:num(c["L1 (cm)"]),l:num(c["L2 (cm)"]),h:num(c["L3 (cm)"]),
+   matiere:c["Matière"]||"",etat:c["État"]||"",empl:r[8]||"",par:o.par||"",photos:(P[r[0]]||P[code]||[]).map(x=>x[1])}}):[];
+ if(!imp)return M;
+ return M.concat(lireCsv(new TextDecoder("windows-1252").decode(imp)).slice(1).filter(r=>r[0]).map(r=>{const code=norm(r[0]),c=C[code]||{},pre=(code.match(/^[A-Z]+/)||[""])[0];
   return {type:"neuf",code,nom:r[1],cat:CATS.some(x=>x[0]===pre)?pre:"DIV",qte:c["Quantité"]||r[3],unite:c["Unité"]||"pièce",prix:r[4],descr:r[5]||"",
    L:num(c["L1 (cm)"]),l:num(c["L2 (cm)"]),h:num(c["L3 (cm)"]),matiere:c["Matière"]||"",couleur:c["Couleur"]||"",etat:c["État"]||"",
    empl:c["Emplacement"]||"",poids:c["Poids (kg)"]||"",prov:c["Provenance"]||"",par:o.par||"",cree:c["Arrivée"]?Date.parse(c["Arrivée"]):Date.parse(o.quand)||Date.now(),
-   photos:(P[r[0]]||P[code]||[]).map(x=>x[1])}})}
+   photos:(P[r[0]]||P[code]||[]).map(x=>x[1])}}))}
 async function integrerEnvois(){if(!syncPret())return 0;let n=0;
- const L=(await ficListe(SRV.envois)).filter(f=>f.name.endsWith(".json")&&(!REG["envoiStock:"+f.name]||REG["envoiStock:"+f.name]==="ancien format"));
+ const L=(await ficListe(SRV.envois)).filter(f=>f.name.endsWith(".json")&&!REG["envoiStock2:"+f.name]);
  for(const f of L){let o;try{o=await dechiffrer(await ficLire(f.path))}catch(e){if(e.status)throw e;continue}
   if(o&&!Array.isArray(o.fiches))o.fiches=fichesAncienEnvoi(o);
-  if(!o||!o.fiches.length){await putSet("envoiStock:"+f.name,"vide");continue}
+  if(!o||!o.fiches.length){await putSet("envoiStock2:"+f.name,"vide");continue}
   const fiches=[];
-  for(const x of o.fiches){const r=norm(x.code),neuf=x.type!=="maj"&&r&&!parRef(r);const ph=[];
-   if(neuf)for(const p of x.photos||[]){try{ph.push(await envoyerPhoto(await (await fetch(p)).blob(),"stock"))}catch(e){if(!navigator.onLine)throw e}}
+  // référence déjà prise par un autre article (l'app ne connaissait pas toutes les références) : la suivante libre
+  const pris=new Set(),num2=q=>{const m=/^([A-Z]+)(\d+)$/.exec(q);return m?[m[1],+m[2]]:["",0]};
+  for(const x of o.fiches){if(x.type==="maj")continue;const r=norm(x.code),ex=r&&parRef(r);
+   if(!ex||ex.envoi===f.name||CAT.some(a=>a.envoi===f.name&&a.refApp===r))continue;
+   const pre=num2(r)[0]||x.cat||"DIV";let k=0;[...CAT.map(a=>a.r),...pris].forEach(q=>{const [p,i]=num2(q);if(p===pre&&i>k)k=i});
+   x.refApp=r;x.code=pre+(k+1);pris.add(x.code)}
+  for(const x of o.fiches){const r=norm(x.code),neuf=x.type!=="maj"&&r&&!parRef(r),majA=x.type==="maj"&&x.statut!=="introuvable"&&parRef(norm(x.annonce||x.code));const ph=[];
+   if(neuf||majA)for(const p of x.photos||[]){try{ph.push(await envoyerPhoto(await (await fetch(p)).blob(),"stock"))}catch(e){if(!navigator.onLine)throw e}}
    fiches.push({...x,photos:ph})}
   const avant=CAT.length;n+=ajouterFiches(fiches,"app");
-  for(const a of CAT.slice(avant)){a.aVerif=REG["envoiPlace:"+f.name]?"":f.name;a.envoi=f.name;const x={...a};delete x.k;x.modifie=Date.now();ARTS[a.r]=x;await put("articles",x)}
-  // fiches « annonce existante » : emplacement et prix repris sur l'article
-  for(const x of fiches.filter(x=>x.type==="maj")){const a=parRef(norm(x.annonce));if(a){const y={...(ARTS[a.r]||{r:a.r}),modifie:Date.now()};if(a.e)y.e=a.e;if(a.p)y.p=a.p;ARTS[a.r]=y;await put("articles",y)}}
-  await putSet("envoiStock:"+f.name,new Date().toISOString())}
+  for(const a of CAT.slice(avant)){a.aVerif=f.name;a.envoi=f.name;const fx=fiches.find(x=>norm(x.code)===a.r);if(fx&&fx.refApp)a.refApp=fx.refApp;const x={...a};delete x.k;x.modifie=Date.now();ARTS[a.r]=x;await put("articles",x)}
+  // fiches « annonce existante » : emplacement et prix, et la nouvelle annonce (titre, description, photos)
+  // qui remplacera celle du site après « Vérifié »
+  for(const x of fiches.filter(x=>x.type==="maj"&&x.statut!=="introuvable")){const a=parRef(norm(x.annonce||x.code));if(!a)continue;
+   const y={...(ARTS[a.r]||{r:a.r}),modifie:Date.now(),src:a.src||"maj",envoi:f.name,aVerif:f.name,majAnnonce:1};
+   if(a.e)y.e=a.e;if(a.p)y.p=a.p;if(x.titre||x.nom)y.n=x.titre||x.nom;if(x.descr)y.d=x.descr;if(x.photos.length)y.fs=x.photos;
+   for(const k of ["L","l","h"])if(x[k])y[k]=x[k];if(x.matiere)y.m=x.matiere;if(x.etat)y.et=x.etat;
+   Object.assign(a,y);indexer(a);ARTS[a.r]=y;await put("articles",y);n++}
+  await putSet("envoiStock2:"+f.name,new Date().toISOString())}
  if(n){calcStock();toast(`${n} fiche${n>1?"s":""} de l'app ajoutée${n>1?"s":""} au stock`);if(screen==="stock"&&!panneauRef)render()}
  return n}
 const infoEnvoi=n=>{const m=/^(\d{4})-(\d\d)-(\d\d)-(\d\d)h(\d\d)-(.+?)-(\d+)f-/.exec(n);return m?{date:`${m[3]}/${m[2]}/${m[1]} à ${m[4]}h${m[5]}`,par:m[6].replace(/-/g," ").replace(/\bsaid\b/,"Saïd").replace(/\baudrey\b/,"Audrey"),n:+m[7]}:{date:n,par:"",n:0}};
@@ -471,16 +497,17 @@ function envoisHtml(){if(!syncPret())return "";if(ENVOIS===null){chargerEnvois()
   ${a.map(ligne).join("")||'<p class="muted">Rien en attente.</p>'}
   ${faits?`<details class="muted"><summary>Déjà vérifiés (${faits})</summary>${ENVOIS.filter(f=>REG["envoiPlace:"+f.name]).map(ligne).join("")}</details>`:""}</div>`}
 // Fiches d'un envoi, revues dans la caisse avant de passer sur le site.
-function verifEnvoi(nom){const L=CAT.filter(a=>a.envoi===nom),i=infoEnvoi(nom),fait=REG["envoiPlace:"+nom];
+function verifEnvoi(nom){const L=CAT.filter(a=>a.envoi===nom),i=infoEnvoi(nom),fait=REG["envoiPlace:"+nom]&&!L.some(a=>a.aVerif);
  const ph=a=>(a.fs&&a.fs.length?a.fs:[a.f]).filter(Boolean);
  const dims=a=>[a.L,a.l,a.h].filter(x=>x!=null&&x!=="").join(" × ");
  modal(`<h3 style="margin-top:0">${L.length} fiche${L.length>1?"s":""}${i.par?" de "+esc(i.par):""} <span class="muted" style="font-weight:400">· ${esc(i.date)}</span></h3>
   ${L.map(a=>`<div style="border-top:1px solid var(--ligne,#ddd);padding:12px 0">
    <div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:8px">${ph(a).map(u=>`<a href="${esc(u)}" target="_blank"><img src="${esc(u)}" alt="" style="height:110px;border-radius:8px;display:block"></a>`).join("")||'<span class="muted">Pas de photo</span>'}</div>
    <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap"><div style="flex:1;min-width:220px">
-    <b>${esc(a.n||"")}</b> <span class="muted">${esc(a.r)} · ${esc(catLabel(a.c)||a.c||"")}</span><br>
+    <b>${esc(a.n||"")}</b> ${a.majAnnonce?'<span class="muted">(remplace l\'annonce existante)</span> ':""}<span class="muted">${esc(a.r)} · ${esc(catLabel(a.c)||a.c||"")}</span><br>
     ${a.p?eur(a.p)+" / "+esc(a.u||"pièce"):'<b style="color:#b00020">Sans prix : n\'ira pas sur le site</b>'} · ${(q=>esc(String(q).replace(".",","))+" "+esc((a.u||"pièce")+((a.u||"pièce")==="pièce"&&q>1?"s":"")))(reste(a)??a.s??0)}
     ${dims(a)?" · "+esc(dims(a))+" cm":""}${a.et?" · "+esc(a.et):""}${a.m?" · "+esc(a.m):""}
+    ${a.refApp?`<div style="margin-top:4px;color:#a15c00"><b>Nouvelle référence ${esc(a.r)}</b> : l'app avait donné ${esc(a.refApp)}, déjà pris par un autre article. Corrigez l'étiquette sur l'objet.</div>`:""}
     ${a.d?`<div class="muted" style="margin-top:4px;white-space:pre-line">${esc(a.d)}</div>`:""}</div>
     <button class="btn clair petit" data-modif="${esc(a.r)}">Modifier</button></div></div>`).join("")}
   <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px"><button class="btn clair" data-ferme>Fermer</button>
@@ -961,9 +988,9 @@ const sansSecrets=r=>{const o={...r};delete o.ghJeton;delete o.ghPhrase;delete o
   (await all("inventaire")).forEach(i=>INV[i.k]=i);(await all("articles")).forEach(a=>ARTS[a.r]=a);
   const te=REG.ticketEnCours;if(te&&te.panier&&te.panier.length){panier=te.panier;if(te.pay)pay={...pay,...te.pay};if(te.remise)remise=te.remise}}
  catch(e){idb=null;stockageKo=true}
- try{(await (await fetch("catalogue.json")).json()).forEach(ajouterArticle)}catch(e){}
+ try{(await (await fetch("catalogue.json")).json()).forEach(a=>{BASE[a.r]={...a};ajouterArticle(a)})}catch(e){}
  try{HIST=await (await fetch("historique.json")).json()}catch(e){HIST=[]}
- appliquerArticles();
+ appliquerArticles();await separerCollisions();
  nbFiches=ajouterFiches(await lireFiches("comptoir"),"app")+ajouterFiches(await lireFiches("comptoir-essai"),"essai");
  CAT.forEach(a=>{aLaPiece(a);indexer(a);if(!a.m)a.m=Poids.matiere({nom:a.t||a.n,titre:a.n,cat:a.c});
   if(a.kg==null){const r=Poids.estimer({nom:a.t||a.n,titre:a.n,cat:a.c,matiere:a.m,unite:a.u,L:a.L,l:a.l,h:a.h});a.kg=r?r.kg:null;a.kgEst=!!r;

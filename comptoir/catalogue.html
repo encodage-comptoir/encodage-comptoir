@@ -70,7 +70,7 @@ const carteNouvelle=x=>{const d=x.d||[],c=RAYON[x.c]||'Divers',st=stockTxt(x);
 const nouvelle=x=>x.n&&x.p>0&&x.st==='ok'&&x.s>0;
 const vivant=(d,j)=>{if(!j)return d;const m={};(j.articles||[]).forEach(x=>m[x.r]=x);
  return (j.articles||[]).filter(x=>nouvelle(x)&&!d.some(a=>a.r===x.r)).sort((x,y)=>String(y.cree||'').localeCompare(String(x.cree||''))).map(carteNouvelle).concat(d.filter(a=>!['vendu','rupture','hors'].includes((m[a.r]||{}).st)).map(a=>{const x=m[a.r];if(!x)return a;
-  if(x.s>0){a.s=x.s;a.st=x.u&&x.u!=='pièce'?`${String(x.s).replace('.',',')} ${x.u}`:`${x.s} pièce${x.s>1?'s':''}`;if(a.sc)a.sc=a.st+' en stock'}if(x.e)a.o=x.e;return a}))};
+  if(x.s>0){a.s=x.s;a.st=x.u&&x.u!=='pièce'?`${String(x.s).replace('.',',')} ${x.u}`:`${x.s} pièce${x.s>1?'s':''}`;if(a.sc)a.sc=a.st+' en stock'}if(x.e)a.o=x.e;if(nouvelle(x)){const z=carteNouvelle(x);a.t=z.t;if(z.v)a.v=z.v;a.k+=' '+z.k;a.nv=1}return a}))};
 Promise.all([fetch('donnees.json').then(r=>r.json()),fetch('stock.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null).catch(()=>null)]).then(([d,j])=>{D=vivant(d,j);maj()});
 </script>
 <footer class="pied"><div class="pied-in">

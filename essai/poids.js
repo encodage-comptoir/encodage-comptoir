@@ -19,6 +19,9 @@ const MAT_CAT={CAR:"Céramique",GRO:"Pierre / béton",RA:"Métal",Q:"Métal",OUT
 const PLEIN=[[/baignoire/,0.04],[/bac de douche/,0.25],[/\bwc\b|toilette/,0.12],[/evier|lavabo|vasque|lave-mains/,0.12],[/meuble|colonne/,0.15],
  [/radiateur|seche-serviettes/,0.05],[/chassis|fenetre|velux/,0.3,"CH"],[/porte/,0.6,"PO"],
  [/planche|poutre|panneau|plaque|dalle|carrelage|faience|pave|brique|bloc|pierre|marbre|granit|tuile|ardoise|lame|parquet|bardage|lambris|vitre|plan de travail|linteau|osb|multiplex|trespa|isolant|laine|polystyrene/,1]];
+// En métal, éviers, lavabos, bacs et baignoires sont une tôle mince (inox, acier émaillé) : la part pleine des tables ci-dessus
+// (calée sur la céramique) donnerait un poids 10 fois trop grand. La fonte reste plus lourde.
+const PLEIN_METAL=[[/baignoire.*fonte|fonte.*baignoire/,0.02],[/baignoire/,0.006],[/evier|lavabo|vasque|lave-mains|bac de douche/,0.01]];
 // Poids moyen d'après le type (kg par pièce), quand les dimensions manquent. null = inconnu, à peser.
 const PAR_TYPE=[[/baignoire/,40],[/bac de douche/,20],[/\bwc\b|toilette/,25],[/evier/,15],[/lave-mains/,6],[/lavabo|vasque/,12],[/colonne/,15],[/meuble/,25],
  [/paroi|porte de douche/,25],[/mitigeur|robinet|tete de douche|douchette|porte-serviettes|porte-papier|cache-siphon/,1],
@@ -39,7 +42,7 @@ function estimer(o){const txt=sans([o.nom,o.titre].join(" ")),m=o.matiere||matie
   if(d&&ep&&ep<=10)return {kg:arrondi(d*ep/100),base:"épaisseur et matière"};
   return PAR_M2[o.cat]?{kg:PAR_M2[o.cat],base:"type d'article"}:null}
  if(u!=="pièce")return null;
- const p=cherche(PLEIN,txt,o.cat);
+ const p=(m==="Métal"&&cherche(PLEIN_METAL,txt,o.cat))||cherche(PLEIN,txt,o.cat);
  if(d&&p&&dims.length===3){const kg=dims.reduce((a,b)=>a*b,1)/1e6*d*p[1];if(kg>=0.1)return {kg:arrondi(kg),base:"dimensions et matière"}}
  const t=cherche(PAR_TYPE,txt,o.cat);return t?{kg:t[1],base:"type d'article"}:null}
 return {MATIERES,matiere,estimer}})();
