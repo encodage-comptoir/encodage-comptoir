@@ -78,6 +78,7 @@ async function synchroniser(manuel){
   const S=stockSite(),es=await empreinte(JSON.stringify(S.articles));
   if(!illisibles&&es!==REG.empreinteStock){const f=await gh(GH.stock);
    await ghEcrire(GH.stock,JSON.stringify(S),f&&f.sha,`Stock du site mis à jour par la caisse (${appareil()})`);await putSet("empreinteStock",es)}
+  if(!illisibles)await publierStockSite(S).catch(()=>{});
   Sync.quand=Date.now();await putSet("derniereSync",Sync.quand);
   majEtat(illisibles?"err":"ok",illisibles?`${illisibles} journal illisible : la phrase secrète n'est pas la même sur tous les appareils. Rien n'a été envoyé d'ici.`:"");
   if(illisibles)toast("Un journal n'a pas pu être lu : vérifiez la phrase secrète",true);else if(manuel)toast("Caisse, stock et site à jour");

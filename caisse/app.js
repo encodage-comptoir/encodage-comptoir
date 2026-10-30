@@ -1,6 +1,6 @@
 "use strict";
 // Caisse & stock du Comptoir des Matériaux. Tout est gardé sur l'appareil (IndexedDB) ; rien n'est écrit dans Impulsion.
-const VERSION="2.6 (essai)";
+const VERSION="2.7 (essai)";
 const CATS=[["SA","Sanitaire"],["PA","Parois de douche"],["CH","Châssis"],["PO","Portes"],["CAR","Carrelage"],["GRO","Gros œuvre"],["RA","Chauffage"],
  ["ELEC","Électricité"],["LUM","Luminaires"],["BOI","Bois"],["PAR","Parquet & bardage"],["LAM","Lambris"],["TOI","Toiture"],["ISO","Isolant"],
  ["Q","Quincaillerie"],["OUT","Outillage"],["ELECTRO","Électroménager"],["DIV","Divers"]];
@@ -19,6 +19,7 @@ const IC={
  stock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8l9-5 9 5v12H3zM3 8h18M8 20v-7h8v7"/></svg>',
  mouv:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h14l-4-4M20 16H6l4 4"/></svg>',
  carnet:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 3h12l2 2v16H5zM9 8h7M9 12h7M9 16h4"/></svg>',
+ locations:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/></svg>',
  rapports:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
  reglages:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z"/></svg>',
  scan:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V3h4M17 3h4v4M21 17v4h-4M7 21H3v-4M7 8v8M10 8v8M13 8v8M17 8v8"/></svg>',
@@ -109,13 +110,13 @@ function aLaPiece(a){if(a.c!=="CAR"||a.u!=="m²")return;const L=num(a.L),l=num(a
 const m2Txt=(a,n)=>a.pm&&n>0?` (≈ ${nb(n/a.pm).replace(/,00$/,"")} m²)`:"";
 
 // ---------- Navigation ----------
-const ONGLETS={caisse:"Caisse",carnet:"Carnet de caisse",mouv:"Mouvements",stock:"Stock",rapports:"Rapports",reglages:"Réglages"};
+const ONGLETS={caisse:"Caisse",carnet:"Carnet de caisse",mouv:"Mouvements",stock:"Stock",locations:"Locations",rapports:"Rapports",reglages:"Réglages"};
 let screen="caisse";
 function render(){
  $("#nav").innerHTML=Object.entries(ONGLETS).map(([k,t])=>`<button data-go="${k}" class="${screen===k?"sel":""}">${IC[k]}${t}</button>`).join("");
- const P={caisse:ecranCaisse,stock:ecranStock,mouv:ecranMouv,carnet:ecranCarnet,rapports:ecranRapports,reglages:ecranReglages};
+ const P={caisse:ecranCaisse,stock:ecranStock,locations:ecranLocations,mouv:ecranMouv,carnet:ecranCarnet,rapports:ecranRapports,reglages:ecranReglages};
  $("#page").innerHTML=P[screen]();
- ({caisse:brancherCaisse,stock:brancherStock,mouv:brancherMouv,carnet:brancherCarnet,rapports:brancherRapports,reglages:brancherReglages}[screen])();
+ ({caisse:brancherCaisse,stock:brancherStock,locations:brancherLocations,mouv:brancherMouv,carnet:brancherCarnet,rapports:brancherRapports,reglages:brancherReglages}[screen])();
  if(panneauRef)ouvrirPanneau(panneauRef,true);
  if(screen==="caisse")garderTicket();bandeau();
 }
@@ -834,6 +835,7 @@ function ecranReglages(){return `<div class="titre"><h2>Réglages</h2></div><div
   <label class="f">BIC (facultatif)<input class="champ" id="rBic" value="${esc(REG.bic||"")}" placeholder="ex. GEBABEBB"></label><p class="muted" id="rIbanOk">${REG.iban?(ibanOk(REG.iban)?"IBAN valide.":"IBAN incorrect : vérifiez-le."):""}</p></div>
  ${carteSauvAuto()}
  ${carteSync()}
+ <div class="carte">${formSite()}</div>
  <div class="carte"><h3>Factures</h3><label class="f">Dernier n° de facture utilisé<input class="champ" id="dFact" value="${esc(REG.derniereFacture||"")}" placeholder="ex. F49-26"></label></div>
  <div class="carte"><h3>À propos</h3><p class="muted">Caisse & stock ${VERSION} · ${CAT.length} articles (export Impulsion du 14/10/2026, annonces du site, fiches) · ${ventes.length} tickets · ${MVT.length} mouvements.</p></div></div>`}
 function brancherReglages(){
@@ -847,7 +849,7 @@ function brancherReglages(){
   location.reload()};
  const t=$("#testScan");t.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();const r=lireCode(t.value);$("#testRes").innerHTML=r?`Reconnu : <b>${esc(r)}</b> · ${esc(parRef(r).n)}`:`Non reconnu : « ${esc(t.value)} »`;t.value=""}};
  brancherSauvAuto();
- $("#dFact").onchange=e=>putSet("derniereFacture",e.target.value.trim().toUpperCase());brancherSync();
+ $("#dFact").onchange=e=>putSet("derniereFacture",e.target.value.trim().toUpperCase());brancherSync();brancherSite();
  $("#rIban").onchange=async e=>{const v=ibanNet(e.target.value);await putSet("iban",v);$("#rIbanOk").textContent=v?(ibanOk(v)?"IBAN valide.":"IBAN incorrect : vérifiez-le."):""};
  $("#rBenef").onchange=e=>putSet("beneficiaire",e.target.value.trim()||"La Pile asbl");$("#rBic").onchange=e=>putSet("bic",e.target.value.trim())}
 

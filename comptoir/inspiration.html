@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Inspirations – Faire avec – Comptoir des Matériaux</title><meta name="description" content="Réalisations en réemploi : idées et photos pour faire avec les matériaux du Comptoir.">
+<meta name="robots" content="noindex"><!-- maquette : à retirer à la mise en ligne réelle -->
+<meta property="og:title" content="Inspirations – Faire avec – Comptoir des Matériaux"><meta property="og:description" content="Réalisations en réemploi : idées et photos pour faire avec les matériaux du Comptoir.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="style.css?v=p2"><script src="panier.js?v=p2" defer></script><script src="compte.js?v=p2"></script>
+</head><body>
+<div class="maquette">Maquette : textes, prix et photos à valider par l'équipe.</div>
+<header class="haut"><div class="haut-in">
+<a class="logo" href="index.html"><img src="https://www.la-pile.be/img/logo-main.svg" alt="La Pile"></a>
+<nav><a href="index.html">Accueil</a><a href="catalogue.html">Matériaux</a><a href="outils.html">Outilthèque</a><a href="reserver.html">Camionnette &amp; atelier</a><a href="faire-avec.html">Faire avec</a><a href="comprendre.html">Comprendre</a><a href="compte.html" class="lien-compte">Mon compte</a><a href="panier.html" class="lien-panier">Mes listes <span class="nb-panier" hidden>0</span></a></nav>
+</div></header>
+
+<main class="contenu"><p class="fil"><a href="faire-avec.html">Faire avec</a> › Inspirations</p><h1>Inspirations</h1>
+<p class="intro">Des réalisations en réemploi, ici ou ailleurs : de quoi donner des idées. Vous avez réalisé quelque chose avec des matériaux du Comptoir ? Envoyez-nous vos photos, on la publie.</p>
+<div class="filtres-tags" id="tags"></div>
+<div class="blog" id="liste"></div>
+<article class="billet-plein" id="billet" hidden></article>
+<p class="centre"><a class="bouton jaune" href="mailto:info@la-pile.be?subject=Ma%20r%C3%A9alisation%20en%20r%C3%A9emploi">Proposer ma réalisation</a></p>
+</main>
+<script>
+const $=id=>document.getElementById(id);let B=[],tag='';
+const carte=b=>`<a class="billet" href="#${encodeURIComponent(b.id)}"><div class="img">${b.photos&&b.photos[0]?`<img loading="lazy" src="${escH(b.photos[0])}" alt="">`:`<div class="sans-photo">${b.icone||'🌱'}</div>`}</div><div class="txt"><p class="petit">${escH((b.tags||[]).join(' · '))}</p><h3>${escH(b.titre)}</h3><p>${escH(b.chapo)}</p></div></a>`;
+function liste(){$('billet').hidden=true;$('liste').hidden=false;$('tags').hidden=false;
+ const t=[...new Set(B.flatMap(b=>b.tags||[]))];$('tags').innerHTML=['',...t].map(x=>`<button class="tag${x===tag?' sel':''}" data-t="${escH(x)}">${x?escH(x):'Tout'}</button>`).join('');
+ $('tags').querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tag=b.dataset.t;liste()});
+ $('liste').innerHTML=B.filter(b=>!tag||(b.tags||[]).includes(tag)).map(carte).join('')}
+function billet(id){const b=B.find(x=>x.id===id);if(!b)return liste();$('liste').hidden=true;$('tags').hidden=true;$('billet').hidden=false;
+ $('billet').innerHTML=`<p><a href="#">← Toutes les inspirations</a></p><p class="petit">${escH((b.tags||[]).join(' · '))}${b.date?' · '+new Date(b.date).toLocaleDateString('fr-BE',{month:'long',year:'numeric'}):''}</p><h2>${escH(b.titre)}</h2><p class="accroche">${escH(b.chapo)}</p>
+ ${(b.photos||[]).length?`<div class="galerie">${b.photos.map(p=>`<img src="${escH(p)}" alt="">`).join('')}</div>`:`<div class="sans-photo grand">${b.icone||'🌱'}<small>Photos à venir</small></div>`}
+ ${(b.texte||[]).map(p=>`<p>${escH(p)}</p>`).join('')}
+ ${(b.materiaux||[]).length?`<h3>Ce qu'il faut</h3><ul>${b.materiaux.map(m=>`<li>${escH(m.t)}${m.q?` – <a href="catalogue.html?q=${encodeURIComponent(m.q)}">voir au catalogue</a>`:''}</li>`).join('')}</ul>`:''}
+ ${b.projet?`<p><a class="bouton" href="projet/${escH(b.projet)}.html">Le projet pas à pas</a></p>`:''}${b.credit?`<p class="petit">${escH(b.credit)}</p>`:''}`;scrollTo(0,0)}
+const route=()=>{const h=decodeURIComponent(location.hash.slice(1));h?billet(h):liste()};
+addEventListener('hashchange',route);
+fetch('inspiration.json',{cache:'no-cache'}).then(r=>r.json()).then(j=>{B=j;route()});</script>
+<footer class="pied"><div class="pied-in">
+<img src="https://www.la-pile.be/img/footer-logo.svg" alt="La Pile" class="pied-logo">
+<div><b>Comptoir des Matériaux</b><br>Rue Frédéric Lang 3, 4960 Malmedy<br>Tél. <a href="tel:+32493049929">+32 (0)493 04 99 29</a><br><a href="mailto:info@la-pile.be">info@la-pile.be</a></div>
+<div>Un projet de <a href="https://www.la-pile.be">La Pile asbl</a><br><a href="https://www.instagram.com/lapile_malmedy/">Instagram</a> · <a href="https://www.facebook.com/LaPileMalmedy/">Facebook</a></div>
+</div></footer></body></html>

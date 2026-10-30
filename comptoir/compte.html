@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mon compte – Comptoir des Matériaux</title><meta name="description" content="Connexion, inscription et réservations des membres de La Pile.">
+<meta name="robots" content="noindex"><!-- maquette : à retirer à la mise en ligne réelle -->
+<meta property="og:title" content="Mon compte – Comptoir des Matériaux"><meta property="og:description" content="Connexion, inscription et réservations des membres de La Pile.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="style.css?v=p2"><script src="panier.js?v=p2" defer></script><script src="compte.js?v=p2"></script>
+</head><body>
+<div class="maquette">Maquette : textes, prix et photos à valider par l'équipe.</div>
+<header class="haut"><div class="haut-in">
+<a class="logo" href="index.html"><img src="https://www.la-pile.be/img/logo-main.svg" alt="La Pile"></a>
+<nav><a href="index.html">Accueil</a><a href="catalogue.html">Matériaux</a><a href="outils.html">Outilthèque</a><a href="reserver.html">Camionnette &amp; atelier</a><a href="faire-avec.html">Faire avec</a><a href="comprendre.html">Comprendre</a><a href="compte.html" class="lien-compte">Mon compte</a><a href="panier.html" class="lien-panier">Mes listes <span class="nb-panier" hidden>0</span></a></nav>
+</div></header>
+
+<main class="contenu etroit" id="zone"><p>Chargement…</p></main>
+<script>
+const $=id=>document.getElementById(id);const retour=new URLSearchParams(location.search).get('retour');
+function connexion(){ $('zone').innerHTML=bandeauDemo()+`<h1>Mon compte</h1><div class="deux-grand">
+ <form id="fc" class="form-res"><h2>J'ai un compte</h2><label>E-mail <input type="email" id="ce" required autocomplete="email"></label><label>Mot de passe <input type="password" id="cm" required autocomplete="current-password"></label><button class="bouton">Me connecter</button><p class="retour" id="rc"></p><p class="petit">Mot de passe oublié ? Appelez le Comptoir, l'équipe vous aide.</p></form>
+ <form id="fi" class="form-res"><h2>Devenir membre</h2><label>Nom et prénom <input id="in" required autocomplete="name"></label><label>E-mail <input type="email" id="ie" required autocomplete="email"></label><label>Téléphone <input type="tel" id="it" autocomplete="tel"></label><label>Adresse <input id="ia" autocomplete="street-address"></label><label>Mot de passe (8 caractères au moins) <input type="password" id="im" minlength="8" required autocomplete="new-password"></label>
+ <p class="petit">L'adhésion à La Pile se règle au Comptoir ; l'équipe active alors votre compte. En attendant, vous pouvez déjà envoyer des demandes.</p><button class="bouton jaune">Créer mon compte</button><p class="retour" id="ri"></p></form></div>`;
+ $('fc').onsubmit=e=>envoi(e,'connexion',{email:$('ce').value,mdp:$('cm').value},'rc');
+ $('fi').onsubmit=e=>envoi(e,'inscription',{nom:$('in').value,email:$('ie').value,tel:$('it').value,adresse:$('ia').value,mdp:$('im').value},'ri')}
+async function envoi(e,a,c,r){e.preventDefault();try{const j=await Compte.api(a,c);Compte.membre=j.membre;if(retour&&/^https?:/.test(retour)&&new URL(retour).origin===location.origin)location.href=retour;else espace()}catch(x){$(r).className='retour bad';$(r).textContent=x.message}}
+async function espace(){const m=Compte.membre,L=await Compte.api('mes');
+ const st={en_attente:'Adhésion à valider au Comptoir',actif:'Membre actif'+(m.jusqua?` jusqu'au ${new Date(m.jusqua).toLocaleDateString('fr-BE')}`:''),suspendu:'Compte suspendu'}[m.statut]||m.statut;
+ $('zone').innerHTML=bandeauDemo()+`<h1>Bonjour ${escH(m.nom)}</h1><p><span class="pastille ${m.statut==='actif'?'ok':'jaune'}">${st}</span></p>
+ <h2>Mes réservations</h2>${L.length?`<div class="liste-res">${L.map(r=>`<div class="res"><div><b>${escH(r.nom||r.ref)}</b><br><span class="petit">${dateFr(r.debut)} → ${dateFr(r.fin)}</span>${r.code_acces?`<br><span class="code">Accès : ${escH(r.code_acces)}</span>`:''}</div><div><span class="pastille ${STATUT_FR[r.statut][1]}">${STATUT_FR[r.statut][0]}</span>${['demandee','confirmee'].includes(r.statut)?`<button class="lien" data-ann="${r.id}">Annuler</button>`:''}</div></div>`).join('')}</div>`:'<p>Aucune réservation pour l\'instant.</p>'}
+ <p><a class="bouton" href="outils.html">Louer un outil</a> <a class="bouton jaune" href="reserver.html">Camionnette &amp; atelier</a></p>
+ <details class="profil"><summary>Mes coordonnées</summary><form id="fp" class="form-res"><label>Nom <input id="pn" value="${escH(m.nom)}"></label><label>Téléphone <input id="pt" value="${escH(m.tel||'')}"></label><label>Adresse <input id="pa" value="${escH(m.adresse||'')}"></label><button class="bouton">Enregistrer</button></form></details>
+ <p><button class="lien" id="deco">Me déconnecter</button></p>`;
+ $('zone').querySelectorAll('[data-ann]').forEach(b=>b.onclick=async()=>{if(confirm('Annuler cette réservation ?')){await Compte.api('annuler',{id:+b.dataset.ann});espace()}});
+ $('fp').onsubmit=async e=>{e.preventDefault();Compte.membre=(await Compte.api('profil',{nom:$('pn').value,tel:$('pt').value,adresse:$('pa').value})).membre;espace()};
+ $('deco').onclick=async()=>{await Compte.api('deconnexion',{});Compte.membre=null;connexion()}}
+Compte.moi().then(m=>m?espace():connexion());</script>
+<footer class="pied"><div class="pied-in">
+<img src="https://www.la-pile.be/img/footer-logo.svg" alt="La Pile" class="pied-logo">
+<div><b>Comptoir des Matériaux</b><br>Rue Frédéric Lang 3, 4960 Malmedy<br>Tél. <a href="tel:+32493049929">+32 (0)493 04 99 29</a><br><a href="mailto:info@la-pile.be">info@la-pile.be</a></div>
+<div>Un projet de <a href="https://www.la-pile.be">La Pile asbl</a><br><a href="https://www.instagram.com/lapile_malmedy/">Instagram</a> · <a href="https://www.facebook.com/LaPileMalmedy/">Facebook</a></div>
+</div></footer></body></html>

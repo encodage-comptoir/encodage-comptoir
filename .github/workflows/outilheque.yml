@@ -1,0 +1,17 @@
+name: Lire l'outilthèque actuelle
+# À lancer à la main (onglet Actions) pour relire l'ancienne outilthèque, puis : python3 outils/outilheque_reprise.py …
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  lire:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm i playwright@1.48.2 && npx playwright install --with-deps chromium
+      - run: node outils/outilheque.mjs
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add donnees/outilheque-source && git commit -m "Outilthèque actuelle : pages et API" && git push

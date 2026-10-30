@@ -1,0 +1,255 @@
+# Pages du site comptoir-materiaux.be qui ne viennent pas du catalogue : outilthèque, camionnette et atelier,
+# compte membre, « Comprendre » (économie circulaire, réemploi) et le blog d'inspiration de « Faire avec ».
+# Remet aussi le même menu sur toutes les pages déjà générées.
+# Usage : python3 outils/site_pages.py comptoir/
+import sys, os, re, glob, html
+
+out = sys.argv[1]
+PILE = 'https://www.la-pile.be'
+VER = 'p2'
+esc = lambda s: html.escape(str(s or ''), quote=True)
+
+def nav(prof=''):
+    return (f'<nav><a href="{prof}index.html">Accueil</a><a href="{prof}catalogue.html">Matériaux</a>'
+            f'<a href="{prof}outils.html">Outilthèque</a><a href="{prof}reserver.html">Camionnette &amp; atelier</a>'
+            f'<a href="{prof}faire-avec.html">Faire avec</a><a href="{prof}comprendre.html">Comprendre</a>'
+            f'<a href="{prof}compte.html" class="lien-compte">Mon compte</a>'
+            f'<a href="{prof}panier.html" class="lien-panier">Mes listes <span class="nb-panier" hidden>0</span></a></nav>')
+
+def page(nom, titre, desc, corps, script='', compte=True):
+    t = f'''<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{esc(titre)}</title><meta name="description" content="{esc(desc)}">
+<meta name="robots" content="noindex"><!-- maquette : à retirer à la mise en ligne réelle -->
+<meta property="og:title" content="{esc(titre)}"><meta property="og:description" content="{esc(desc)}">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="style.css?v={VER}"><script src="panier.js?v={VER}" defer></script>{f'<script src="compte.js?v={VER}"></script>' if compte else ''}
+</head><body>
+<div class="maquette">Maquette : textes, prix et photos à valider par l'équipe.</div>
+<header class="haut"><div class="haut-in">
+<a class="logo" href="index.html"><img src="{PILE}/img/logo-main.svg" alt="La Pile"></a>
+{nav()}
+</div></header>
+{corps}
+{f'<script>{script}</script>' if script else ''}
+<footer class="pied"><div class="pied-in">
+<img src="{PILE}/img/footer-logo.svg" alt="La Pile" class="pied-logo">
+<div><b>Comptoir des Matériaux</b><br>Rue Frédéric Lang 3, 4960 Malmedy<br>Tél. <a href="tel:+32493049929">+32 (0)493 04 99 29</a><br><a href="mailto:info@la-pile.be">info@la-pile.be</a></div>
+<div>Un projet de <a href="{PILE}">La Pile asbl</a><br><a href="https://www.instagram.com/lapile_malmedy/">Instagram</a> · <a href="https://www.facebook.com/LaPileMalmedy/">Facebook</a></div>
+</div></footer></body></html>'''
+    open(os.path.join(out, nom), 'w').write(t)
+
+# ——— Outilthèque : catalogue ———
+page('outils.html', 'Outilthèque – Comptoir des Matériaux', "Louez plutôt qu'acheter : perceuses, ponceuses, scies, échelles… à petit prix, pour les membres de La Pile à Malmedy.", '''
+<main class="contenu"><h1>Outilthèque</h1>
+<p class="intro">Une perceuse sert en moyenne quelques minutes dans sa vie. Plutôt que de l'acheter, louez-la : c'est moins cher, ça prend moins de place, et chaque outil partagé est un outil de moins à fabriquer.</p>
+<div class="etapes"><div><b>1</b>Choisissez un outil et une période : du mercredi au samedi, ou du samedi au mercredi</div><div><b>2</b>Envoyez la demande depuis votre compte membre</div><div><b>3</b>On vous confirme par e-mail</div><div><b>4</b>Retrait et retour au Comptoir, paiement sur place</div></div>
+<p class="note-tarif"><b>Tarif conscient.</b> Notre outilthèque se veut solidaire : vous choisissez votre tarif, solidaire, normal ou soutien, sans justificatif. Les outils sont classés en 2 catégories selon leur valeur ; le prix affiché est le tarif normal.</p>
+<form class="filtres" id="filtres" onsubmit="return false">
+<input id="q" type="search" placeholder="Rechercher un outil (ponceuse, échelle…)" aria-label="Rechercher">
+<select id="cat" aria-label="Famille"><option value="">Toutes les familles</option></select></form>
+<p id="nb" class="nb"></p><div class="grille" id="liste"></div>
+<div class="encart-don"><h2>Vous avez un outil qui dort ?</h2><p>Donnez-le à l'outilthèque : vous recevez un bon de location équivalent à sa valeur estimée.</p><a class="bouton jaune" href="index.html#infos">Nous contacter</a></div>
+</main>''', r'''
+const sans=s=>String(s||'').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase();
+let O=[];const $=id=>document.getElementById(id);
+function prixCourt(o){return o.prix_periode!=null?`${eurs(o.prix_periode)} / période`:'Prix sur demande'}
+function maj(){const mots=sans($('q').value).split(/\s+/).filter(Boolean),c=$('cat').value;
+ const r=O.filter(o=>(!c||o.cat===c)&&mots.every(w=>sans([o.nom,o.cat,o.descr,o.ref].join(' ')).includes(w)));
+ $('nb').textContent=r.length+' outil'+(r.length>1?'s':'');
+ $('liste').innerHTML=r.map(o=>`<a class="carte" href="outil.html?r=${encodeURIComponent(o.ref)}"><div class="img">${o.photos[0]?`<img loading="lazy" src="${escH(o.photos[0])}" alt="${escH(o.nom)}">`:'<div class="sans-photo">🔧</div>'}</div><div class="txt"><h3>${escH(o.nom)}</h3><p class="prix">${prixCourt(o)}</p><p class="petit">${escH(o.cat||'')}${o.tarif?` · catégorie ${o.tarif}`:''}</p></div></a>`).join('')}
+Compte.outils().then(l=>{O=l.filter(o=>(o.type||'outil')==='outil');
+ [...new Set(O.map(o=>o.cat).filter(Boolean))].sort().forEach(c=>$('cat').add(new Option(c,c)));
+ const P=new URLSearchParams(location.search);if(P.get('q'))$('q').value=P.get('q');maj()});
+document.querySelectorAll('#filtres input,#filtres select').forEach(e=>e.addEventListener('input',maj));''')
+
+# ——— Fiche d'un outil, de la camionnette ou de l'atelier (même modèle que les matériaux) ———
+FICHE_JS = r'''
+const $=id=>document.getElementById(id);const P=new URLSearchParams(location.search);let O=null,choix=null,PRIS=[];
+function heures(){let h='';for(let i=7;i<=20;i++)h+=`<option>${String(i).padStart(2,'0')}:00</option>`;return h}
+const occupe=(d,f)=>PRIS.filter(p=>['confirmee','en_cours'].includes(p.statut)&&p.debut<f&&p.fin>d).length>=(O.qte||1);
+const demande=(d,f)=>PRIS.some(p=>p.statut==='demandee'&&p.debut<f&&p.fin>d);
+// Outils : on loue par période, du mercredi au samedi ou du samedi au mercredi (jours d'ouverture du Comptoir).
+function periodes(){const L=[],j=new Date();j.setHours(0,0,0,0);
+ for(let i=0;L.length<8&&i<60;i++){const d=new Date(j);d.setDate(j.getDate()+i);const w=d.getDay();if(w!==3&&w!==6)continue;
+  const f=new Date(d);f.setDate(d.getDate()+(w===3?3:4));L.push([d,f])}
+ const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} 09:00`;
+ return L.map(([d,f])=>({debut:iso(d),fin:iso(f),lib:`${d.toLocaleDateString('fr-BE',{weekday:'long',day:'numeric',month:'short'})} → ${f.toLocaleDateString('fr-BE',{weekday:'long',day:'numeric',month:'short'})}`}))}
+function formOutil(m){const L=periodes();
+ return `<form id="dem" class="form-res"><h2>Choisir une période</h2><p class="petit">Retrait et retour au Comptoir, le mercredi ou le samedi (9 h – 16 h).</p><div class="periodes">${L.map((p,i)=>{const o=occupe(p.debut,p.fin);
+  return `<label class="periode${o?' pris':''}"><input type="radio" name="per" value="${i}" ${o?'disabled':''}><span>${p.lib}</span><small>${o?'Déjà loué':demande(p.debut,p.fin)?'Demande en cours':'Libre'}</small></label>`}).join('')}</div>
+ ${m?`<label>Message (facultatif) <textarea id="msg" rows="2" placeholder="Pour quel projet ? Besoin de conseils ?"></textarea></label><button class="bouton">Envoyer la demande</button><p id="retour" class="retour"></p>`:blocConnexion()}</form>`}
+function formRess(m){if(!m)return '<h2>Réserver</h2>'+blocConnexion();
+ return `<form id="dem" class="form-res"><h2>Ma demande</h2>${m.statut==='en_attente'?'<p class="note">Votre adhésion n\'est pas encore validée : vous pouvez envoyer la demande, l\'équipe la validera.</p>':''}
+ <div class="deux"><label>Du <input type="date" id="d1" required></label><label>À <select id="h1">${heures()}</select></label></div>
+ <div class="deux"><label>Au <input type="date" id="d2"></label><label>À <select id="h2">${heures()}</select></label></div>
+ <label>Message (facultatif) <textarea id="msg" rows="2" placeholder="Que transportez-vous ? Quelles machines ?"></textarea></label>
+ <p id="estim" class="estim"></p><button class="bouton">Envoyer la demande</button><p id="retour" class="retour"></p></form>`}
+function bornes(){if(O.type==='outil'){const r=document.querySelector('[name=per]:checked');if(!r)return null;const p=periodes()[+r.value];return {debut:p.debut,fin:p.fin}}
+ const d1=$('d1').value,d2=$('d2').value||d1;return d1?{debut:d1+' '+$('h1').value,fin:d2+' '+$('h2').value}:null}
+function estimer(){const b=bornes();if(!b||!$('estim'))return;const h=(Date.parse(b.fin.replace(' ','T'))-Date.parse(b.debut.replace(' ','T')))/36e5;
+ const t=h<=0?'':h<=5&&O.prix_we!=null?`Demi-journée : ${eurs(O.prix_we)}`:O.prix_jour!=null?`${Math.ceil(h/24)} jour${h>24?'s':''} : ≈ ${eurs(Math.ceil(h/24)*O.prix_jour)}`:'';
+ $('estim').textContent=t?t+(O.caution?` + caution ${eurs(O.caution)}`:'')+', à régler au Comptoir':''}
+async function dessiner(){const [m,dispo]=await Promise.all([Compte.moi(),Compte.dispo(O.ref).catch(()=>({pris:[]}))]);PRIS=dispo.pris||[];
+ $('cal').innerHTML=O.type==='outil'?'':calendrierHtml(PRIS,choix);$('form').innerHTML=bandeauDemo()+(O.type==='outil'?formOutil(m):formRess(m));
+ $('cal').querySelectorAll('[data-jour]').forEach(b=>b.onclick=()=>{choix=b.dataset.jour;if($('d1')){if(!$('d1').value||$('d2').value){$('d1').value=choix;$('d2').value=''}else if(choix>=$('d1').value)$('d2').value=choix;else $('d1').value=choix;estimer()}
+  $('cal').querySelectorAll('.sel').forEach(x=>x.classList.remove('sel'));b.classList.add('sel')});
+ const f=$('dem');if(!f||!m)return;['d1','d2','h1','h2'].forEach(i=>$(i)&&$(i).addEventListener('change',estimer));
+ if($('h1')){$('h1').value='09:00';$('h2').value='17:00'}
+ f.onsubmit=async e=>{e.preventDefault();const b=bornes();$('retour').className='retour';
+  if(!b){$('retour').className='retour bad';$('retour').textContent=O.type==='outil'?'Choisissez une période.':'Choisissez une date.';return}
+  try{await Compte.api('reserver',{ref:O.ref,nom:O.nom,...b,message:$('msg').value});$('retour').innerHTML='✓ Demande envoyée. Nous vous confirmons par e-mail. <a href="compte.html">Voir mes réservations</a>';f.querySelector('button').disabled=true;setTimeout(dessiner,2500)}
+  catch(x){$('retour').className='retour bad';$('retour').textContent=x.message}}}
+function tarifsHtml(){if(O.type==='outil')return O.prix_periode!=null?`<p class="prix-gros">${eurs(O.prix_periode)} <small>la période</small></p><p class="petit">Tarif normal${O.tarif?` (catégorie ${O.tarif})`:''}. Tarif conscient : solidaire, normal ou soutien, vous choisissez sans justificatif.</p>`:'<p class="prix-gros">Prix sur demande</p>';
+ const l=[['Demi-journée',O.prix_we],['Journée',O.prix_jour],['Caution',O.caution]].filter(x=>x[1]!=null);
+ return l.length?`<table class="tarifs">${l.map(x=>`<tr><th>${x[0]}</th><td>${eurs(x[1])}</td></tr>`).join('')}</table>`:'<p class="prix-gros">Tarifs à venir</p>'}
+function afficher(){document.title=O.nom+' – Comptoir des Matériaux';const ic=O.type==='camionnette'?'🚐':O.type==='atelier'?'🪚':'🔧';
+ $('fiche').innerHTML=`<p class="fil"><a href="${O.type==='outil'?'outils.html':'reserver.html'}">${O.type==='outil'?'Outilthèque':'Camionnette & atelier'}</a>${O.cat&&O.type==='outil'?' › '+escH(O.cat):''}</p>
+ <div class="art-grille"><div class="galerie">${O.photos.length?O.photos.map(p=>`<img src="${escH(p)}" alt="${escH(O.nom)}">`).join(''):`<div class="sans-photo grand">${ic}<small>Photo à venir</small></div>`}</div>
+ <div><h1>${escH(O.nom)}</h1>${tarifsHtml()}${O.caution&&O.type==='outil'?`<p>Caution : ${eurs(O.caution)}</p>`:''}
+ ${O.etat?`<p><b>État :</b> ${escH(O.etat)}</p>`:''}${O.descr?`<div class="descr">${escH(O.descr).replace(/\n/g,'<br>')}</div>`:''}
+ <p class="petit">Réf. ${escH(O.ref)}${O.qte>1?` · ${O.qte} exemplaires`:''}</p>
+ ${O.type==='outil'?'':'<h2>Disponibilités</h2>'}<div id="cal"></div><div id="form"></div></div></div>`;dessiner()}
+Compte.outils().then(l=>{O=l.find(o=>o.ref===P.get('r'));if(!O){$('fiche').innerHTML='<h1>Introuvable</h1><p><a href="outils.html">Retour à l\'outilthèque</a></p>';return}afficher()});'''
+page('outil.html', 'Outil – Comptoir des Matériaux', "Fiche d'un outil de l'outilthèque du Comptoir des Matériaux : prix, caution, disponibilités, demande en ligne.",
+     '<main class="article" id="fiche"><p>Chargement…</p></main>', FICHE_JS)
+
+# ——— Camionnette et atelier partagé ———
+page('reserver.html', 'Camionnette et atelier partagé – Comptoir des Matériaux', "Réservez en ligne la camionnette partagée (clé en boîte à clé, 7j/7) ou l'atelier partagé de La Pile, à Malmedy.", '''
+<main class="contenu"><h1>Camionnette &amp; atelier partagé</h1>
+<p class="intro">Deux outils en commun pour les membres de La Pile : une camionnette pour transporter vos matériaux, et un atelier équipé pour les travailler.</p>
+<div class="deux-grand" id="ress"><p>Chargement…</p></div>
+<h2 style="margin-top:40px">Comment ça marche ?</h2>
+<div class="infos-prat">
+<div><h3>1. Devenir membre</h3><p>Créez votre compte en ligne. L'adhésion à La Pile se règle au Comptoir : l'équipe active alors votre compte.</p></div>
+<div><h3>2. Réserver</h3><p>Choisissez vos dates sur le calendrier et envoyez la demande. Vous recevez la confirmation par e-mail.</p></div>
+<div><h3>3. Camionnette : 7j/7</h3><p>La clé vous attend dans la boîte à clé à l'entrée du Comptoir, même quand il est fermé. Le code vous est envoyé avec la confirmation.</p></div>
+<div><h3>4. Au retour</h3><p>Plein fait, clé remise dans la boîte. Le paiement se fait au Comptoir (espèces, QR code ou virement).</p></div></div>
+</main>''', r'''
+const $=id=>document.getElementById(id);
+Compte.outils().then(l=>{const R=l.filter(o=>o.type==='camionnette'||o.type==='atelier');
+ $('ress').innerHTML=R.length?R.map(o=>`<a class="carte ress" href="outil.html?r=${encodeURIComponent(o.ref)}"><div class="img">${o.photos[0]?`<img src="${escH(o.photos[0])}" alt="">`:`<div class="sans-photo">${o.type==='camionnette'?'🚐':'🪚'}</div>`}</div>
+ <div class="txt"><h2>${escH(o.nom)}</h2><p>${escH((o.descr||'').split('\n')[0])}</p><p class="prix">${o.prix_jour!=null?eurs(o.prix_jour)+' / jour':'Tarifs à venir'}${o.prix_we!=null?` · ${eurs(o.prix_we)} la demi-journée`:''}</p><span class="bouton">Voir les disponibilités</span></div></a>`).join(''):'<p>Bientôt disponible.</p>'});''')
+
+# ——— Compte membre ———
+page('compte.html', 'Mon compte – Comptoir des Matériaux', "Connexion, inscription et réservations des membres de La Pile.", '''
+<main class="contenu etroit" id="zone"><p>Chargement…</p></main>''', r'''
+const $=id=>document.getElementById(id);const retour=new URLSearchParams(location.search).get('retour');
+function connexion(){ $('zone').innerHTML=bandeauDemo()+`<h1>Mon compte</h1><div class="deux-grand">
+ <form id="fc" class="form-res"><h2>J'ai un compte</h2><label>E-mail <input type="email" id="ce" required autocomplete="email"></label><label>Mot de passe <input type="password" id="cm" required autocomplete="current-password"></label><button class="bouton">Me connecter</button><p class="retour" id="rc"></p><p class="petit">Mot de passe oublié ? Appelez le Comptoir, l'équipe vous aide.</p></form>
+ <form id="fi" class="form-res"><h2>Devenir membre</h2><label>Nom et prénom <input id="in" required autocomplete="name"></label><label>E-mail <input type="email" id="ie" required autocomplete="email"></label><label>Téléphone <input type="tel" id="it" autocomplete="tel"></label><label>Adresse <input id="ia" autocomplete="street-address"></label><label>Mot de passe (8 caractères au moins) <input type="password" id="im" minlength="8" required autocomplete="new-password"></label>
+ <p class="petit">L'adhésion à La Pile se règle au Comptoir ; l'équipe active alors votre compte. En attendant, vous pouvez déjà envoyer des demandes.</p><button class="bouton jaune">Créer mon compte</button><p class="retour" id="ri"></p></form></div>`;
+ $('fc').onsubmit=e=>envoi(e,'connexion',{email:$('ce').value,mdp:$('cm').value},'rc');
+ $('fi').onsubmit=e=>envoi(e,'inscription',{nom:$('in').value,email:$('ie').value,tel:$('it').value,adresse:$('ia').value,mdp:$('im').value},'ri')}
+async function envoi(e,a,c,r){e.preventDefault();try{const j=await Compte.api(a,c);Compte.membre=j.membre;if(retour&&/^https?:/.test(retour)&&new URL(retour).origin===location.origin)location.href=retour;else espace()}catch(x){$(r).className='retour bad';$(r).textContent=x.message}}
+async function espace(){const m=Compte.membre,L=await Compte.api('mes');
+ const st={en_attente:'Adhésion à valider au Comptoir',actif:'Membre actif'+(m.jusqua?` jusqu'au ${new Date(m.jusqua).toLocaleDateString('fr-BE')}`:''),suspendu:'Compte suspendu'}[m.statut]||m.statut;
+ $('zone').innerHTML=bandeauDemo()+`<h1>Bonjour ${escH(m.nom)}</h1><p><span class="pastille ${m.statut==='actif'?'ok':'jaune'}">${st}</span></p>
+ <h2>Mes réservations</h2>${L.length?`<div class="liste-res">${L.map(r=>`<div class="res"><div><b>${escH(r.nom||r.ref)}</b><br><span class="petit">${dateFr(r.debut)} → ${dateFr(r.fin)}</span>${r.code_acces?`<br><span class="code">Accès : ${escH(r.code_acces)}</span>`:''}</div><div><span class="pastille ${STATUT_FR[r.statut][1]}">${STATUT_FR[r.statut][0]}</span>${['demandee','confirmee'].includes(r.statut)?`<button class="lien" data-ann="${r.id}">Annuler</button>`:''}</div></div>`).join('')}</div>`:'<p>Aucune réservation pour l\'instant.</p>'}
+ <p><a class="bouton" href="outils.html">Louer un outil</a> <a class="bouton jaune" href="reserver.html">Camionnette &amp; atelier</a></p>
+ <details class="profil"><summary>Mes coordonnées</summary><form id="fp" class="form-res"><label>Nom <input id="pn" value="${escH(m.nom)}"></label><label>Téléphone <input id="pt" value="${escH(m.tel||'')}"></label><label>Adresse <input id="pa" value="${escH(m.adresse||'')}"></label><button class="bouton">Enregistrer</button></form></details>
+ <p><button class="lien" id="deco">Me déconnecter</button></p>`;
+ $('zone').querySelectorAll('[data-ann]').forEach(b=>b.onclick=async()=>{if(confirm('Annuler cette réservation ?')){await Compte.api('annuler',{id:+b.dataset.ann});espace()}});
+ $('fp').onsubmit=async e=>{e.preventDefault();Compte.membre=(await Compte.api('profil',{nom:$('pn').value,tel:$('pt').value,adresse:$('pa').value})).membre;espace()};
+ $('deco').onclick=async()=>{await Compte.api('deconnexion',{});Compte.membre=null;connexion()}}
+Compte.moi().then(m=>m?espace():connexion());''')
+
+# ——— Comprendre : économie circulaire et réemploi ———
+page('comprendre.html', 'Comprendre le réemploi – Comptoir des Matériaux', "Pourquoi réemployer les matériaux de construction ? Économie circulaire, déchets, CO₂ : la raison d'être du Comptoir des Matériaux.", '''
+<section class="hero hero-court"><div class="hero-in"><h1>Pourquoi <span>réemployer</span> ?</h1>
+<p>Un évier, une porte ou une brique ont déjà coûté de l'énergie, de l'eau et des matières premières. Les jeter, c'est perdre tout cela. Les réemployer, c'est le garder.</p></div></section>
+<main class="contenu comprendre">
+<div class="chiffres">
+<div><b>≈ 1/3</b><span>des déchets produits en Europe viennent de la construction et de la démolition</span></div>
+<div><b>&gt; 15 t</b><span>de matériaux remis en circulation par le Comptoir en 2026</span></div>
+<div><b>jusqu'à −90 %</b><span>sur le prix d'un matériau, par rapport au neuf</span></div>
+<div><b>quelques minutes</b><span>c'est ce que sert une perceuse dans toute sa vie, en moyenne</span></div></div>
+
+<h2>L'économie circulaire, en deux mots</h2>
+<p>L'économie « linéaire » <em>extrait, fabrique, utilise, jette</em>. L'économie circulaire cherche à garder les objets et les matériaux en usage le plus longtemps possible, à leur meilleure valeur. Elle ne parle pas d'abord de recyclage : recycler, c'est déjà casser l'objet pour en refaire de la matière, avec de l'énergie. Avant ça, il y a mieux.</p>
+
+<h2>L'échelle : du meilleur au moins bon</h2>
+<ol class="echelle">
+<li><b>Éviter</b><span>Ne pas acheter ce dont on n'a pas besoin. Louer ou emprunter plutôt qu'acheter : c'est l'outilthèque et la camionnette partagée.</span></li>
+<li><b>Réemployer</b><span>Utiliser à nouveau, tel quel, pour le même usage : une porte reste une porte. C'est le cœur du Comptoir.</span></li>
+<li><b>Réutiliser, détourner</b><span>Donner un autre usage : un châssis devient une serre, une palette un bac potager. C'est « Faire avec ».</span></li>
+<li><b>Réparer</b><span>Remettre en état plutôt que remplacer : c'est l'atelier partagé.</span></li>
+<li><b>Recycler</b><span>Broyer, fondre, refondre pour refaire de la matière. Utile, mais cela consomme de l'énergie et perd de la valeur.</span></li>
+<li><b>Valoriser, éliminer</b><span>Brûler pour l'énergie, ou mettre en décharge. Le dernier recours.</span></li></ol>
+
+<h2>Pourquoi les matériaux de construction ?</h2>
+<div class="infos-prat">
+<div><h3>Beaucoup de matière</h3><p>La construction est le secteur qui consomme le plus de matières premières et produit le plus de déchets. Une rénovation de salle de bain sort vite plusieurs centaines de kilos de matériaux, souvent en parfait état.</p></div>
+<div><h3>Beaucoup de CO₂ « caché »</h3><p>Cuire une brique, fondre du verre, produire de l'acier ou de la céramique émet beaucoup de CO₂. Ce carbone est déjà dépensé : réemployer l'objet évite d'en émettre à nouveau pour un neuf. Sur chaque fiche du catalogue, on indique une estimation du CO₂ évité.</p></div>
+<div><h3>Des ressources locales</h3><p>Ce qui est démonté à Malmedy et alentours resservit ici : moins de transport, et de l'argent qui reste dans la région.</p></div>
+<div><h3>Des emplois</h3><p>Trier, nettoyer, mesurer, photographier, conseiller : le réemploi crée du travail local, souvent en insertion.</p></div></div>
+
+<h2>Le Comptoir, concrètement</h2>
+<div class="quatre">
+<a href="index.html#infos"><span>📦</span><b>Le dépôt</b>Vous rénovez ? Proposez-nous vos matériaux en bon état (photos par WhatsApp d'abord).</a>
+<a href="catalogue.html"><span>🏷️</span><b>Le magasin</b>Sanitaires, portes, châssis, carrelage, bois… à prix doux, mercredi et samedi.</a>
+<a href="outils.html"><span>🔧</span><b>L'outilthèque</b>Louez l'outil plutôt que de l'acheter.</a>
+<a href="reserver.html"><span>🪚</span><b>L'atelier et la camionnette</b>Un espace équipé et un véhicule, en commun pour les membres.</a></div>
+
+<h2>Ce que vous pouvez faire</h2>
+<ul class="gestes">
+<li><b>Avant de jeter :</b> une porte, un évier, des carrelages en trop ? Appelez-nous avant le conteneur.</li>
+<li><b>Avant d'acheter neuf :</b> regardez le catalogue, avec les mesures L1, L2, L3 pour savoir si ça rentre.</li>
+<li><b>Avant d'acheter un outil :</b> louez-le à l'outilthèque.</li>
+<li><b>Pour démonter :</b> dévisser plutôt que casser, garder les pièces ensemble, noter les mesures.</li>
+<li><b>Pour s'inspirer :</b> parcourez les <a href="inspiration.html">réalisations en réemploi</a>.</li></ul>
+
+<details class="sources"><summary>Sources et précisions</summary><p>Part des déchets de construction et démolition dans l'Union européenne : Eurostat, statistiques des déchets (environ un tiers du total, hors déchets miniers selon les années). Tonnage 2026 du Comptoir : estimation à partir des ventes enregistrées (poids estimés par catégorie). CO₂ évité : ordres de grandeur tirés des bases INIES / TOTEM, à affiner. Durée d'usage d'une perceuse : chiffre couramment cité par les outilthèques, à prendre comme un ordre de grandeur.</p></details>
+</main>''', compte=False)
+
+# ——— Inspiration : le blog de « Faire avec » ———
+page('inspiration.html', 'Inspirations – Faire avec – Comptoir des Matériaux', "Réalisations en réemploi : idées et photos pour faire avec les matériaux du Comptoir.", '''
+<main class="contenu"><p class="fil"><a href="faire-avec.html">Faire avec</a> › Inspirations</p><h1>Inspirations</h1>
+<p class="intro">Des réalisations en réemploi, ici ou ailleurs : de quoi donner des idées. Vous avez réalisé quelque chose avec des matériaux du Comptoir ? Envoyez-nous vos photos, on la publie.</p>
+<div class="filtres-tags" id="tags"></div>
+<div class="blog" id="liste"></div>
+<article class="billet-plein" id="billet" hidden></article>
+<p class="centre"><a class="bouton jaune" href="mailto:info@la-pile.be?subject=Ma%20r%C3%A9alisation%20en%20r%C3%A9emploi">Proposer ma réalisation</a></p>
+</main>''', r'''
+const $=id=>document.getElementById(id);let B=[],tag='';
+const carte=b=>`<a class="billet" href="#${encodeURIComponent(b.id)}"><div class="img">${b.photos&&b.photos[0]?`<img loading="lazy" src="${escH(b.photos[0])}" alt="">`:`<div class="sans-photo">${b.icone||'🌱'}</div>`}</div><div class="txt"><p class="petit">${escH((b.tags||[]).join(' · '))}</p><h3>${escH(b.titre)}</h3><p>${escH(b.chapo)}</p></div></a>`;
+function liste(){$('billet').hidden=true;$('liste').hidden=false;$('tags').hidden=false;
+ const t=[...new Set(B.flatMap(b=>b.tags||[]))];$('tags').innerHTML=['',...t].map(x=>`<button class="tag${x===tag?' sel':''}" data-t="${escH(x)}">${x?escH(x):'Tout'}</button>`).join('');
+ $('tags').querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{tag=b.dataset.t;liste()});
+ $('liste').innerHTML=B.filter(b=>!tag||(b.tags||[]).includes(tag)).map(carte).join('')}
+function billet(id){const b=B.find(x=>x.id===id);if(!b)return liste();$('liste').hidden=true;$('tags').hidden=true;$('billet').hidden=false;
+ $('billet').innerHTML=`<p><a href="#">← Toutes les inspirations</a></p><p class="petit">${escH((b.tags||[]).join(' · '))}${b.date?' · '+new Date(b.date).toLocaleDateString('fr-BE',{month:'long',year:'numeric'}):''}</p><h2>${escH(b.titre)}</h2><p class="accroche">${escH(b.chapo)}</p>
+ ${(b.photos||[]).length?`<div class="galerie">${b.photos.map(p=>`<img src="${escH(p)}" alt="">`).join('')}</div>`:`<div class="sans-photo grand">${b.icone||'🌱'}<small>Photos à venir</small></div>`}
+ ${(b.texte||[]).map(p=>`<p>${escH(p)}</p>`).join('')}
+ ${(b.materiaux||[]).length?`<h3>Ce qu'il faut</h3><ul>${b.materiaux.map(m=>`<li>${escH(m.t)}${m.q?` – <a href="catalogue.html?q=${encodeURIComponent(m.q)}">voir au catalogue</a>`:''}</li>`).join('')}</ul>`:''}
+ ${b.projet?`<p><a class="bouton" href="projet/${escH(b.projet)}.html">Le projet pas à pas</a></p>`:''}${b.credit?`<p class="petit">${escH(b.credit)}</p>`:''}`;scrollTo(0,0)}
+const route=()=>{const h=decodeURIComponent(location.hash.slice(1));h?billet(h):liste()};
+addEventListener('hashchange',route);
+fetch('inspiration.json',{cache:'no-cache'}).then(r=>r.json()).then(j=>{B=j;route()});''', compte=True)
+
+# ——— Même menu partout ———
+for f in glob.glob(os.path.join(out, '*.html')) + glob.glob(os.path.join(out, '*', '*.html')):
+    prof = '../' if os.path.dirname(f) != out.rstrip('/') else ''
+    t = open(f).read()
+    n = re.sub(r'<nav>.*?</nav>', lambda m: nav(prof), t, count=1, flags=re.S)
+    n = re.sub(r'(style\.css|panier\.js)\?v=[\w]+', rf'\1?v={VER}', n)
+    if n != t:
+        open(f, 'w').write(n)
+
+# ——— Ajouts aux pages générées par site_comptoir.py (à relancer après lui) ———
+def inserer(nom, apres, bloc, marque):
+    f = os.path.join(out, nom)
+    t = open(f).read()
+    t = re.sub(rf'<!--{marque}-->.*?<!--/{marque}-->', '', t, flags=re.S)
+    if apres in t:
+        open(f, 'w').write(t.replace(apres, apres + f'<!--{marque}-->{bloc}<!--/{marque}-->', 1))
+
+inserer('index.html', '<a class="bouton jaune" href="faire-avec.html">Trouver des idées</a></div></section>', '''
+<section class="contenu"><h2>Au Comptoir, on peut aussi…</h2><div class="quatre">
+<a href="outils.html"><span>🔧</span><b>Louer un outil</b>Perceuse, ponceuse, échelle… à petit prix plutôt que de l'acheter.</a>
+<a href="reserver.html"><span>🚐</span><b>Réserver la camionnette</b>Clé en boîte à clé, 7 jours sur 7, pour les membres.</a>
+<a href="reserver.html"><span>🪚</span><b>Travailler à l'atelier</b>Un atelier partagé et son parc machines.</a>
+<a href="comprendre.html"><span>♻️</span><b>Comprendre le réemploi</b>Pourquoi réemployer, et comment s'y mettre.</a></div></section>''', 'services')
+
+inserer('faire-avec.html', 'Partez d’un projet ou de ce que vous voulez faire.</p>', '''
+<a class="encart-inspi" href="inspiration.html"><div><h2>Inspirations</h2><p>Des réalisations en réemploi, en photos : une serre en vieux châssis, un plan de travail en parquet, une cloison en portes… De quoi donner envie de faire avec.</p><span class="bouton jaune">Voir les inspirations</span></div><div class="inspi-icones" aria-hidden="true">🪟🌱🚪🪵</div></a>''', 'inspi')

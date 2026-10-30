@@ -220,3 +220,14 @@ table.t img{width:40px;height:40px;object-fit:cover;border-radius:6px;display:bl
 .carnet tr.jour td{font-weight:600;background:var(--fond,#f4f1ea);font-size:12px}
 .carnet tr.annule td{color:#888;text-decoration:line-through}
 .carnet tr.corr td{color:#b3261e;font-style:italic}
+/* Locations : outilthèque, camionnette, atelier */
+.onglets-loc{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.onglets-loc button{border:2px solid var(--ligne);background:#fff;border-radius:30px;padding:6px 14px;font-weight:600}
+.onglets-loc button.sel{background:var(--bleu);border-color:var(--bleu);color:#fff}
+.res-loc{display:flex;justify-content:space-between;gap:12px;margin-bottom:8px;flex-wrap:wrap}
+.res-loc>div:first-child{display:flex;flex-direction:column;gap:3px;font-size:14px}
+.res-loc.retard{border-color:var(--rouge)}
+.res-btns{display:flex;gap:6px;align-items:flex-start;flex-wrap:wrap}
+.form-loc{display:flex;flex-direction:column;gap:8px}
+.deux-c{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.modal .boite:has(.form-loc){max-width:620px}
