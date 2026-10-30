@@ -6,7 +6,7 @@ import sys, os, re, glob, html
 
 out = sys.argv[1]
 PILE = 'https://www.la-pile.be'
-VER = 'p6'
+VER = 'p7'
 esc = lambda s: html.escape(str(s or ''), quote=True)
 # Coordonnées du Comptoir (pas celles de La Pile). INSTAGRAM : à remplir quand le compte du Comptoir est connu.
 TEL, TEL_LIEN = '+32 (0)455 10 09 21', '+32455100921'
@@ -205,7 +205,7 @@ page('comprendre.html', 'Comprendre le réemploi – Comptoir des Matériaux', "
 
 <h2>Le Comptoir, concrètement</h2>
 <div class="quatre">
-<a href="index.html#infos"><span>📦</span><b>Le dépôt</b>Vous rénovez ? Proposez-nous vos matériaux en bon état (photos par WhatsApp d'abord).</a>
+<a href="index.html#infos"><span>📦</span><b>Le dépôt</b>Des matériaux en trop (chantier, fin de stock, rénovation) ? Proposez-les-nous (photos d'abord).</a>
 <a href="catalogue.html"><span>🏷️</span><b>Le magasin</b>Sanitaires, portes, châssis, carrelage, bois… à prix doux, mercredi et samedi.</a>
 <a href="outils.html"><span>🔧</span><b>L'outilthèque</b>Louez l'outil plutôt que de l'acheter.</a>
 <a href="reserver.html"><span>🪚</span><b>L'atelier et la camionnette</b>Un espace équipé et un véhicule, en commun pour les membres.</a></div>
@@ -248,9 +248,9 @@ fetch('inspiration.json',{cache:'no-cache'}).then(r=>r.json()).then(j=>{B=j;rout
 
 
 # ——— Dépôt : proposer ses matériaux ———
-page('depot.html', 'Donner des matériaux – Comptoir des Matériaux', "Vous rénovez ? Proposez vos matériaux de construction en bon état au Comptoir des Matériaux de Malmedy : envoyez quelques photos, on vous répond.", f"""
+page('depot.html', 'Donner des matériaux – Comptoir des Matériaux', "Fin de chantier, fin de stock, rénovation, garage à vider : proposez vos matériaux de construction en bon état au Comptoir des Matériaux de Malmedy. Envoyez quelques photos, on vous répond.", f"""
 <main class="contenu etroit"><h1>Donner des matériaux</h1>
-<p class="intro">Vous rénovez, vous videz un garage, il vous reste des carrelages ? Ce qui est encore en bon état peut resservir ici, au lieu de partir au conteneur.</p>
+<p class="intro">Particulier ou professionnel : fin de chantier, fin de stock, surplus de commande, rénovation, garage ou grenier à vider… Ce qui est encore en bon état peut resservir ici, au lieu de partir au conteneur.</p>
 <div class="etapes"><div><b>1</b>Envoyez-nous quelques photos et une description, ici ou par WhatsApp</div><div><b>2</b>On vous répond : oui, non, ou une question</div><div><b>3</b>Vous apportez les matériaux un jour d'ouverture, ou on organise un enlèvement</div></div>
 <p class="note-tarif"><b>Merci de ne pas venir déposer sans nous avoir contactés :</b> la place est comptée et certains matériaux ne se revendent pas.</p>
 <div class="deux-grand">
@@ -301,15 +301,15 @@ def inserer(nom, apres, bloc, marque):
 
 # Accueil : la recherche, puis directement les services (photos dans img/services/, sinon une photo de repli).
 SERVICES = [
-    ('catalogue.html', 'materiaux', 'Catalogue matériaux', 'Sanitaires, portes, châssis, carrelage, bois… de réemploi, à prix doux.', '🏷️', f'{PILE}/sites/lapile/gallery_images/thumbs/6958f28b6442e.jpg'),
-    ('outils.html', 'outillage', 'Location d’outillage', 'Perceuses, scies, échelles… louées à la période, au tarif conscient.', '🔧', 'https://lapilebucket.s3.eu-west-3.amazonaws.com/production/item/scv-6a1942ef45853.webp'),
-    ('reserver.html', 'camionnette', 'Camionnette & atelier', 'La camionnette 7j/7 et l’atelier partagé, à réserver en ligne.', '🚐', ''),
-    ('inspiration.html', 'inspirer', 'S’inspirer', 'Des réalisations en réemploi, en photos.', '🌱', ''),
+    ('catalogue.html', 'materiaux', 'Catalogue matériaux', 'Sanitaires, portes, châssis, carrelage, bois… de réemploi, à prix doux.', 'Explorer ›', '🏷️', f'{PILE}/sites/lapile/gallery_images/thumbs/6958f28b6442e.jpg'),
+    ('outils.html', 'outillage', 'Location d’outillage', 'Perceuses, scies, échelles… louées à la période, au tarif conscient.', 'Réserver', '🔧', 'https://lapilebucket.s3.eu-west-3.amazonaws.com/production/item/scv-6a1942ef45853.webp'),
+    ('reserver.html', 'camionnette', 'Camionnette & atelier', 'La camionnette 7j/7 et l’atelier partagé, à réserver en ligne.', 'Réserver', '🚐', ''),
+    ('inspiration.html', 'inspirer', 'S’inspirer', 'Des réalisations en réemploi, en photos.', 'Découvrir ›', '🌱', ''),
 ]
 def accueil():
     f = os.path.join(out, 'index.html'); t = open(f).read()
-    tuiles = ''.join(f"""<a class="service" href="{h}"><div class="img"><img src="img/services/{n}.jpg" alt="" loading="lazy" data-repli="{esc(r)}" onerror="if(this.dataset.repli){{this.src=this.dataset.repli;this.dataset.repli=''}}else{{this.remove()}}"><span class="ic">{ic}</span></div><div class="txt"><h3>{esc(ti)}</h3><p>{esc(d)}</p></div></a>""" for h, n, ti, d, ic, r in SERVICES)
-    don = '<a class="bandeau-don" href="depot.html"><span aria-hidden="true">📦</span><span><b>Vous rénovez ?</b> Donnez-nous vos matériaux encore bons : quelques photos suffisent.</span><span class="bouton jaune">Proposer un don</span></a>'
+    tuiles = ''.join(f"""<a class="service" href="{h}"><div class="img"><img src="img/services/{n}.jpg" alt="" loading="lazy" data-repli="{esc(r)}" onerror="if(this.dataset.repli){{this.src=this.dataset.repli;this.dataset.repli=''}}else{{this.remove()}}"><span class="ic">{ic}</span></div><div class="txt"><h3>{esc(ti)}</h3><p>{esc(d)}</p><span class="cta">{esc(cta)}</span></div></a>""" for h, n, ti, d, cta, ic, r in SERVICES)
+    don = '<a class="bandeau-don" href="depot.html"><span aria-hidden="true">📦</span><span><b>Des matériaux en trop ?</b> Fin de chantier, fin de stock, rénovation, garage à vider… Donnez-nous ce qui est encore bon : quelques photos suffisent.</span><span class="bouton jaune">Proposer un don</span></a>'
     bloc = f'<section class="contenu"><h2 class="sr">Nos services</h2><div class="services">{tuiles}</div>{don}</section>\n'
     t = re.sub(r'(<section class="hero"><div class="hero-in">)<h1>.*?</h1>', r'\1<h1 class="hero-logo"><img src="img/logo-comptoir.png" alt="Comptoir des Matériaux" width="735" height="275"></h1>', t, flags=re.S)
     t = re.sub(r'<form action="catalogue.html" class="cherche">.*?</form>', '', t, flags=re.S)  # plus de recherche sur l'accueil
