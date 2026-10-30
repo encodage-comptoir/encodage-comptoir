@@ -3,7 +3,7 @@
 <title>Catalogue – Comptoir des Matériaux</title><meta name="description" content="Tous les matériaux de réemploi disponibles au Comptoir des Matériaux à Malmedy, avec recherche par dimensions.">
 <meta name="robots" content="noindex"><!-- maquette : à retirer à la mise en ligne réelle -->
 <meta property="og:title" content="Catalogue – Comptoir des Matériaux"><meta property="og:description" content="Tous les matériaux de réemploi disponibles au Comptoir des Matériaux à Malmedy, avec recherche par dimensions.">
-<link rel="canonical" href="https://encodage-comptoir.github.io/encodage-comptoir/comptoir/catalogue.html">
+<link rel="canonical" href="https://www.comptoir-materiaux.be/catalogue.html">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="style.css?v=p8"><script src="panier.js?v=p8" defer></script>
 <!--ico--><link rel="icon" href="favicon.ico" sizes="any"><link rel="icon" type="image/png" href="favicon-32.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><!--/ico--></head><body>
@@ -53,14 +53,24 @@ function maj(){
   &&mots.every(w=>proche(a,w)));
  if($('tri').value==='p')r.sort((a,b)=>(a.p||1e9)-(b.p||1e9));if($('tri').value==='e')r.sort((a,b)=>b.e-a.e);
  $('nb').textContent=r.length+' article'+(r.length>1?'s':'');
- $('liste').innerHTML=r.slice(0,240).map(a=>`<div class="carte-w"><a class="carte" href="article/${a.r}.html"><div class="img"><img loading="lazy" src="${a.v}" alt="${esc(a.t)}">${a.e>=20?`<span class="eco">−${a.e} % vs neuf</span>`:''}</div><div class="txt"><h3>${esc(a.t)}</h3><p class="prix">${esc(a.pt)}${a.pm?`<small class="prix-m2">${esc(a.pm)}</small>`:''}</p>${a.n?`<p class="neuf">Neuf : ${esc(a.n)}</p>`:''}${a.c2?`<p class="co2-mini">−${esc(a.c2)} évités vs neuf</p>`:''}${a.sc?`<p class="dispo"><span class="stock-pastille">${esc(a.sc)}</span></p>`:''}${a.sf?`<p class="surf">${esc(a.sf)}</p>`:''}</div></a><button class="ajout-mini" data-ajout="${esc(JSON.stringify({r:a.r,t:a.t,p:a.p,pt:a.pt,v:a.v,s:a.s,st:a.st,o:a.o}))}">+ Ma liste</button></div>`).join('');
+ $('liste').innerHTML=r.slice(0,240).map(a=>`<div class="carte-w"><a class="carte" href="${a.nv?'fiche.html?r='+encodeURIComponent(a.r):'article/'+a.r+'.html'}"><div class="img"><img loading="lazy" src="${a.v}" alt="${esc(a.t)}">${a.e>=20?`<span class="eco">−${a.e} % vs neuf</span>`:''}</div><div class="txt"><h3>${esc(a.t)}</h3><p class="prix">${esc(a.pt)}${a.pm?`<small class="prix-m2">${esc(a.pm)}</small>`:''}</p>${a.n?`<p class="neuf">Neuf : ${esc(a.n)}</p>`:''}${a.c2?`<p class="co2-mini">−${esc(a.c2)} évités vs neuf</p>`:''}${a.sc?`<p class="dispo"><span class="stock-pastille">${esc(a.sc)}</span></p>`:''}${a.sf?`<p class="surf">${esc(a.sf)}</p>`:''}</div></a><button class="ajout-mini" data-ajout="${esc(JSON.stringify({r:a.r,t:a.t,p:a.p,pt:a.pt,v:a.v,s:a.s,st:a.st,o:a.o}))}">+ Ma liste</button></div>`).join('');
  history.replaceState(null,'',$('cat').value?'#cat='+$('cat').value:location.pathname+location.search);
 }
 document.querySelectorAll('#filtres input,#filtres select').forEach(e=>e.addEventListener('input',maj));
 // Stock vivant publié par la caisse : articles partis retirés, quantités et emplacements à jour.
+const RAYON={SA:'Sanitaire',PA:'Sanitaire',CH:'Châssis et fenêtres',PO:'Portes',CAR:'Carrelage',GRO:'Gros œuvre',RA:'Chauffage',ELEC:'Électricité et éclairage',LUM:'Électricité et éclairage',
+ BOI:'Bois et panneaux',PAR:'Parquet, bardage et terrasse',LAM:'Lambris et plafonds',TOI:'Toiture',ISO:'Isolation',Q:'Quincaillerie',OUT:'Outillage',ELECTRO:'Électroménager',DIV:'Divers'};
+const prixTxt=(p,u)=>p.toFixed(2).replace('.',',')+' € / '+(u||'pièce');
+const dimsTxt=d=>d.length?d.map(x=>String(x).replace('.',',')).join(' × ')+' cm':'';
+const stockTxt=x=>x.s>0?(x.u&&x.u!=='pièce'?String(x.s).replace('.',',')+' '+x.u:x.s+' pièce'+(x.s>1?'s':'')):'';
+// Article du stock publié par la caisse, au format des cartes du catalogue (seulement avec un prix et en stock).
+const carteNouvelle=x=>{const d=x.d||[],c=RAYON[x.c]||'Divers',st=stockTxt(x);
+ return {r:x.r,t:x.n+(d.length&&!/\d/.test(x.n)?' – '+dimsTxt(d):''),c,p:x.p,pt:prixTxt(x.p,x.u),v:(x.f||[])[0]||'',d1:d[0]||0,d2:d[1]||0,d3:d[2]||0,m:x.m||'',e:0,s:x.s,st,sc:st?st+' en stock':'',o:x.e||'',
+  k:[x.n,x.r,c,x.m,x.de].join(' ').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase(),nv:1}};
+const nouvelle=x=>x.n&&x.p>0&&x.st==='ok'&&x.s>0;
 const vivant=(d,j)=>{if(!j)return d;const m={};(j.articles||[]).forEach(x=>m[x.r]=x);
- return d.filter(a=>!['vendu','rupture','hors'].includes((m[a.r]||{}).st)).map(a=>{const x=m[a.r];if(!x)return a;
-  if(x.s>0){a.s=x.s;a.st=x.u&&x.u!=='pièce'?`${String(x.s).replace('.',',')} ${x.u}`:`${x.s} pièce${x.s>1?'s':''}`;if(a.sc)a.sc=a.st+' en stock'}if(x.e)a.o=x.e;return a})};
+ return (j.articles||[]).filter(x=>nouvelle(x)&&!d.some(a=>a.r===x.r)).sort((x,y)=>String(y.cree||'').localeCompare(String(x.cree||''))).map(carteNouvelle).concat(d.filter(a=>!['vendu','rupture','hors'].includes((m[a.r]||{}).st)).map(a=>{const x=m[a.r];if(!x)return a;
+  if(x.s>0){a.s=x.s;a.st=x.u&&x.u!=='pièce'?`${String(x.s).replace('.',',')} ${x.u}`:`${x.s} pièce${x.s>1?'s':''}`;if(a.sc)a.sc=a.st+' en stock'}if(x.e)a.o=x.e;return a}))};
 Promise.all([fetch('donnees.json').then(r=>r.json()),fetch('stock.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null).catch(()=>null)]).then(([d,j])=>{D=vivant(d,j);maj()});
 </script>
 <footer class="pied"><div class="pied-in">

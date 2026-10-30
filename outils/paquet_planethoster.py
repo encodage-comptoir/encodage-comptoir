@@ -5,13 +5,23 @@
 #   /api/        l'API PHP, avec un config.php prêt (clé de la caisse tirée au hasard)
 #   /caisse/     la caisse
 #   /encodage/   l'app d'encodage (index.html de la racine du dépôt + essai/ pour le modèle de reconnaissance)
-import sys, os, zipfile, secrets, glob, datetime
+import sys, os, zipfile, secrets, glob, datetime, subprocess
 
 racine = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sortie = sys.argv[1]
 os.makedirs(sortie, exist_ok=True)
 zp = os.path.join(sortie, 'comptoir-materiaux.zip')
 cle = os.environ.get('CLE_CAISSE') or secrets.token_urlsafe(24)   # garder la même clé d'un paquet à l'autre
+# Mot de passe des pages /caisse/ et /encodage/ (le navigateur le demande une fois puis le retient).
+UTIL = 'comptoir'
+mdp = os.environ.get('MDP_ACCES') or '-'.join(secrets.choice(['pile', 'bois', 'brique', 'porte', 'tuile', 'chene', 'vis', 'clou', 'evier', 'poutre', 'dalle', 'zinc']) + str(secrets.randbelow(90) + 10) for _ in range(3))
+HTPASSWD = UTIL + ':' + subprocess.run(['openssl', 'passwd', '-apr1', mdp], capture_output=True, text=True, check=True).stdout.strip() + '\n'
+PROTEGE = """# Accès réservé à l'équipe du Comptoir (identifiant et mot de passe dans INSTALLATION.txt).
+AuthType Basic
+AuthName "Comptoir des Materiaux - equipe"
+AuthUserFile /home/hebkdjjkdw/public_html/api/donnees/.htpasswd
+Require valid-user
+"""
 
 HTACCESS = """# www.comptoir-materiaux.be : https et adresse avec www.
 RewriteEngine On
@@ -58,6 +68,9 @@ with zipfile.ZipFile(zp, 'w', zipfile.ZIP_DEFLATED) as z:
     for f in glob.glob(os.path.join(racine, 'donnees', 'envois', '*.json')):
         z.write(f, 'api/donnees/fichiers/envois/' + os.path.basename(f))
     ajouter(z, os.path.join(racine, 'caisse'), 'caisse')
+    z.writestr('api/donnees/.htpasswd', HTPASSWD)
+    z.writestr('caisse/.htaccess', PROTEGE)
+    z.writestr('encodage/.htaccess', PROTEGE)
     for f in ['index.html', 'sw.js', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png']:
         ajouter(z, os.path.join(racine, f), 'encodage/' + f)
     for f in ['poids.js', 'annonces.json', 'vendor', 'modeles']:
@@ -83,6 +96,11 @@ Clé de la caisse (à garder pour soi, ne pas l'envoyer par mail ni la publier) 
    suivent pas le changement d'adresse). Puis ouvrir https://www.comptoir-materiaux.be/encodage/
    Réglages > Liaison avec la caisse : la même clé > Enregistrer. Puis « Ajouter à l'écran d'accueil ».
 6. Dans la caisse, onglet Locations > Outils : « Reprendre l'ancienne outilthèque » une fois, pour charger les 45 outils.
+
+Mot de passe des pages Caisse et Encodage (demandé une fois par appareil, le navigateur le retient) :
+
+    identifiant  {UTIL}
+    mot de passe {mdp}
 
 Adresses :
   Site       https://www.comptoir-materiaux.be

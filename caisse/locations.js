@@ -14,10 +14,10 @@ async function siteApi(a,corps,get={},brut){
  const j=await r.json().catch(()=>({erreur:"Réponse illisible du site ("+r.status+")"}));
  if(!r.ok||j.erreur)throw new Error(j.erreur||"Erreur "+r.status);return j}
 // Photo réduite à 1600 px avant l'envoi au site.
-async function envoyerPhoto(f){const i=await createImageBitmap(f),k=Math.min(1,1600/Math.max(i.width,i.height)),c=document.createElement("canvas");
+async function envoyerPhoto(f,dossier){const i=await createImageBitmap(f),k=Math.min(1,1600/Math.max(i.width,i.height)),c=document.createElement("canvas");
  c.width=Math.round(i.width*k);c.height=Math.round(i.height*k);c.getContext("2d").drawImage(i,0,0,c.width,c.height);
  const b=await new Promise(ok=>c.toBlob(ok,"image/jpeg",.85)),fd=new FormData();fd.append("photo",b,"photo.jpg");
- const u=new URL(apiSite());u.searchParams.set("a","c_photo");
+ const u=new URL(apiSite());u.searchParams.set("a","c_photo");if(dossier)u.searchParams.set("dossier",dossier);
  const r=await fetch(u,{method:"POST",headers:{"X-Cle-Caisse":REG.siteCle},body:fd}),j=await r.json().catch(()=>({erreur:"Réponse illisible"}));
  if(!r.ok||j.erreur)throw new Error(j.erreur||"Erreur "+r.status);return j.url}
 async function chargerLoc(){if(!siteApiPret()||Loc.charge)return;Loc.charge=true;

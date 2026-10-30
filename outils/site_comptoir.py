@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from site_co2 import co2, NOTE as CO2_NOTE
 
 src_json, src_csv, out = sys.argv[1:4]
-BASE = 'https://encodage-comptoir.github.io/encodage-comptoir/comptoir/'
+BASE = 'https://www.comptoir-materiaux.be/'
 PILE = 'https://www.la-pile.be'
 cat = json.load(open(src_json))
 unite_act = {r['Référence']: r['Unité actuelle'] for r in csv.DictReader(open(src_csv, encoding='utf-8-sig'), delimiter=';')}

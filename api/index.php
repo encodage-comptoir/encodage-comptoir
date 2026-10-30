@@ -244,9 +244,10 @@ switch ($a) {
     q('UPDATE depots SET statut=?, note=?, maj=? WHERE id=?', [$c['statut'], (string)($c['note'] ?? ''), maintenant(), (int)($c['id'] ?? 0)]);
     rep(['ok' => true]);
 
-  case 'c_photo':  // photo d'un outil, de la camionnette ou de l'atelier, envoyée depuis la caisse
+  case 'c_photo':  // photo d'un outil, de la camionnette, de l'atelier ou d'un article du stock, envoyée depuis la caisse
     caisse();
-    $p = ($t = fichiers('photo')) ? sauver_photo($t[0], 'outils') : null;
+    // dossier=stock : photos des fiches de l'app d'encodage, intégrées au stock par la caisse.
+    $p = ($t = fichiers('photo')) ? sauver_photo($t[0], ($_GET['dossier'] ?? '') === 'stock' ? 'stock' : 'outils') : null;
     if (!$p) err('Photo refusée (JPEG, PNG ou WebP, 8 Mo au plus).');
     rep(['url' => base_site() . $p]);
 

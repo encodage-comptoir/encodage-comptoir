@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Encodage Comptoir</title>
 <meta name="theme-color" content="#f2b705">
-<link rel="manifest" href="manifest.webmanifest">
+<link rel="manifest" href="manifest.webmanifest" crossorigin="use-credentials">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
@@ -134,7 +134,7 @@ body.said .steps i.on{background:#ffd800}
 <script src="essai/poids.js"></script>
 <script>
 "use strict";
-const VERSION="8.1 (site comptoir-materiaux.be)";
+const VERSION="8.2 (fiches directement dans le stock)";
 // ---------- Données de référence ----------
 // Préfixes et catégories : les noms doivent être identiques aux catégories du back-office Impulsion (vérifiés le 14/10/2026).
 const CATS=[
@@ -253,7 +253,7 @@ const appelSite=(a,get,corps)=>{const u=new URL(apiSite());u.searchParams.set("a
 // Vérifie la clé dès l'enregistrement : mieux vaut le savoir dans les Réglages qu'au moment d'envoyer.
 async function testerCle(){try{const r=await appelSite("c_fichiers",{dossier:"envois"});
  return r.status===403?"Le site refuse cette clé : recopiez-la en entier":!r.ok?"Le site ne répond pas ("+r.status+")":""}catch(e){return navigator.onLine?"Site introuvable : vérifiez l'adresse":""}}
-async function envoyerCaisse(list,suivi){const P=paquets(list,8e6),pile=n=>String(n).padStart(2,"0"),t=new Date();
+async function envoyerCaisse(list,suivi){const P=paquets(list,6e6),pile=n=>String(n).padStart(2,"0"),t=new Date();
  const base=`${t.getFullYear()}-${pile(t.getMonth()+1)}-${pile(t.getDate())}-${pile(t.getHours())}h${pile(t.getMinutes())}`;
  for(let i=0;i<P.length;i++){const l=P[i],par=[...new Set(l.map(f=>f.par).filter(Boolean))].join(" et ")||"app d'encodage";suivi(i,P.length);
   // Le nom du fichier dit déjà quand, qui et combien : la caisse affiche la liste sans tout télécharger.
@@ -261,7 +261,11 @@ async function envoyerCaisse(list,suivi){const P=paquets(list,8e6),pile=n=>Strin
   const nom=`${base}-${qui_}-${l.length}f-${Math.random().toString(36).slice(2,6)}${P.length>1?"-"+(i+1):""}`;
   const contenu=JSON.stringify({quand:t.toISOString(),par,n:l.length,nPhotos:l.reduce((s,f)=>s+f.photos.length,0),
    liste:l.map(f=>({code:f.code,nom:f.type==="maj"?(f.statut==="introuvable"?"introuvable":titrePropose(f)):f.nom,note:f.note||""})),
-   fichier:`comptoir-${today()}${P.length>1?"-"+(i+1):""}.html`,html:reportHtml(l)});
+   fichier:`comptoir-${today()}${P.length>1?"-"+(i+1):""}.html`,html:reportHtml(l),
+   // Les fiches elles-mêmes : la caisse les ajoute directement au stock (et donc au site), photos comprises.
+   fiches:l.map(f=>({type:f.type||"",code:f.code,nom:f.nom,titre:f.type==="maj"?titrePropose(f):"",annonce:f.annonce||"",statut:f.statut||"",cat:f.cat,
+    L:f.L,l:f.l,h:f.h,matiere:f.matiere||"",couleur:f.couleur||"",etat:f.etat||"",qte:f.qte,unite:f.unite||"pièce",prix:f.prix||"",prov:f.prov||"",
+    empl:f.empl||"",poids:f.poids||"",poidsEst:!!f.poidsEst,note:f.note||"",descr:descr(f),par:f.par||"",cree:f.cree,photos:(f.photos||[]).filter(Boolean)}))});
   const r=await appelSite("c_ecrire",{chemin:`envois/${nom}.json`},contenu);
   if(!r.ok)throw new Error(r.status===403?"clé de la caisse refusée":r.status===413?"envoi trop lourd pour le site":"le site répond "+r.status);
   await marquerEnvoye(l)}}

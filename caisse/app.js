@@ -1,6 +1,6 @@
 "use strict";
 // Caisse & stock du Comptoir des Matériaux. Tout est gardé sur l'appareil (IndexedDB) ; rien n'est écrit dans Impulsion.
-const VERSION="3.1 (essai)";
+const VERSION="3.2 (essai)";
 const CATS=[["SA","Sanitaire"],["PA","Parois de douche"],["CH","Châssis"],["PO","Portes"],["CAR","Carrelage"],["GRO","Gros œuvre"],["RA","Chauffage"],
  ["ELEC","Électricité"],["LUM","Luminaires"],["BOI","Bois"],["PAR","Parquet & bardage"],["LAM","Lambris"],["TOI","Toiture"],["ISO","Isolant"],
  ["Q","Quincaillerie"],["OUT","Outillage"],["ELECTRO","Électroménager"],["DIV","Divers"]];
@@ -78,8 +78,9 @@ function ajouterFiches(fiches,source){let n=0;
   if(f.type==="maj"){const a=parRef(norm(f.annonce));if(a){if(empl)a.e=empl;if(prix)a.p=prix}return}
   const r=norm(f.code);if(!r||!(f.nom||f.titre))return;
   const a=parRef(r);if(a){if(empl&&!a.e)a.e=empl;if(prix&&!a.p)a.p=prix;return}
+  const fs=(f.photos||[]).filter(p=>typeof p==="string"&&/^https?:/.test(p));
   ajouterArticle({r,n:f.titre||f.nom,t:f.nom,p:prix||0,s:num(f.qte)??1,u:f.unite||"pièce",c:f.cat,e:empl,f:photo1(f),src:source,cree:f.cree,m:f.matiere||"",
-   kg:num(f.poids),kgEst:!!f.poidsEst,L:f.L,l:f.l,h:f.h});n++});
+   kg:num(f.poids),kgEst:!!f.poidsEst,L:f.L,l:f.l,h:f.h,...(fs.length?{fs}:{}),...(f.descr?{d:f.descr}:{}),...(f.etat?{et:f.etat}:{}),...(f.par?{par:f.par}:{})});n++});
  return n}
 
 // ---------- Données ----------
@@ -418,8 +419,26 @@ function stockListe(){const mots=sans(stQ).split(/\s+/).filter(Boolean);
 function stockTotaux(){let n=0,val=0,kg=0;CAT.forEach(a=>{const r=reste(a);if(r>0){n++;val+=r*(a.p||0);if(a.kg!=null)kg+=r*a.kg}});return {n,val:r2(val),kg}}
 // ---------- Fiches envoyées par l'app d'encodage (provisoire, demande de Jérôme du 24/10/2026) ----------
 // L'app d'encodage dépose sur le serveur du site (envois/) un fichier avec les annonces et les photos.
-// Ici : juste la liste et un lien pour l'ouvrir, puis les placer dans Impulsion. « Placé » est noté sur cet appareil.
+// Ici : la liste, un lien pour revoir les annonces et photos, et « Vérifié » (noté sur cet appareil).
 let ENVOIS=null;
+// Les envois de l'app (8.2 et plus) contiennent les fiches elles-mêmes : la caisse les ajoute au stock toute seule,
+// photos envoyées sur le site. Une référence déjà connue n'est pas recréée (un autre appareil a pu l'ajouter avant).
+// Sans prix, l'article reste dans la caisse (filtre « Sans prix ») ; il apparaît sur le site dès qu'il a un prix.
+async function integrerEnvois(){if(!syncPret())return 0;let n=0;
+ const L=(await ficListe(SRV.envois)).filter(f=>f.name.endsWith(".json")&&!REG["envoiStock:"+f.name]);
+ for(const f of L){let o;try{o=await dechiffrer(await ficLire(f.path))}catch(e){if(e.status)throw e;continue}
+  if(!o||!Array.isArray(o.fiches)){await putSet("envoiStock:"+f.name,"ancien format");continue}
+  const fiches=[];
+  for(const x of o.fiches){const r=norm(x.code),neuf=x.type!=="maj"&&r&&!parRef(r);const ph=[];
+   if(neuf)for(const p of x.photos||[]){try{ph.push(await envoyerPhoto(await (await fetch(p)).blob(),"stock"))}catch(e){if(!navigator.onLine)throw e}}
+   fiches.push({...x,photos:ph})}
+  const avant=CAT.length;n+=ajouterFiches(fiches,"app");
+  for(const a of CAT.slice(avant)){const x={...a};delete x.k;x.modifie=Date.now();ARTS[a.r]=x;await put("articles",x)}
+  // fiches « annonce existante » : emplacement et prix repris sur l'article
+  for(const x of fiches.filter(x=>x.type==="maj")){const a=parRef(norm(x.annonce));if(a){const y={...(ARTS[a.r]||{r:a.r}),modifie:Date.now()};if(a.e)y.e=a.e;if(a.p)y.p=a.p;ARTS[a.r]=y;await put("articles",y)}}
+  await putSet("envoiStock:"+f.name,new Date().toISOString())}
+ if(n){calcStock();toast(`${n} fiche${n>1?"s":""} de l'app ajoutée${n>1?"s":""} au stock`);if(screen==="stock"&&!panneauRef)render()}
+ return n}
 const infoEnvoi=n=>{const m=/^(\d{4})-(\d\d)-(\d\d)-(\d\d)h(\d\d)-(.+?)-(\d+)f-/.exec(n);return m?{date:`${m[3]}/${m[2]}/${m[1]} à ${m[4]}h${m[5]}`,par:m[6].replace(/-/g," ").replace(/\bsaid\b/,"Saïd").replace(/\baudrey\b/,"Audrey"),n:+m[7]}:{date:n,par:"",n:0}};
 async function chargerEnvois(){if(!syncPret()){ENVOIS=[];return}
  try{ENVOIS=(await ficListe(SRV.envois)).filter(f=>f.name.endsWith(".json")).sort((a,b)=>b.name.localeCompare(a.name))}catch(e){ENVOIS=ENVOIS||[]}
@@ -429,10 +448,11 @@ function envoisHtml(){if(!syncPret())return "";if(ENVOIS===null){chargerEnvois()
  const ligne=f=>{const i=infoEnvoi(f.name);return `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--ligne,#ddd)">
   <span style="flex:1;min-width:200px"><b>${i.n} fiche${i.n>1?"s":""}</b>${i.par?" de "+esc(i.par):""} <span class="muted">· ${esc(i.date)}</span></span>
   <button class="btn petit" data-envoi="${esc(f.path)}">Ouvrir les annonces et photos</button>
-  ${REG["envoiPlace:"+f.name]?"":`<button class="btn clair petit" data-place="${esc(f.name)}">Placé dans Impulsion</button>`}</div>`};
- return `<div class="carte" style="margin-bottom:14px"><h3>Fiches de l'app d'encodage à placer dans Impulsion (${a.length})</h3>
+  ${REG["envoiPlace:"+f.name]?"":`<button class="btn clair petit" data-place="${esc(f.name)}">Vérifié</button>`}</div>`};
+ return `<div class="carte" style="margin-bottom:14px"><h3>Envois de l'app d'encodage (${a.length} à vérifier)</h3>
+  <p class="muted">Les nouvelles fiches entrent toutes seules dans le stock, filtre « Nouvelles fiches ». Elles apparaissent sur le site dès qu'elles ont un prix. Ouvrez l'envoi pour revoir les photos, puis cochez « Vérifié ».</p>
   ${a.map(ligne).join("")||'<p class="muted">Rien en attente.</p>'}
-  ${faits?`<details class="muted"><summary>Déjà placés (${faits})</summary>${ENVOIS.filter(f=>REG["envoiPlace:"+f.name]).map(ligne).join("")}</details>`:""}</div>`}
+  ${faits?`<details class="muted"><summary>Déjà vérifiés (${faits})</summary>${ENVOIS.filter(f=>REG["envoiPlace:"+f.name]).map(ligne).join("")}</details>`:""}</div>`}
 function brancherEnvois(){
  $$("[data-envoi]").forEach(b=>b.onclick=async()=>{const w=window.open("","_blank");b.disabled=true;const t=b.textContent;b.textContent="Ouverture…";
   try{const o=await dechiffrer(await ficLire(b.dataset.envoi)),u=URL.createObjectURL(new Blob([o.html],{type:"text/html"}));
@@ -773,7 +793,10 @@ function rImpulsion(){const vendus={};ventes.filter(v=>!v.annulee&&dansPeriode(v
  ${actions(["stock","Stock à jour, tous les articles (tableur)"],["retirer","Articles à retirer (tableur)"])}`}
 
 // Site : fichier de stock lu par le site du Comptoir (référence, stock, prix, statut, emplacement).
-function stockSite(){return {maj:new Date().toISOString(),articles:CAT.filter(a=>!a.x).map(a=>({r:a.r,s:reste(a),p:a.p||0,u:a.u||"pièce",e:a.e||"",st:statut(a),n:a.src?a.n:undefined}))}}
+// Les articles créés dans la caisse ou venus de l'app n'existent pas dans le catalogue du site : on publie aussi leur fiche.
+const ficheSite=a=>{const ph=(a.fs||[a.f]).filter(p=>p&&/^https?:/.test(p));
+ return {n:a.n,c:a.c,d:[a.L,a.l,a.h].map(num).filter(x=>x>0).sort((x,y)=>y-x),f:ph,de:a.d||"",m:a.m||"",et:a.et||"",cree:a.cree||0}};
+function stockSite(){return {maj:new Date().toISOString(),articles:CAT.filter(a=>!a.x).map(a=>({r:a.r,s:reste(a),p:a.p||0,u:a.u||"pièce",e:a.e||"",st:statut(a),...(a.src?ficheSite(a):{})}))}}
 function rSite(){const S=stockSite(),n=k=>S.articles.filter(a=>a.st===k).length;
  return `<div class="titre"><h2>Site du Comptoir</h2></div>
  <p>Le site affiche le stock à partir du fichier <b>stock.json</b> produit ici : articles vendus retirés, quantités et prix à jour, nouvelles fiches ajoutées.</p>

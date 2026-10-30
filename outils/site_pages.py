@@ -310,6 +310,8 @@ for f in glob.glob(os.path.join(out, '*.html')) + glob.glob(os.path.join(out, '*
     n = re.sub(r'<a class="logo".*?</a>', lambda m: logo(prof), n, count=1, flags=re.S)
     n = re.sub(r'<footer class="pied">.*?</footer>', lambda m: pied(prof), n, count=1, flags=re.S)
     n = re.sub(r'(style\.css|panier\.js)\?v=[\w]+', rf'\1?v={VER}', n)
+    # Adresse définitive du site (liens de partage, sitemap, balises og).
+    n = n.replace('https://encodage-comptoir.github.io/encodage-comptoir/comptoir/', 'https://www.comptoir-materiaux.be/')
     # Favicon du Comptoir (les flèches jaunes du logo sur fond turquoise).
     ico = f'<!--ico--><link rel="icon" href="{prof}favicon.ico" sizes="any"><link rel="icon" type="image/png" href="{prof}favicon-32.png"><link rel="apple-touch-icon" href="{prof}apple-touch-icon.png"><!--/ico-->'
     n = re.sub(r'<!--ico-->.*?<!--/ico-->', '', n).replace('</head>', ico + '</head>', 1)
@@ -373,6 +375,54 @@ function proche(a,w){if(!a._k){a._k=sans(a.k);a._w=a._k.split(/[^a-z0-9]+/).filt
     t = t.replace("&&mots.every(w=>sans(a.k).includes(w)));", "&&mots.every(w=>proche(a,w)));", 1)
     open(f, 'w').write(t)
 recherche_souple()
+
+# ——— Articles ajoutés depuis la caisse ou l'app d'encodage (pas encore dans le catalogue généré) ———
+# La caisse publie leur fiche dans stock.json ; le catalogue les ajoute, et fiche.html?r=REF les affiche.
+CODES_JS = r"""const RAYON={SA:'Sanitaire',PA:'Sanitaire',CH:'Châssis et fenêtres',PO:'Portes',CAR:'Carrelage',GRO:'Gros œuvre',RA:'Chauffage',ELEC:'Électricité et éclairage',LUM:'Électricité et éclairage',
+ BOI:'Bois et panneaux',PAR:'Parquet, bardage et terrasse',LAM:'Lambris et plafonds',TOI:'Toiture',ISO:'Isolation',Q:'Quincaillerie',OUT:'Outillage',ELECTRO:'Électroménager',DIV:'Divers'};
+const prixTxt=(p,u)=>p.toFixed(2).replace('.',',')+' € / '+(u||'pièce');
+const dimsTxt=d=>d.length?d.map(x=>String(x).replace('.',',')).join(' × ')+' cm':'';
+const stockTxt=x=>x.s>0?(x.u&&x.u!=='pièce'?String(x.s).replace('.',',')+' '+x.u:x.s+' pièce'+(x.s>1?'s':'')):'';
+// Article du stock publié par la caisse, au format des cartes du catalogue (seulement avec un prix et en stock).
+const carteNouvelle=x=>{const d=x.d||[],c=RAYON[x.c]||'Divers',st=stockTxt(x);
+ return {r:x.r,t:x.n+(d.length&&!/\d/.test(x.n)?' – '+dimsTxt(d):''),c,p:x.p,pt:prixTxt(x.p,x.u),v:(x.f||[])[0]||'',d1:d[0]||0,d2:d[1]||0,d3:d[2]||0,m:x.m||'',e:0,s:x.s,st,sc:st?st+' en stock':'',o:x.e||'',
+  k:[x.n,x.r,c,x.m,x.de].join(' ').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase(),nv:1}};
+const nouvelle=x=>x.n&&x.p>0&&x.st==='ok'&&x.s>0;"""
+
+def nouvelles_fiches():
+    f = os.path.join(out, 'catalogue.html'); t = open(f).read()
+    if 'carteNouvelle' in t:
+        # version précédente : nouvelles fiches en fin de liste → les remettre en tête
+        t = t.replace(".concat((j.articles||[]).filter(x=>nouvelle(x)&&!d.some(a=>a.r===x.r)).sort((x,y)=>(y.cree||0)-(x.cree||0)).map(carteNouvelle))};", "};")
+        if '.map(carteNouvelle)' in t: return
+        t = t.replace(CODES_JS + '\n', '')
+    t = t.replace("const vivant=(d,j)=>{", CODES_JS + "\nconst vivant=(d,j)=>{", 1)
+    # les nouvelles fiches s'ajoutent en tête du catalogue
+    NV = "(j.articles||[]).filter(x=>nouvelle(x)&&!d.some(a=>a.r===x.r)).sort((x,y)=>String(y.cree||'').localeCompare(String(x.cree||''))).map(carteNouvelle)"
+    t = t.replace(" return d.filter(a=>!['vendu'", " return " + NV + ".concat(d.filter(a=>!['vendu'", 1).replace("if(x.e)a.o=x.e;return a})};", "if(x.e)a.o=x.e;return a}))};", 1)
+    t = t.replace('<a class="carte" href="article/${a.r}.html">', '<a class="carte" href="${a.nv?\'fiche.html?r=\'+encodeURIComponent(a.r):\'article/\'+a.r+\'.html\'}">', 1)
+    assert '.map(carteNouvelle)' in t and 'fiche.html?r=' in t
+    open(f, 'w').write(t)
+nouvelles_fiches()
+
+FICHE_NOUVELLE = r"""
+const $=id=>document.getElementById(id);const R=new URLSearchParams(location.search).get('r')||'';
+const slugC=c=>c.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+fetch('stock.json',{cache:'no-cache'}).then(r=>r.json()).then(j=>{const x=(j.articles||[]).find(a=>a.r===R);
+ if(!x||!nouvelle(x)){$('fiche').innerHTML='<p class="fil"><a href="catalogue.html">← Catalogue</a></p><h1>Article plus disponible</h1><p>Cet article a été vendu ou retiré. <a href="catalogue.html">Voir le catalogue</a></p>';return}
+ const a=carteNouvelle(x),d=x.d||[];document.title=a.t+' – Comptoir des Matériaux';
+ const ajout=JSON.stringify({r:a.r,t:a.t,p:a.p,pt:a.pt,v:a.v,s:a.s,st:a.st,o:a.o});
+ const q='Bonjour, je suis intéressé·e par l\'article '+a.r+' ('+a.t+'). Est-il toujours disponible ?';
+ $('fiche').innerHTML=`<p class="fil"><a href="catalogue.html">Catalogue</a> › <a href="catalogue.html#cat=${slugC(a.c)}">${escH(a.c)}</a></p>
+ <div class="art-grille"><div class="galerie">${(x.f||[]).map((p,i)=>`<img src="${escH(p)}" alt="${escH(a.t)} – photo ${i+1}">`).join('')||'<div class="sans-photo grand">📦<small>Photo à venir</small></div>'}</div>
+ <div class="infos"><h1>${escH(a.t)}</h1><p class="prix-gros">${escH(a.pt)}</p>
+ <div class="actions"><button class="bouton" data-ajout="${escH(ajout)}">+ Ajouter à ma liste</button>
+ <a class="bouton clair" href="mailto:__MAIL__?subject=${encodeURIComponent('Article '+a.r)}&body=${encodeURIComponent(q)}">Poser une question</a></div>
+ ${x.de?`<p class="descr">${escH(x.de).replace(/\n/g,'<br>')}</p>`:''}
+ <table class="carac">${[['Dimensions (L1 × L2 × L3)',dimsTxt(d)],['Matière',x.m],['État',x.et],['Vendu par',x.u||'pièce'],['Disponible',a.st],['Référence',a.r]].filter(r=>r[1]).map(r=>`<tr><th>${r[0]}</th><td>${escH(r[1])}</td></tr>`).join('')}</table></div></div>`;
+ document.dispatchEvent(new Event('DOMContentLoaded'))}).catch(()=>{$('fiche').innerHTML='<p>Impossible de charger l\'article.</p>'});"""
+page('fiche.html', 'Article – Comptoir des Matériaux', "Un matériau de réemploi disponible au Comptoir des Matériaux, à Malmedy.",
+     '\n<main class="article contenu" id="fiche"><p>Chargement…</p></main>', CODES_JS + FICHE_NOUVELLE.replace('__MAIL__', MAIL))
 
 # Catalogue : les rayons en boutons de couleur, au-dessus de la recherche.
 inserer('catalogue.html', '<main class="contenu"><h1>Catalogue</h1>', """

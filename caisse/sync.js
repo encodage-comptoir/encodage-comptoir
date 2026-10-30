@@ -66,6 +66,8 @@ async function synchroniser(manuel){
   if(recus){appliquerArticles();calcStock();
    const tape=document.activeElement&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)&&document.activeElement.id!=="scanIn";
    if(!tape)render();toast(recus+" changement"+(recus>1?"s":"")+" reçu"+(recus>1?"s":"")+" des autres appareils")}
+  // Nouvelles fiches de l'app d'encodage : ajoutées au stock avant d'écrire le journal (les autres appareils les reçoivent ainsi).
+  if(!illisibles){try{await integrerEnvois()}catch(e){if(e.status===403)throw e}}
   // Journal de cet appareil, seulement s'il a changé.
   const journal={appareil:appareil(),version:VERSION,ventes,sorties,mouvements:MVT,articles:Object.values(ARTS),inventaire:Object.values(INV)};
   const ej=await empreinte(JSON.stringify(journal));
