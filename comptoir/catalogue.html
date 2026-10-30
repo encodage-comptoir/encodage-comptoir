@@ -65,8 +65,11 @@ const dimsTxt=d=>d.length?d.map(x=>String(x).replace('.',',')).join(' × ')+' cm
 const stockTxt=x=>x.s>0?(x.u&&x.u!=='pièce'?String(x.s).replace('.',',')+' '+x.u:x.s+' pièce'+(x.s>1?'s':'')):'';
 // Article du stock publié par la caisse, au format des cartes du catalogue (seulement avec un prix et en stock).
 const carteNouvelle=x=>{const d=x.d||[],c=RAYON[x.c]||'Divers',st=stockTxt(x);
- return {r:x.r,t:x.n+(d.length&&!/\d/.test(x.n)?' – '+dimsTxt(d):''),c,p:x.p,pt:prixTxt(x.p,x.u),v:(x.f||[])[0]||'',d1:d[0]||0,d2:d[1]||0,d3:d[2]||0,m:x.m||'',e:0,s:x.s,st,sc:st?st+' en stock':'',o:x.e||'',
+ return {r:x.r,t:x.n+(d.length&&!/\d/.test(x.n)?' – '+dimsTxt(d):''),c,p:x.p,pt:prixTxt(x.p,x.u),v:(x.f||[])[0]||'',d1:d[0]||0,d2:d[1]||0,d3:d[2]||0,m:x.m||'',e:ecoNeuf(x),n:neufTxt(x),c2:x.co&&x.co.par==='pièce'?String(x.co.kg).replace('.',',')+' kg CO₂':'',s:x.s,st,sc:st?st+' en stock':'',o:x.e||'',
   k:[x.n,x.r,c,x.m,x.de].join(' ').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase(),nv:1}};
+// Prix du neuf et CO₂ calculés par la caisse (caisse/auto.js) pour les fiches de l'app.
+const neufTxt=x=>x.nf?(x.nf[0]===x.nf[1]?x.nf[0]:x.nf[0]+' à '+x.nf[1])+' € / '+(x.u||'pièce'):'';
+const ecoNeuf=x=>x.nf&&x.p>0&&x.nf[0]>x.p?Math.round(100*(1-x.p/x.nf[0])/5)*5:0;
 const nouvelle=x=>x.n&&x.p>0&&x.st==='ok'&&x.s>0;
 const vivant=(d,j)=>{if(!j)return d;const m={};(j.articles||[]).forEach(x=>m[x.r]=x);
  return (j.articles||[]).filter(x=>nouvelle(x)&&!d.some(a=>a.r===x.r)).sort((x,y)=>String(y.cree||'').localeCompare(String(x.cree||''))).map(carteNouvelle).concat(d.filter(a=>!['vendu','rupture','hors'].includes((m[a.r]||{}).st)).map(a=>{const x=m[a.r];if(!x)return a;

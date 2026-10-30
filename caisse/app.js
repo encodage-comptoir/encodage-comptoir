@@ -1,6 +1,6 @@
 "use strict";
 // Caisse & stock du Comptoir des Matériaux. Tout est gardé sur l'appareil (IndexedDB) ; rien n'est écrit dans Impulsion.
-const VERSION="3.7 (essai)";
+const VERSION="3.8 (essai)";
 const CATS=[["SA","Sanitaire"],["PA","Parois de douche"],["CH","Châssis"],["PO","Portes"],["CAR","Carrelage"],["GRO","Gros œuvre"],["RA","Chauffage"],
  ["ELEC","Électricité"],["LUM","Luminaires"],["BOI","Bois"],["PAR","Parquet & bardage"],["LAM","Lambris"],["TOI","Toiture"],["ISO","Isolant"],
  ["Q","Quincaillerie"],["OUT","Outillage"],["ELECTRO","Électroménager"],["DIV","Divers"]];
@@ -508,7 +508,8 @@ function verifEnvoi(nom){const L=CAT.filter(a=>a.envoi===nom),i=infoEnvoi(nom),f
     ${a.p?eur(a.p)+" / "+esc(a.u||"pièce"):'<b style="color:#b00020">Sans prix : n\'ira pas sur le site</b>'} · ${(q=>esc(String(q).replace(".",","))+" "+esc((a.u||"pièce")+((a.u||"pièce")==="pièce"&&q>1?"s":"")))(reste(a)??a.s??0)}
     ${dims(a)?" · "+esc(dims(a))+" cm":""}${a.et?" · "+esc(a.et):""}${a.m?" · "+esc(a.m):""}
     ${a.refApp?`<div style="margin-top:4px;color:#a15c00"><b>Nouvelle référence ${esc(a.r)}</b> : l'app avait donné ${esc(a.refApp)}, déjà pris par un autre article. Corrigez l'étiquette sur l'objet.</div>`:""}
-    ${a.d?`<div class="muted" style="margin-top:4px;white-space:pre-line">${esc(a.d)}</div>`:""}</div>
+    ${(P=>{const nf=neufFiche(a,P);return `<div style="margin-top:6px;white-space:pre-line">${esc(a.dc||P.desc||a.d||"")}</div>
+     <div class="muted" style="margin-top:4px">${nf?`Neuf : ${nf[0]} à ${nf[1]} €`:"Prix du neuf : pas d'estimation"}${P.co2?` · CO₂ évité ≈ ${P.co2.kg} kg`:""}${P.famille?` · ${esc(P.famille)}`:""}</div>`})(Auto.proposer(a))}</div>
     <button class="btn clair petit" data-modif="${esc(a.r)}">Modifier</button></div></div>`).join("")}
   <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px"><button class="btn clair" data-ferme>Fermer</button>
    ${fait?'<span class="muted" style="align-self:center">Déjà vérifié</span>':`<button class="btn" data-verifie>Vérifié : mettre en ligne</button>`}</div>`);
@@ -586,6 +587,11 @@ function ouvrirPanneau(r,refresh,nouveau){
    <label class="f">L2 (cm)<input class="champ" id="aL2" inputmode="decimal" value="${virg(a.l)}"></label>
    <label class="f">L3 (cm)<input class="champ" id="aL3" inputmode="decimal" value="${virg(a.h)}"></label>
   </div>
+  ${a.src?(P=>`<div class="carte" style="padding:10px;margin:0"><h3 style="margin:0 0 6px">Pour le site</h3>
+   <label class="f">Description<textarea class="champ" id="aDc" rows="4" placeholder="${esc(P.desc)}">${esc(a.dc||"")}</textarea></label>
+   <div class="grille-f"><label class="f">Prix du neuf min (€)<input class="champ" id="aNm" inputmode="decimal" value="${virg(a.nMin)}" placeholder="${P.neuf?P.neuf[0]:""}"></label>
+   <label class="f">Prix du neuf max (€)<input class="champ" id="aNx" inputmode="decimal" value="${virg(a.nMax)}" placeholder="${P.neuf?P.neuf[1]:""}"></label></div>
+   <p class="muted" style="margin:4px 0 0">Laissé vide, le site prend la proposition en gris (articles semblables du catalogue).${P.co2?` CO₂ évité ≈ ${P.co2.kg} kg (${esc(P.co2.calcul)}).`:""}</p></div>`)(Auto.proposer(a)):""}
   <label class="f" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="aH" ${a.horsLigne?"checked":""} style="width:20px;height:20px"> Hors ligne (retiré du site, même s'il reste du stock)</label>
   <p class="muted" style="margin:0">${a.kgEst?"Poids estimé d'après la matière et les mesures. ":""}Dans Impulsion, rien ne change : reportez les modifications avec le fichier « Stock à jour » (Rapports).</p>
   ${nouveau?"":`<div><h3>Historique</h3><div class="hist">${hist.map(e=>`<div><span>${dateBe(jour(new Date(e.ts)))}</span><span>${lib[e.type]}${e.motif?" · "+esc(MOTIFS[e.motif]||e.motif):""}${e.note?" · "+esc(e.note):""}${e.vid?" · ticket "+esc(e.vid.slice(11)):""}</span><b>${e.type==="correction"?"= ":e.type==="entree"?"+":"−"}${virg(e.q)}</b></div>`).join("")||'<div><span></span><span class="muted">Aucun mouvement depuis l\'export du 14/10.</span><b></b></div>'}
@@ -613,7 +619,8 @@ function formMouvement(a,type){const t={entree:"Entrée en stock",sortie:"Sortie
   await put("mouvements",m);MVT.push(m);calcStock();toast(t+" enregistrée");render()}}
 async function enregistrerArticle(a,nouveau){
  const o={r:nouveau?norm($("#aR").value)||prochaineRef($("#aC").value):a.r,n:$("#aN").value.trim(),c:$("#aC").value,p:num($("#aP").value),u:$("#aU").value,e:$("#aE").value.trim().toUpperCase(),
-  m:$("#aM").value,L:num($("#aL1").value),l:num($("#aL2").value),h:num($("#aL3").value),horsLigne:$("#aH").checked,modifie:Date.now()};
+  m:$("#aM").value,L:num($("#aL1").value),l:num($("#aL2").value),h:num($("#aL3").value),horsLigne:$("#aH").checked,modifie:Date.now(),
+  ...($("#aDc")?{dc:$("#aDc").value.trim(),nMin:num($("#aNm").value),nMax:num($("#aNx").value)}:{})};
  const kg=num($("#aK").value);o.kg=kg;o.kgEst=kg==null?false:(kg===a.kg?!!a.kgEst:false);
  if(kg==null){const r=Poids.estimer({nom:o.n,cat:o.c,matiere:o.m,unite:o.u,L:o.L,l:o.l,h:o.h});if(r){o.kg=r.kg;o.kgEst=true}}
  if(!o.n){toast("Donnez un nom à l'article",true);return}
@@ -859,8 +866,11 @@ function rImpulsion(){const vendus={};ventes.filter(v=>!v.annulee&&dansPeriode(v
 
 // Site : fichier de stock lu par le site du Comptoir (référence, stock, prix, statut, emplacement).
 // Les articles créés dans la caisse ou venus de l'app n'existent pas dans le catalogue du site : on publie aussi leur fiche.
-const ficheSite=a=>{const ph=(a.fs||[a.f]).filter(p=>p&&/^https?:/.test(p));
- return {n:a.n,c:a.c,d:[a.L,a.l,a.h].map(num).filter(x=>x>0).sort((x,y)=>y-x),f:ph,de:a.d||"",m:a.m||"",et:a.et||"",cree:a.cree||0}};
+// Fiche publiée : ce que la caisse propose (Auto : description, prix du neuf, CO₂, idées) sauf ce qu'Audrey a saisi.
+const neufFiche=(a,P)=>a.nMax?[a.nMin||a.nMax,a.nMax]:P.neuf;
+const ficheSite=a=>{const ph=(a.fs||[a.f]).filter(p=>p&&/^https?:/.test(p)),P=Auto.proposer(a),nf=neufFiche(a,P);
+ return {n:a.n,c:a.c,d:[a.L,a.l,a.h].map(num).filter(x=>x>0).sort((x,y)=>y-x),f:ph,de:a.dc||P.desc||a.d||"",m:a.m||"",et:a.et||"",cree:a.cree||0,
+  ...(nf?{nf}:{}),...(P.co2?{co:P.co2}:{}),...(P.idees&&P.idees.length?{i:P.idees}:{})}};
 function stockSite(){return {maj:new Date().toISOString(),articles:CAT.filter(a=>!a.x).map(a=>({r:a.r,s:reste(a),p:a.p||0,u:a.u||"pièce",e:a.e||"",st:statut(a),...(a.src&&!a.aVerif?ficheSite(a):{})}))}}
 function rSite(){const S=stockSite(),n=k=>S.articles.filter(a=>a.st===k).length;
  return `<div class="titre"><h2>Site du Comptoir</h2></div>
@@ -990,6 +1000,7 @@ const sansSecrets=r=>{const o={...r};delete o.ghJeton;delete o.ghPhrase;delete o
  catch(e){idb=null;stockageKo=true}
  try{(await (await fetch("catalogue.json")).json()).forEach(a=>{BASE[a.r]={...a};ajouterArticle(a)})}catch(e){}
  try{HIST=await (await fetch("historique.json")).json()}catch(e){HIST=[]}
+ await Auto.charger();
  appliquerArticles();await separerCollisions();
  nbFiches=ajouterFiches(await lireFiches("comptoir"),"app")+ajouterFiches(await lireFiches("comptoir-essai"),"essai");
  CAT.forEach(a=>{aLaPiece(a);indexer(a);if(!a.m)a.m=Poids.matiere({nom:a.t||a.n,titre:a.n,cat:a.c});

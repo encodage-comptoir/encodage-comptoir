@@ -2,6 +2,7 @@
 # compte membre, « Comprendre » (économie circulaire, réemploi) et le blog d'inspiration de « Faire avec ».
 # Remet aussi le même menu sur toutes les pages déjà générées.
 # Usage : python3 outils/site_pages.py comptoir/
+from site_co2 import NOTE as CO2_NOTE
 import sys, os, re, glob, html
 
 out = sys.argv[1]
@@ -385,16 +386,22 @@ const dimsTxt=d=>d.length?d.map(x=>String(x).replace('.',',')).join(' × ')+' cm
 const stockTxt=x=>x.s>0?(x.u&&x.u!=='pièce'?String(x.s).replace('.',',')+' '+x.u:x.s+' pièce'+(x.s>1?'s':'')):'';
 // Article du stock publié par la caisse, au format des cartes du catalogue (seulement avec un prix et en stock).
 const carteNouvelle=x=>{const d=x.d||[],c=RAYON[x.c]||'Divers',st=stockTxt(x);
- return {r:x.r,t:x.n+(d.length&&!/\d/.test(x.n)?' – '+dimsTxt(d):''),c,p:x.p,pt:prixTxt(x.p,x.u),v:(x.f||[])[0]||'',d1:d[0]||0,d2:d[1]||0,d3:d[2]||0,m:x.m||'',e:0,s:x.s,st,sc:st?st+' en stock':'',o:x.e||'',
+ return {r:x.r,t:x.n+(d.length&&!/\d/.test(x.n)?' – '+dimsTxt(d):''),c,p:x.p,pt:prixTxt(x.p,x.u),v:(x.f||[])[0]||'',d1:d[0]||0,d2:d[1]||0,d3:d[2]||0,m:x.m||'',e:ecoNeuf(x),n:neufTxt(x),c2:x.co&&x.co.par==='pièce'?String(x.co.kg).replace('.',',')+' kg CO₂':'',s:x.s,st,sc:st?st+' en stock':'',o:x.e||'',
   k:[x.n,x.r,c,x.m,x.de].join(' ').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase(),nv:1}};
+// Prix du neuf et CO₂ calculés par la caisse (caisse/auto.js) pour les fiches de l'app.
+const neufTxt=x=>x.nf?(x.nf[0]===x.nf[1]?x.nf[0]:x.nf[0]+' à '+x.nf[1])+' € / '+(x.u||'pièce'):'';
+const ecoNeuf=x=>x.nf&&x.p>0&&x.nf[0]>x.p?Math.round(100*(1-x.p/x.nf[0])/5)*5:0;
 const nouvelle=x=>x.n&&x.p>0&&x.st==='ok'&&x.s>0;"""
 
 def nouvelles_fiches():
     f = os.path.join(out, 'catalogue.html'); t = open(f).read()
+    # codes communs toujours remis à jour
+    t = re.sub(r"const RAYON=\{.*?const nouvelle=x=>x\.n&&x\.p>0&&x\.st==='ok'&&x\.s>0;", lambda m: CODES_JS, t, count=1, flags=re.S)
     if 'carteNouvelle' in t:
         # version précédente : nouvelles fiches en fin de liste → les remettre en tête
         t = t.replace(".concat((j.articles||[]).filter(x=>nouvelle(x)&&!d.some(a=>a.r===x.r)).sort((x,y)=>(y.cree||0)-(x.cree||0)).map(carteNouvelle))};", "};")
-        if '.map(carteNouvelle)' in t and 'a.nv=1}return a}))};' in t: return
+        if '.map(carteNouvelle)' in t and 'a.nv=1}return a}))};' in t:
+            open(f, 'w').write(t); return
         t = t.replace(CODES_JS + '\n', '')
     t = t.replace("const vivant=(d,j)=>{", CODES_JS + "\nconst vivant=(d,j)=>{", 1)
     # les nouvelles fiches s'ajoutent en tête du catalogue
@@ -419,13 +426,16 @@ fetch('stock.json',{cache:'no-cache'}).then(r=>r.json()).then(j=>{const x=(j.art
  $('fiche').innerHTML=`<p class="fil"><a href="catalogue.html">Catalogue</a> › <a href="catalogue.html#cat=${slugC(a.c)}">${escH(a.c)}</a></p>
  <div class="art-grille"><div class="galerie">${(x.f||[]).map((p,i)=>`<img src="${escH(p)}" alt="${escH(a.t)} – photo ${i+1}">`).join('')||'<div class="sans-photo grand">📦<small>Photo à venir</small></div>'}</div>
  <div class="infos"><h1>${escH(a.t)}</h1><p class="prix-gros">${escH(a.pt)}</p>
+ ${a.n?`<p class="neuf-gros">Prix du neuf équivalent : <b>${escH(a.n)}</b> <small>(indicatif, d'après des articles semblables)</small></p>`:''}${a.e>=20?`<p class="eco-grand">Environ ${a.e} % moins cher que le neuf</p>`:''}
+ ${x.co?`<div class="co2"><b>≈ ${String(x.co.kg).replace('.',',')} kg CO₂e évités${x.co.par==='m²'?' par m²':''} par rapport au neuf</b><small>Calcul : ${escH(x.co.calcul)}.</small><details><summary>Source et méthode</summary><small>${CO2_NOTE} Jeu de données : <a href="${escH(x.co.lien)}">${escH(x.co.jeu)}</a>.</small></details></div>`:''}
  <div class="actions"><button class="bouton" data-ajout="${escH(ajout)}">+ Ajouter à ma liste</button>
  <a class="bouton clair" href="mailto:__MAIL__?subject=${encodeURIComponent('Article '+a.r)}&body=${encodeURIComponent(q)}">Poser une question</a></div>
  ${x.de?`<p class="descr">${escH(x.de).replace(/\n/g,'<br>')}</p>`:''}
  <table class="carac">${[['Dimensions (L1 × L2 × L3)',dimsTxt(d)],['Matière',x.m],['État',x.et],['Vendu par',x.u||'pièce'],['Disponible',a.st],['Référence',a.r]].filter(r=>r[1]).map(r=>`<tr><th>${r[0]}</th><td>${escH(r[1])}</td></tr>`).join('')}</table></div></div>`;
+ if(x.i&&x.i.length)$('fiche').insertAdjacentHTML('beforeend',`<section class="idees"><h2>Idées pour l’utiliser</h2><ul>${x.i.map(i=>`<li>${escH(i)}</li>`).join('')}</ul></section>`);
  document.dispatchEvent(new Event('DOMContentLoaded'))}).catch(()=>{$('fiche').innerHTML='<p>Impossible de charger l\'article.</p>'});"""
 page('fiche.html', 'Article – Comptoir des Matériaux', "Un matériau de réemploi disponible au Comptoir des Matériaux, à Malmedy.",
-     '\n<main class="article contenu" id="fiche"><p>Chargement…</p></main>', CODES_JS + FICHE_NOUVELLE.replace('__MAIL__', MAIL))
+     '\n<main class="article contenu" id="fiche"><p>Chargement…</p></main>', CODES_JS + FICHE_NOUVELLE.replace('__MAIL__', MAIL).replace('${CO2_NOTE}', CO2_NOTE.replace('`', "'")))
 
 # Catalogue : les rayons en boutons de couleur, au-dessus de la recherche.
 inserer('catalogue.html', '<main class="contenu"><h1>Catalogue</h1>', """
