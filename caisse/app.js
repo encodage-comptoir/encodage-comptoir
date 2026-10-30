@@ -1,6 +1,6 @@
 "use strict";
 // Caisse & stock du Comptoir des Matériaux. Tout est gardé sur l'appareil (IndexedDB) ; rien n'est écrit dans Impulsion.
-const VERSION="3.2 (essai)";
+const VERSION="3.3 (essai)";
 const CATS=[["SA","Sanitaire"],["PA","Parois de douche"],["CH","Châssis"],["PO","Portes"],["CAR","Carrelage"],["GRO","Gros œuvre"],["RA","Chauffage"],
  ["ELEC","Électricité"],["LUM","Luminaires"],["BOI","Bois"],["PAR","Parquet & bardage"],["LAM","Lambris"],["TOI","Toiture"],["ISO","Isolant"],
  ["Q","Quincaillerie"],["OUT","Outillage"],["ELECTRO","Électroménager"],["DIV","Divers"]];
@@ -433,7 +433,7 @@ async function integrerEnvois(){if(!syncPret())return 0;let n=0;
    if(neuf)for(const p of x.photos||[]){try{ph.push(await envoyerPhoto(await (await fetch(p)).blob(),"stock"))}catch(e){if(!navigator.onLine)throw e}}
    fiches.push({...x,photos:ph})}
   const avant=CAT.length;n+=ajouterFiches(fiches,"app");
-  for(const a of CAT.slice(avant)){const x={...a};delete x.k;x.modifie=Date.now();ARTS[a.r]=x;await put("articles",x)}
+  for(const a of CAT.slice(avant)){a.aVerif=REG["envoiPlace:"+f.name]?"":f.name;const x={...a};delete x.k;x.modifie=Date.now();ARTS[a.r]=x;await put("articles",x)}
   // fiches « annonce existante » : emplacement et prix repris sur l'article
   for(const x of fiches.filter(x=>x.type==="maj")){const a=parRef(norm(x.annonce));if(a){const y={...(ARTS[a.r]||{r:a.r}),modifie:Date.now()};if(a.e)y.e=a.e;if(a.p)y.p=a.p;ARTS[a.r]=y;await put("articles",y)}}
   await putSet("envoiStock:"+f.name,new Date().toISOString())}
@@ -450,7 +450,7 @@ function envoisHtml(){if(!syncPret())return "";if(ENVOIS===null){chargerEnvois()
   <button class="btn petit" data-envoi="${esc(f.path)}">Ouvrir les annonces et photos</button>
   ${REG["envoiPlace:"+f.name]?"":`<button class="btn clair petit" data-place="${esc(f.name)}">Vérifié</button>`}</div>`};
  return `<div class="carte" style="margin-bottom:14px"><h3>Envois de l'app d'encodage (${a.length} à vérifier)</h3>
-  <p class="muted">Les nouvelles fiches entrent toutes seules dans le stock, filtre « Nouvelles fiches ». Elles apparaissent sur le site dès qu'elles ont un prix. Ouvrez l'envoi pour revoir les photos, puis cochez « Vérifié ».</p>
+  <p class="muted">Les nouvelles fiches entrent toutes seules dans le stock (filtre « Nouvelles fiches »). Elles ne passent sur le site qu'après « Vérifié » et si elles ont un prix. Ouvrez l'envoi pour revoir les annonces et les photos.</p>
   ${a.map(ligne).join("")||'<p class="muted">Rien en attente.</p>'}
   ${faits?`<details class="muted"><summary>Déjà vérifiés (${faits})</summary>${ENVOIS.filter(f=>REG["envoiPlace:"+f.name]).map(ligne).join("")}</details>`:""}</div>`}
 function brancherEnvois(){
@@ -459,7 +459,10 @@ function brancherEnvois(){
    if(w)w.location.href=u;else{const x=document.createElement("a");x.href=u;x.download=o.fichier||"comptoir.html";x.click()}}
   catch(e){if(w)w.close();toast(e.status?"Le site répond "+e.status:"Impossible d'ouvrir : ancien envoi chiffré, entrez l'ancienne phrase secrète (Réglages)",true)}
   b.disabled=false;b.textContent=t});
- $$("[data-place]").forEach(b=>b.onclick=async()=>{await putSet("envoiPlace:"+b.dataset.place,new Date().toISOString());render()})}
+ $$("[data-place]").forEach(b=>b.onclick=async()=>{const nom=b.dataset.place;await putSet("envoiPlace:"+nom,new Date().toISOString());
+  // vérifié : les fiches de cet envoi peuvent passer sur le site
+  for(const a of CAT.filter(a=>a.aVerif===nom)){a.aVerif="";const x={...(ARTS[a.r]||{r:a.r}),aVerif:"",modifie:Date.now()};ARTS[a.r]=x;await put("articles",x)}
+  if(typeof planifierSync==="function")planifierSync();render()})}
 
 function ecranStock(){const L=stockListe(),T=stockTotaux(),PAR=100,pages=Math.ceil(L.length/PAR);if(stPage>=pages)stPage=0;
  const filtres={"":"Tous les statuts",ok:"En stock",vendu:"Vendus",rupture:"Plus en stock",hors:"Hors ligne",nouveau:"Nouvelles fiches",sansprix:"Sans prix",sanspoids:"Sans poids",sansempl:"Sans emplacement"};
@@ -796,7 +799,7 @@ function rImpulsion(){const vendus={};ventes.filter(v=>!v.annulee&&dansPeriode(v
 // Les articles créés dans la caisse ou venus de l'app n'existent pas dans le catalogue du site : on publie aussi leur fiche.
 const ficheSite=a=>{const ph=(a.fs||[a.f]).filter(p=>p&&/^https?:/.test(p));
  return {n:a.n,c:a.c,d:[a.L,a.l,a.h].map(num).filter(x=>x>0).sort((x,y)=>y-x),f:ph,de:a.d||"",m:a.m||"",et:a.et||"",cree:a.cree||0}};
-function stockSite(){return {maj:new Date().toISOString(),articles:CAT.filter(a=>!a.x).map(a=>({r:a.r,s:reste(a),p:a.p||0,u:a.u||"pièce",e:a.e||"",st:statut(a),...(a.src?ficheSite(a):{})}))}}
+function stockSite(){return {maj:new Date().toISOString(),articles:CAT.filter(a=>!a.x).map(a=>({r:a.r,s:reste(a),p:a.p||0,u:a.u||"pièce",e:a.e||"",st:statut(a),...(a.src&&!a.aVerif?ficheSite(a):{})}))}}
 function rSite(){const S=stockSite(),n=k=>S.articles.filter(a=>a.st===k).length;
  return `<div class="titre"><h2>Site du Comptoir</h2></div>
  <p>Le site affiche le stock à partir du fichier <b>stock.json</b> produit ici : articles vendus retirés, quantités et prix à jour, nouvelles fiches ajoutées.</p>
