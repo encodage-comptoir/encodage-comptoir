@@ -6,7 +6,7 @@ import sys, os, re, glob, html
 
 out = sys.argv[1]
 PILE = 'https://www.la-pile.be'
-VER = 'p4'
+VER = 'p5'
 esc = lambda s: html.escape(str(s or ''), quote=True)
 # Coordonnées du Comptoir (pas celles de La Pile). INSTAGRAM : à remplir quand le compte du Comptoir est connu.
 TEL, TEL_LIEN = '+32 (0)455 10 09 21', '+32455100921'
@@ -122,7 +122,13 @@ function afficher(){document.title=O.nom+' – Comptoir des Matériaux';const ic
  <div><h1>${escH(O.nom)}</h1>${tarifsHtml()}${O.caution&&O.type==='outil'?`<p>Caution : ${eurs(O.caution)}</p>`:''}
  ${O.etat?`<p><b>État :</b> ${escH(O.etat)}</p>`:''}${O.descr?`<div class="descr">${escH(O.descr).replace(/\n/g,'<br>')}</div>`:''}
  <p class="petit">Réf. ${escH(O.ref)}${O.qte>1?` · ${O.qte} exemplaires`:''}</p>
- ${O.type==='outil'?'':'<h2>Disponibilités</h2>'}<div id="cal"></div><div id="form"></div></div></div>`;dessiner()}
+ ${O.type==='outil'?'':'<h2>Disponibilités</h2>'}<div id="cal"></div><div id="form"></div></div></div>${O.type==='camionnette'?PLAN_CAMION:''}`;dessiner()}
+// Plan de chargement de la camionnette (Fiat Ducato L2H2, cotes du constructeur).
+const PLAN_CAMION=`<section class="plan-camion"><h2>Dimensions de chargement</h2>
+ <img src="img/camionnette-plan.svg" alt="Plan de la camionnette avec les cotes de chargement" width="900" height="470">
+ <table class="tarifs"><tr><th>Longueur au plancher</th><td>3,12 m</td></tr><tr><th>Largeur (entre les roues)</th><td>1,87 m (1,42 m)</td></tr><tr><th>Hauteur intérieure</th><td>1,93 m</td></tr>
+ <tr><th>Portes arrière (l × h)</th><td>1,56 × 1,79 m</td></tr><tr><th>Porte latérale (l × h)</th><td>1,25 × 1,75 m</td></tr><tr><th>Seuil de chargement</th><td>53 cm du sol</td></tr><tr><th>Volume</th><td>11,5 m³</td></tr><tr><th>Charge utile</th><td>≈ 1 200 kg</td></tr></table>
+ <p class="petit">Une plaque de 244 × 122 cm passe à plat entre les passages de roue.</p></section>`;
 Compte.outils().then(l=>{O=l.find(o=>o.ref===P.get('r'));if(!O){$('fiche').innerHTML='<h1>Introuvable</h1><p><a href="outils.html">Retour à l\'outilthèque</a></p>';return}afficher()});'''
 page('outil.html', 'Outil – Comptoir des Matériaux', "Fiche d'un outil de l'outilthèque du Comptoir des Matériaux : prix, caution, disponibilités, demande en ligne.",
      '<main class="article" id="fiche"><p>Chargement…</p></main>', FICHE_JS)

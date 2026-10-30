@@ -4,7 +4,7 @@
 <meta name="robots" content="noindex"><!-- maquette : à retirer à la mise en ligne réelle -->
 <meta property="og:title" content="Outil – Comptoir des Matériaux"><meta property="og:description" content="Fiche d&#x27;un outil de l&#x27;outilthèque du Comptoir des Matériaux : prix, caution, disponibilités, demande en ligne.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=p4"><script src="panier.js?v=p4" defer></script><script src="compte.js?v=p4"></script>
+<link rel="stylesheet" href="style.css?v=p5"><script src="panier.js?v=p5" defer></script><script src="compte.js?v=p5"></script>
 </head><body>
 <div class="maquette">Maquette : textes, prix et photos à valider par l'équipe.</div>
 <header class="haut"><div class="haut-in">
@@ -57,7 +57,13 @@ function afficher(){document.title=O.nom+' – Comptoir des Matériaux';const ic
  <div><h1>${escH(O.nom)}</h1>${tarifsHtml()}${O.caution&&O.type==='outil'?`<p>Caution : ${eurs(O.caution)}</p>`:''}
  ${O.etat?`<p><b>État :</b> ${escH(O.etat)}</p>`:''}${O.descr?`<div class="descr">${escH(O.descr).replace(/\n/g,'<br>')}</div>`:''}
  <p class="petit">Réf. ${escH(O.ref)}${O.qte>1?` · ${O.qte} exemplaires`:''}</p>
- ${O.type==='outil'?'':'<h2>Disponibilités</h2>'}<div id="cal"></div><div id="form"></div></div></div>`;dessiner()}
+ ${O.type==='outil'?'':'<h2>Disponibilités</h2>'}<div id="cal"></div><div id="form"></div></div></div>${O.type==='camionnette'?PLAN_CAMION:''}`;dessiner()}
+// Plan de chargement de la camionnette (Fiat Ducato L2H2, cotes du constructeur).
+const PLAN_CAMION=`<section class="plan-camion"><h2>Dimensions de chargement</h2>
+ <img src="img/camionnette-plan.svg" alt="Plan de la camionnette avec les cotes de chargement" width="900" height="470">
+ <table class="tarifs"><tr><th>Longueur au plancher</th><td>3,12 m</td></tr><tr><th>Largeur (entre les roues)</th><td>1,87 m (1,42 m)</td></tr><tr><th>Hauteur intérieure</th><td>1,93 m</td></tr>
+ <tr><th>Portes arrière (l × h)</th><td>1,56 × 1,79 m</td></tr><tr><th>Porte latérale (l × h)</th><td>1,25 × 1,75 m</td></tr><tr><th>Seuil de chargement</th><td>53 cm du sol</td></tr><tr><th>Volume</th><td>11,5 m³</td></tr><tr><th>Charge utile</th><td>≈ 1 200 kg</td></tr></table>
+ <p class="petit">Une plaque de 244 × 122 cm passe à plat entre les passages de roue.</p></section>`;
 Compte.outils().then(l=>{O=l.find(o=>o.ref===P.get('r'));if(!O){$('fiche').innerHTML='<h1>Introuvable</h1><p><a href="outils.html">Retour à l\'outilthèque</a></p>';return}afficher()});</script>
 <footer class="pied"><div class="pied-in">
 <img src="img/logo-comptoir.png" alt="Comptoir des Matériaux" class="pied-logo">

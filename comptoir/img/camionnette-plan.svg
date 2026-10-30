@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 470" font-family="Poppins,Arial,sans-serif" font-size="14" fill="#1d2b2c">
+<title>Camionnette du Comptoir : plan de chargement avec cotes en mm</title>
+<defs><marker id="f" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 1 L9 5 L0 9z" fill="#00646c"/></marker></defs>
+<style>.c{stroke:#00646c;stroke-width:1.6;marker-start:url(#f);marker-end:url(#f)}.t{font-weight:700;fill:#00646c}.h{font-weight:700;font-size:16px}.p{fill:#e6f6f7;stroke:#009fac;stroke-width:3}.r{fill:#f6c213;opacity:.55}.o{fill:#fff8dc;stroke:#f6c213;stroke-width:3}.s{font-size:12px;fill:#5b6b6c}</style>
+<!-- Vue de dessus : 1 px = 10 mm -->
+<text x="40" y="34" class="h">Vue de dessus (plancher)</text>
+<rect x="60" y="90" width="312" height="187" class="p"/>
+<rect x="60" y="81" width="125" height="9" fill="#f6c213"/>
+<rect x="215" y="90" width="90" height="22" class="r"/><rect x="215" y="255" width="90" height="22" class="r"/>
+<text x="260" y="106" text-anchor="middle" class="s">passage de roue</text>
+<text x="40" y="190" class="s" transform="rotate(-90 40 190)" text-anchor="middle">cabine</text>
+<text x="392" y="190" class="s" transform="rotate(90 392 190)" text-anchor="middle">portes arrière</text>
+<line x1="60" y1="300" x2="372" y2="300" class="c"/><text x="216" y="320" text-anchor="middle" class="t">longueur 3 120</text>
+<line x1="60" y1="64" x2="185" y2="64" class="c"/><text x="122" y="56" text-anchor="middle" class="t">1 250 <tspan class="s" font-weight="400">porte latérale</tspan></text>
+<line x1="170" y1="90" x2="170" y2="277" class="c"/><text x="160" y="188" text-anchor="end" class="t">largeur 1 870</text>
+<line x1="260" y1="112" x2="260" y2="255" class="c"/><text x="268" y="180" class="t">1 422</text><text x="268" y="196" class="s">entre les roues</text>
+<!-- Vue arrière : 1 px = 10 mm -->
+<text x="470" y="34" class="h">Vue arrière (ouverture)</text>
+<path d="M500 318 V100 Q500 60 540 60 H650 Q690 60 690 100 V318" fill="none" stroke="#b9c6c7" stroke-width="2" stroke-dasharray="6 5"/>
+<rect x="517" y="86" width="156" height="179" class="o"/>
+<rect x="500" y="265" width="190" height="8" fill="#9aa9aa"/>
+<line x1="517" y1="245" x2="673" y2="245" class="c"/><text x="545" y="237" text-anchor="middle" class="t">1 562</text>
+<line x1="620" y1="86" x2="620" y2="265" class="c"/><text x="628" y="170" class="t">1 790</text>
+<line x1="710" y1="265" x2="710" y2="318" class="c"/><text x="718" y="296" class="t">531</text><text x="718" y="312" class="s">seuil</text>
+<line x1="730" y1="72" x2="730" y2="265" class="c"/><text x="738" y="165" class="t">1 932</text><text x="738" y="181" class="s">hauteur</text><text x="738" y="195" class="s">intérieure</text>
+<line x1="480" y1="318" x2="740" y2="318" stroke="#9aa9aa" stroke-width="2"/><text x="595" y="340" text-anchor="middle" class="s">sol</text>
+<!-- Porte latérale -->
+<text x="40" y="372" class="h">Porte latérale coulissante</text>
+<rect x="60" y="385" width="62" height="70" class="o"/>
+<text x="134" y="412" class="t">1 250 × 1 755</text><text x="134" y="430" class="s">largeur × hauteur</text>
+<text x="300" y="400" class="h">11,5 m³</text><text x="300" y="418" class="s">volume utile</text>
+<text x="300" y="446" class="s">Cotes en mm · Fiat Ducato L2H2, données du constructeur</text>
+</svg>
