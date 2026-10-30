@@ -321,12 +321,15 @@ def accueil():
     t = t[:a] + '\n' + bloc + t[b:]
     t = t.replace('<p>Matériaux de construction de réemploi à Malmedy : sanitaires, portes, châssis, carrelage, bois… jusqu’à 90 % moins chers que le neuf.</p>', '<p>Matériaux de construction de réemploi, outils et camionnette à louer, atelier partagé : à Malmedy, on fait avec ce qui existe déjà.</p>')
     # Infos pratiques : horaires et contact en premier, bien visibles (Comment ? et Donner ? retirés, le don a son bandeau).
-    infos = f"""<h2>Infos pratiques</h2><div class="infos-top">
+    infos = f"""<!--infos--><h2 style="margin-top:32px">Infos pratiques</h2><div class="infos-top">
 <div class="horaires"><span class="ic" aria-hidden="true">🕘</span><div><h3>Horaires du magasin</h3><p class="gros">Mercredi et samedi<br><b>9 h – 16 h</b></p><p class="petit">En dehors de ces heures, sur rendez-vous.</p></div></div>
-<div class="contact"><span class="ic" aria-hidden="true">📞</span><div><h3>Nous contacter</h3><p class="gros"><a href="tel:{TEL_LIEN}">{TEL}</a></p><p><a href="{WHATSAPP}">WhatsApp</a> · <a href="mailto:{MAIL}">{MAIL}</a></p></div></div></div>
-<h2 style="margin-top:32px">Où nous trouver</h2>"""
-    t = re.sub(r'(<section class="contenu" id="infos">)<h2>Où nous trouver</h2>', lambda m: m.group(1) + infos, t)
+<div class="contact"><span class="ic" aria-hidden="true">📞</span><div><h3>Nous contacter</h3><p class="gros"><a href="tel:{TEL_LIEN}">{TEL}</a></p><p><a href="{WHATSAPP}">WhatsApp</a> · <a href="mailto:{MAIL}">{MAIL}</a></p></div></div></div><!--/infos-->"""
+    # anciennes versions du bloc (en tête de section, ou l'ancienne grille Quand ?/Comment ?/Donner ?)
+    t = re.sub(r'<!--infos-->.*?<!--/infos-->', '', t, flags=re.S)
+    t = re.sub(r'<h2>Infos pratiques</h2><div class="infos-top">.*?</div></div></div>\n<h2 style="margin-top:32px">Où nous trouver</h2>', '<h2>Où nous trouver</h2>', t, flags=re.S)
     t = re.sub(r'<h2 style="margin-top:32px">Infos pratiques</h2><div class="infos-prat">.*?</div></div></section>', '</section>', t, flags=re.S)
+    i = t.index('<section class="contenu" id="infos">'); j = t.index('</section>', i)
+    t = t[:j] + infos + t[j:]
     # Accès : montage des photos du chemin (img/acces.jpg), s'il existe.
     if os.path.exists(os.path.join(out, 'img', 'acces.jpg')):
         t = re.sub(r'<div class="encart photo-lieu">.*?</div></div>', '<div class="encart photo-lieu"><a href="img/acces.jpg"><img src="img/acces.jpg" alt="Le chemin vers le Comptoir, en photos" loading="lazy"></a><p><b>Le chemin en 4 photos</b> : depuis le panneau 3b, longez Malmedy Expo, le Comptoir est derrière. <a href="img/acces.jpg">Agrandir</a></p></div></div>', t, count=1, flags=re.S)

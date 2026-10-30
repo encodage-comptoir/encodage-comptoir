@@ -329,3 +329,6 @@ button.lien{background:none;border:0;padding:0;font:inherit;font-size:14px;color
 /* Le plan prend toute la hauteur à côté du montage d'accès */
 .trouver .encart{display:flex;flex-direction:column}
 .trouver .encart iframe{flex:1;aspect-ratio:auto;min-height:320px}
+/* Bandeau dons : bouton en contour, plus discret que les boutons des services */
+.bandeau-don .bouton.jaune{background:transparent;color:var(--bleu-f);border:2px solid var(--bleu-f);box-shadow:none}
+.bandeau-don:hover .bouton.jaune{background:var(--bleu-f);color:#fff}
