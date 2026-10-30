@@ -1,6 +1,6 @@
 "use strict";
 // Caisse & stock du Comptoir des Matériaux. Tout est gardé sur l'appareil (IndexedDB) ; rien n'est écrit dans Impulsion.
-const VERSION="3.0 (essai)";
+const VERSION="3.1 (essai)";
 const CATS=[["SA","Sanitaire"],["PA","Parois de douche"],["CH","Châssis"],["PO","Portes"],["CAR","Carrelage"],["GRO","Gros œuvre"],["RA","Chauffage"],
  ["ELEC","Électricité"],["LUM","Luminaires"],["BOI","Bois"],["PAR","Parquet & bardage"],["LAM","Lambris"],["TOI","Toiture"],["ISO","Isolant"],
  ["Q","Quincaillerie"],["OUT","Outillage"],["ELECTRO","Électroménager"],["DIV","Divers"]];
@@ -26,6 +26,7 @@ const IC={
  especes:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></svg>',
  carte:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/></svg>',
  virement:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h14l-4-4M20 16H6l4 4"/></svg>',
+ mail:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>',
  facture:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l4 4v16H6z"/><path d="M9 11h7M9 15h7M9 7h3"/></svg>'};
 
 const $=s=>document.querySelector(s);
@@ -112,8 +113,11 @@ const m2Txt=(a,n)=>a.pm&&n>0?` (≈ ${nb(n/a.pm).replace(/,00$/,"")} m²)`:"";
 // ---------- Navigation ----------
 const ONGLETS={caisse:"Caisse",carnet:"Carnet de caisse",mouv:"Mouvements",stock:"Stock",locations:"Locations",rapports:"Rapports",reglages:"Réglages"};
 let screen="caisse";
+// Messagerie info@comptoir-materiaux.be : le webmail de PlanetHoster, dans un nouvel onglet (rien n'est stocké ici).
+const WEBMAIL="https://node29-eu.n0c.com/webmail/";
 function render(){
  $("#nav").innerHTML=Object.entries(ONGLETS).map(([k,t])=>`<button data-go="${k}" class="${screen===k?"sel":""}">${IC[k]}${t}</button>`).join("");
+ const lm=$("#lienMail");if(lm&&!lm.href){lm.href=WEBMAIL;lm.innerHTML=IC.mail+"<span>Mails</span>"}
  const P={caisse:ecranCaisse,stock:ecranStock,locations:ecranLocations,mouv:ecranMouv,carnet:ecranCarnet,rapports:ecranRapports,reglages:ecranReglages};
  $("#page").innerHTML=P[screen]();
  ({caisse:brancherCaisse,stock:brancherStock,locations:brancherLocations,mouv:brancherMouv,carnet:brancherCarnet,rapports:brancherRapports,reglages:brancherReglages}[screen])();
