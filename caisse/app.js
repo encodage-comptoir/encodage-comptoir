@@ -1,6 +1,6 @@
 "use strict";
 // Caisse & stock du Comptoir des Matériaux. Tout est gardé sur l'appareil (IndexedDB) ; rien n'est écrit dans Impulsion.
-const VERSION="3.4 (essai)";
+const VERSION="3.5 (essai)";
 const CATS=[["SA","Sanitaire"],["PA","Parois de douche"],["CH","Châssis"],["PO","Portes"],["CAR","Carrelage"],["GRO","Gros œuvre"],["RA","Chauffage"],
  ["ELEC","Électricité"],["LUM","Luminaires"],["BOI","Bois"],["PAR","Parquet & bardage"],["LAM","Lambris"],["TOI","Toiture"],["ISO","Isolant"],
  ["Q","Quincaillerie"],["OUT","Outillage"],["ELECTRO","Électroménager"],["DIV","Divers"]];
@@ -424,10 +424,27 @@ let ENVOIS=null;
 // Les envois de l'app (8.2 et plus) contiennent les fiches elles-mêmes : la caisse les ajoute au stock toute seule,
 // photos envoyées sur le site. Une référence déjà connue n'est pas recréée (un autre appareil a pu l'ajouter avant).
 // Sans prix, l'article reste dans la caisse (filtre « Sans prix ») ; il apparaît sur le site dès qu'il a un prix.
+// Envois faits avant l'app 8.2 : pas de liste « fiches », on la reconstruit à partir de la page jointe
+// (fichier d'import Impulsion, caractéristiques et photos qu'elle contient).
+function lireCsv(t){const R=[];let r=[],v="",q=false;t=t.replace(/^\uFEFF/,"");
+ for(let i=0;i<t.length;i++){const c=t[i];if(q){if(c==='"'){if(t[i+1]==='"'){v+='"';i++}else q=false}else v+=c}
+  else if(c==='"')q=true;else if(c===";"){r.push(v);v=""}else if(c==="\n"){r.push(v.replace(/\r$/,""));R.push(r);r=[];v=""}else v+=c}
+ if(v||r.length){r.push(v);R.push(r)}return R}
+function fichesAncienEnvoi(o){const h=o&&o.html||"",b64=re=>{const m=re.exec(h);return m?Uint8Array.from(atob(m[1]),c=>c.charCodeAt(0)):null};
+ const imp=b64(/"data:text\/csv;base64,([A-Za-z0-9+\/=]+)"/),car=b64(/"data:text\/csv;charset=utf-8;base64,([A-Za-z0-9+\/=]+)"/);
+ if(!imp)return [];
+ const P=(()=>{const m=/const P=(\{.*?\});\s*function dl/s.exec(h);try{return m?JSON.parse(m[1]):{}}catch(e){return {}}})();
+ const C={};if(car){const L=lireCsv(new TextDecoder().decode(car)),H=L[0]||[];L.slice(1).forEach(r=>{const x={};H.forEach((k,i)=>x[k]=r[i]);C[norm(r[0])]=x})}
+ return lireCsv(new TextDecoder("windows-1252").decode(imp)).slice(1).filter(r=>r[0]).map(r=>{const code=norm(r[0]),c=C[code]||{},pre=(code.match(/^[A-Z]+/)||[""])[0];
+  return {type:"neuf",code,nom:r[1],cat:CATS.some(x=>x[0]===pre)?pre:"DIV",qte:c["Quantité"]||r[3],unite:c["Unité"]||"pièce",prix:r[4],descr:r[5]||"",
+   L:num(c["L1 (cm)"]),l:num(c["L2 (cm)"]),h:num(c["L3 (cm)"]),matiere:c["Matière"]||"",couleur:c["Couleur"]||"",etat:c["État"]||"",
+   empl:c["Emplacement"]||"",poids:c["Poids (kg)"]||"",prov:c["Provenance"]||"",par:o.par||"",cree:c["Arrivée"]?Date.parse(c["Arrivée"]):Date.parse(o.quand)||Date.now(),
+   photos:(P[r[0]]||P[code]||[]).map(x=>x[1])}})}
 async function integrerEnvois(){if(!syncPret())return 0;let n=0;
- const L=(await ficListe(SRV.envois)).filter(f=>f.name.endsWith(".json")&&!REG["envoiStock:"+f.name]);
+ const L=(await ficListe(SRV.envois)).filter(f=>f.name.endsWith(".json")&&(!REG["envoiStock:"+f.name]||REG["envoiStock:"+f.name]==="ancien format"));
  for(const f of L){let o;try{o=await dechiffrer(await ficLire(f.path))}catch(e){if(e.status)throw e;continue}
-  if(!o||!Array.isArray(o.fiches)){await putSet("envoiStock:"+f.name,"ancien format");continue}
+  if(o&&!Array.isArray(o.fiches))o.fiches=fichesAncienEnvoi(o);
+  if(!o||!o.fiches.length){await putSet("envoiStock:"+f.name,"vide");continue}
   const fiches=[];
   for(const x of o.fiches){const r=norm(x.code),neuf=x.type!=="maj"&&r&&!parRef(r);const ph=[];
    if(neuf)for(const p of x.photos||[]){try{ph.push(await envoyerPhoto(await (await fetch(p)).blob(),"stock"))}catch(e){if(!navigator.onLine)throw e}}
