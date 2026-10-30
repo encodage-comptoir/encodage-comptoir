@@ -288,6 +288,9 @@ for f in glob.glob(os.path.join(out, '*.html')) + glob.glob(os.path.join(out, '*
     n = re.sub(r'<a class="logo".*?</a>', lambda m: logo(prof), n, count=1, flags=re.S)
     n = re.sub(r'<footer class="pied">.*?</footer>', lambda m: pied(prof), n, count=1, flags=re.S)
     n = re.sub(r'(style\.css|panier\.js)\?v=[\w]+', rf'\1?v={VER}', n)
+    # Favicon du Comptoir (les flèches jaunes du logo sur fond turquoise).
+    ico = f'<!--ico--><link rel="icon" href="{prof}favicon.ico" sizes="any"><link rel="icon" type="image/png" href="{prof}favicon-32.png"><link rel="apple-touch-icon" href="{prof}apple-touch-icon.png"><!--/ico-->'
+    n = re.sub(r'<!--ico-->.*?<!--/ico-->', '', n).replace('</head>', ico + '</head>', 1)
     if n != t:
         open(f, 'w').write(n)
 
