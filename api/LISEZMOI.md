@@ -32,3 +32,10 @@ Quand une réservation de la camionnette est confirmée, l'API appelle `deverrou
 membre dans l'e-mail de confirmation et affiché dans « Mon compte ». Il reste à brancher l'application de la
 camionnette : soit elle accepte directement ce genre d'appel, soit on écrit un petit adaptateur vers son API.
 Sans branchement, la clé reste dans la boîte à clé et l'équipe envoie le code à la main.
+
+**Wibee (appli de la camionnette, état au 30/10/2026).** Wibee (wibee.be, Louvain-la-Neuve) ne publie ni API, ni
+webhook, ni export de calendrier : on ne peut pas encore créer une réservation Wibee depuis ce site. Pistes, dans l'ordre :
+1. demander à Wibee (info@wibee.be) un accès API ou un webhook ; si oui, un petit adaptateur PHP reçoit l'appel
+   ci-dessus et crée la réservation Wibee (ou la clé virtuelle) ;
+2. en attendant : à la confirmation dans la caisse, l'équipe valide le membre dans le groupe Wibee du Comptoir ;
+   le membre réserve ensuite le même créneau dans l'appli Wibee, qui ouvre la camionnette (boîtier + smartphone).
