@@ -299,9 +299,9 @@ button.lien{background:none;border:0;padding:0;font:inherit;font-size:14px;color
 .service:hover .cta{background:var(--bleu);color:#fff}
 /* catalogue : rayons */
 .rayons{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 16px}
-.rayons button{font:inherit;font-weight:600;font-size:14px;border:0;background:var(--jaune);color:var(--encre);border-radius:30px;padding:8px 16px;cursor:pointer}
-.rayons button:hover{background:#ffd74a}
-.rayons button.sel{background:var(--bleu);color:#fff}
+.rayons button{font:inherit;font-weight:600;font-size:14px;border:3px solid var(--jaune);background:#fff;color:var(--encre);border-radius:30px;padding:6px 14px;cursor:pointer}
+.rayons button:hover{background:#fff8dc}
+.rayons button.sel{background:var(--bleu);border-color:var(--bleu);color:#fff}
 #filtres #cat{display:none}
 .lien-depot{margin:-8px 0 12px}
 /* dépôt */

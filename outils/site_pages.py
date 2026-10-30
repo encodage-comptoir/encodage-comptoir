@@ -336,6 +336,22 @@ def accueil():
     open(f, 'w').write(t)
 accueil()
 
+# Catalogue : recherche tolérante aux fautes (« carelage », « lavabot », « porte » / « portes »…).
+def recherche_souple():
+    f = os.path.join(out, 'catalogue.html'); t = open(f).read()
+    if 'proche(' in t: return
+    js = """const dbl=s=>s.replace(/(.)\\1+/g,'$1');
+function lev(a,b){if(Math.abs(a.length-b.length)>2)return 9;let p=[...Array(b.length+1).keys()];for(let i=1;i<=a.length;i++){const c=[i];for(let j=1;j<=b.length;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c}return p[b.length]}
+// Un mot cherché trouve l'article s'il y figure, ou s'il en est proche (lettre doublée, oubliée, en trop ou changée).
+function proche(a,w){if(!a._k){a._k=sans(a.k);a._w=a._k.split(/[^a-z0-9]+/).filter(Boolean).map(dbl)}
+ if(a._k.includes(w))return true;const d=dbl(w);if(d.length>=3&&a._w.some(t=>t.includes(d)))return true;if(d.length<4)return false;
+ const tol=d.length>=7?2:1;return a._w.some(t=>lev(d,t)<=tol||(t.length>d.length&&lev(d,t.slice(0,d.length))<=tol))}
+"""
+    t = t.replace("function num(id)", js + "function num(id)", 1)
+    t = t.replace("&&mots.every(w=>sans(a.k).includes(w)));", "&&mots.every(w=>proche(a,w)));", 1)
+    open(f, 'w').write(t)
+recherche_souple()
+
 # Catalogue : les rayons en boutons de couleur, au-dessus de la recherche.
 inserer('catalogue.html', '<main class="contenu"><h1>Catalogue</h1>', """
 <div class="rayons" id="rayons" aria-label="Rayons"></div><p class="petit lien-depot">Vous avez des matériaux à donner ? <a href="depot.html">Proposez-les</a></p>

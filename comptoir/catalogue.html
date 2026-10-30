@@ -38,13 +38,19 @@ const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 let D=[];const $=id=>document.getElementById(id);
 const P=new URLSearchParams(location.search),H=new URLSearchParams(location.hash.slice(1));
 if(P.get('q'))$('q').value=P.get('q');if(H.get('cat'))$('cat').value=H.get('cat');
+const dbl=s=>s.replace(/(.)\1+/g,'$1');
+function lev(a,b){if(Math.abs(a.length-b.length)>2)return 9;let p=[...Array(b.length+1).keys()];for(let i=1;i<=a.length;i++){const c=[i];for(let j=1;j<=b.length;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c}return p[b.length]}
+// Un mot cherché trouve l'article s'il y figure, ou s'il en est proche (lettre doublée, oubliée, en trop ou changée).
+function proche(a,w){if(!a._k){a._k=sans(a.k);a._w=a._k.split(/[^a-z0-9]+/).filter(Boolean).map(dbl)}
+ if(a._k.includes(w))return true;const d=dbl(w);if(d.length>=3&&a._w.some(t=>t.includes(d)))return true;if(d.length<4)return false;
+ const tol=d.length>=7?2:1;return a._w.some(t=>lev(d,t)<=tol||(t.length>d.length&&lev(d,t.slice(0,d.length))<=tol))}
 function num(id){const v=parseFloat($(id).value.replace(',','.'));return isNaN(v)?null:v}
 function dans(v,a,b){return (a===null||v>=a)&&(b===null||(v>0&&v<=b))&&(a===null||v>0)}
 function maj(){
  const mots=sans($('q').value).split(/\s+/).filter(Boolean),c=CATS[$('cat').value],m=$('mat').value,pm=num('pmax');
  let r=D.filter(a=>(!c||a.c===c)&&(!m||a.m===m)&&(pm===null||(a.p>0&&a.p<=pm))
   &&dans(a.d1,num('d1min'),num('d1max'))&&dans(a.d2,num('d2min'),num('d2max'))&&dans(a.d3,num('d3min'),num('d3max'))
-  &&mots.every(w=>sans(a.k).includes(w)));
+  &&mots.every(w=>proche(a,w)));
  if($('tri').value==='p')r.sort((a,b)=>(a.p||1e9)-(b.p||1e9));if($('tri').value==='e')r.sort((a,b)=>b.e-a.e);
  $('nb').textContent=r.length+' article'+(r.length>1?'s':'');
  $('liste').innerHTML=r.slice(0,240).map(a=>`<div class="carte-w"><a class="carte" href="article/${a.r}.html"><div class="img"><img loading="lazy" src="${a.v}" alt="${esc(a.t)}">${a.e>=20?`<span class="eco">−${a.e} % vs neuf</span>`:''}</div><div class="txt"><h3>${esc(a.t)}</h3><p class="prix">${esc(a.pt)}${a.pm?`<small class="prix-m2">${esc(a.pm)}</small>`:''}</p>${a.n?`<p class="neuf">Neuf : ${esc(a.n)}</p>`:''}${a.c2?`<p class="co2-mini">−${esc(a.c2)} évités vs neuf</p>`:''}${a.sc?`<p class="dispo"><span class="stock-pastille">${esc(a.sc)}</span></p>`:''}${a.sf?`<p class="surf">${esc(a.sf)}</p>`:''}</div></a><button class="ajout-mini" data-ajout="${esc(JSON.stringify({r:a.r,t:a.t,p:a.p,pt:a.pt,v:a.v,s:a.s,st:a.st,o:a.o}))}">+ Ma liste</button></div>`).join('');
