@@ -64,5 +64,12 @@ Décision de Jérôme avec l'accord de La Pile : le site du Comptoir est héberg
 - Caisse 2.7 : onglet **Locations** (demandes à confirmer, planning sorties / retours, encaissement sur le ticket,
   fiches outils, membres et adhésions) ; le stock est aussi publié sur le site PlanetHoster.
 
+Retouches du 30/10 : logo et couleurs du Comptoir (turquoise #009fac, jaune #f6c213 ; `comptoir/img/logo-comptoir.png`),
+accueil = recherche + services (photos à déposer dans `comptoir/img/services/` : materiaux, depot, outillage,
+camionnette, atelier, inspirer .jpg), page **Donner des matériaux** (`depot.html`, propositions avec photos reçues dans
+la caisse, Locations > Dépôts proposés), rayons du catalogue en boutons, coordonnées du Comptoir (0455 10 09 21,
+Facebook du Comptoir ; Instagram à compléter dans `outils/site_pages.py`), photos des outils, de la camionnette et
+de l'atelier envoyées depuis la caisse (fiche outil > Ajouter une photo).
+
 Après `outils/site_comptoir.py`, relancer `python3 outils/site_pages.py comptoir/` : il refait ces pages, le menu
 de toutes les pages et les encarts ajoutés à l'accueil et à « Faire avec ».

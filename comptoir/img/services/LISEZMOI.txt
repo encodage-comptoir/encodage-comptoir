@@ -1,0 +1,3 @@
+Photos des tuiles de l'accueil (format paysage, environ 1200 × 750) :
+materiaux.jpg, depot.jpg, outillage.jpg, camionnette.jpg, atelier.jpg, inspirer.jpg.
+Sans photo, la tuile affiche une photo du catalogue ou une icône sur fond turquoise.

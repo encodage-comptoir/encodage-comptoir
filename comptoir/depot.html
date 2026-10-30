@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Donner des matériaux – Comptoir des Matériaux</title><meta name="description" content="Vous rénovez ? Proposez vos matériaux de construction en bon état au Comptoir des Matériaux de Malmedy : envoyez quelques photos, on vous répond.">
+<meta name="robots" content="noindex"><!-- maquette : à retirer à la mise en ligne réelle -->
+<meta property="og:title" content="Donner des matériaux – Comptoir des Matériaux"><meta property="og:description" content="Vous rénovez ? Proposez vos matériaux de construction en bon état au Comptoir des Matériaux de Malmedy : envoyez quelques photos, on vous répond.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="style.css?v=p3"><script src="panier.js?v=p3" defer></script><script src="compte.js?v=p3"></script>
+</head><body>
+<div class="maquette">Maquette : textes, prix et photos à valider par l'équipe.</div>
+<header class="haut"><div class="haut-in">
+<a class="logo" href="index.html"><img src="img/logo-comptoir.png" alt="Comptoir des Matériaux" width="168" height="63"></a>
+<nav><a href="index.html">Accueil</a><a href="catalogue.html">Matériaux</a><a href="outils.html">Outilthèque</a><a href="reserver.html">Camionnette &amp; atelier</a><a href="faire-avec.html">Faire avec</a><a href="comprendre.html">Comprendre</a><a href="compte.html" class="lien-compte">Mon compte</a><a href="panier.html" class="lien-panier">Mes listes <span class="nb-panier" hidden>0</span></a></nav>
+</div></header>
+
+<main class="contenu etroit"><h1>Donner des matériaux</h1>
+<p class="intro">Vous rénovez, vous videz un garage, il vous reste des carrelages ? Ce qui est encore en bon état peut resservir ici, au lieu de partir au conteneur.</p>
+<div class="etapes"><div><b>1</b>Envoyez-nous quelques photos et une description, ici ou par WhatsApp</div><div><b>2</b>On vous répond : oui, non, ou une question</div><div><b>3</b>Vous apportez les matériaux un jour d'ouverture, ou on organise un enlèvement</div></div>
+<p class="note-tarif"><b>Merci de ne pas venir déposer sans nous avoir contactés :</b> la place est comptée et certains matériaux ne se revendent pas.</p>
+<div class="deux-grand">
+<div><h2>Ce qu'on accepte</h2><ul class="acceptes"><li>Bois, panneaux, poutres</li><li>Carrelage, parquet, bardage</li><li>Sanitaires (éviers, lavabos, WC, baignoires, douches)</li><li>Portes, châssis, verre</li><li>Isolation (propre et sèche)</li><li>Tubes, quincaillerie, accessoires électriques</li><li>Radiateurs, luminaires</li><li>Outils (pour l'outilthèque : bon de location en échange)</li></ul>
+<h2>Ce qu'on refuse</h2><ul class="refuses"><li>Matériaux cassés, pourris ou incomplets</li><li>Amiante (vieilles plaques ondulées, Eternit…)</li><li>Pots de peinture, produits chimiques</li><li>Déchets de démolition en vrac</li></ul>
+<p>Plus rapide : <a class="bouton jaune" href="https://wa.me/32455100921">Photos par WhatsApp</a></p><p class="petit">Ou par téléphone : <a href="tel:+32455100921">+32 (0)455 10 09 21</a></p></div>
+<form id="fd" class="form-res"><h2>Proposer mes matériaux</h2>
+<label>Quoi ? <textarea id="dq" rows="3" required placeholder="ex. 12 m² de carrelage gris 30 × 30, 3 portes intérieures en chêne 83 cm…"></textarea></label>
+<label>Photos (jusqu'à 5) <input type="file" id="dp" accept="image/*" multiple></label><div id="apercu" class="apercu"></div>
+<label>Où sont-ils ? <input id="dl" placeholder="Commune"></label>
+<label><span><input type="checkbox" id="de"> J'aurais besoin d'un enlèvement</span></label>
+<label>Nom <input id="dn" required autocomplete="name"></label>
+<div class="deux"><label>Téléphone <input id="dt" type="tel" autocomplete="tel"></label><label>E-mail <input id="dm" type="email" autocomplete="email"></label></div>
+<input id="dh" class="cache" tabindex="-1" autocomplete="off" aria-hidden="true">
+<button class="bouton">Envoyer ma proposition</button><p class="retour" id="dr"></p></form></div>
+</main>
+<script>
+const $=id=>document.getElementById(id);let P=[];
+// Photos réduites dans le navigateur (1600 px) : envoi rapide même depuis un GSM.
+function reduire(f){return new Promise(ok=>{const i=new Image();i.onload=()=>{const k=Math.min(1,1600/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*k;c.height=i.height*k;c.getContext('2d').drawImage(i,0,0,c.width,c.height);c.toBlob(b=>ok(b),'image/jpeg',.82)};i.onerror=()=>ok(null);i.src=URL.createObjectURL(f)})}
+$('dp').onchange=async e=>{P=(await Promise.all([...e.target.files].slice(0,5).map(reduire))).filter(Boolean);$('apercu').innerHTML=P.map(b=>`<img src="${URL.createObjectURL(b)}" alt="">`).join('')};
+$('fd').onsubmit=async e=>{e.preventDefault();const r=$('dr');r.className='retour';
+ if(!$('dt').value&&!$('dm').value){r.className='retour bad';r.textContent='Indiquez un téléphone ou un e-mail pour qu\'on puisse vous répondre.';return}
+ const d={quoi:$('dq').value,lieu:$('dl').value,enlevement:$('de').checked?1:0,nom:$('dn').value,tel:$('dt').value,email:$('dm').value,site:$('dh').value};
+ if(Compte.demo===null)await Compte.sonder();
+ if(Compte.demo){r.innerHTML='Maquette : sur comptoir-materiaux.be, la proposition et les photos arriveront dans la caisse du Comptoir. En attendant, <a href="'+'https://wa.me/32455100921'+'">envoyez-les par WhatsApp</a>.';return}
+ const fd=new FormData();Object.entries(d).forEach(([k,v])=>fd.append(k,v));P.forEach((b,i)=>fd.append('photos[]',b,'photo'+i+'.jpg'));
+ try{const x=await fetch(API+'?a=depot',{method:'POST',body:fd});const j=await x.json();if(!x.ok||j.erreur)throw new Error(j.erreur||'Erreur');
+  r.textContent='✓ Merci ! Nous revenons vers vous rapidement.';e.target.reset();P=[];$('apercu').innerHTML=''}catch(x){r.className='retour bad';r.textContent=x.message}};</script>
+<footer class="pied"><div class="pied-in">
+<img src="img/logo-comptoir.png" alt="Comptoir des Matériaux" class="pied-logo">
+<div><b>Comptoir des Matériaux</b><br>Rue Frédéric Lang 3, 4960 Malmedy<br>Magasin : mercredi et samedi, 9 h – 16 h<br>Tél. <a href="tel:+32455100921">+32 (0)455 10 09 21</a> · <a href="https://wa.me/32455100921">WhatsApp</a><br><a href="mailto:info@la-pile.be">info@la-pile.be</a></div>
+<div><a href="depot.html">Donner des matériaux</a><br><a href="comprendre.html">Pourquoi le réemploi ?</a><br><a href="https://www.facebook.com/p/Comptoir-des-mat%C3%A9riaux-PILE-61557432835398/">Facebook</a><br><span class="petit-pied">Un projet de <a href="https://www.la-pile.be">La Pile asbl</a></span></div>
+</div></footer></body></html>

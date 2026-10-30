@@ -231,3 +231,4 @@ table.t img{width:40px;height:40px;object-fit:cover;border-radius:6px;display:bl
 .form-loc{display:flex;flex-direction:column;gap:8px}
 .deux-c{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .modal .boite:has(.form-loc){max-width:620px}
+.dep-photos{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}.dep-photos img{width:90px;height:90px;object-fit:cover;border-radius:8px}

@@ -40,6 +40,10 @@ function db(): PDO {
   $db->exec("CREATE TABLE IF NOT EXISTS reservations (id $auto, membre INTEGER NOT NULL, ref VARCHAR(40) NOT NULL,
     debut DATETIME NOT NULL, fin DATETIME NOT NULL, statut VARCHAR(20) NOT NULL DEFAULT 'demandee', message TEXT,
     note TEXT, code_acces VARCHAR(80), cree DATETIME NOT NULL, maj DATETIME NOT NULL)");
+  // Propositions de dépôt (dons de matériaux) envoyées depuis le site, traitées dans la caisse.
+  $db->exec("CREATE TABLE IF NOT EXISTS depots (id $auto, nom VARCHAR(190) NOT NULL, tel VARCHAR(40), email VARCHAR(190),
+    quoi TEXT NOT NULL, lieu VARCHAR(190), enlevement INTEGER NOT NULL DEFAULT 0, photos TEXT, statut VARCHAR(20) NOT NULL DEFAULT 'nouveau',
+    note TEXT, cree DATETIME NOT NULL, maj DATETIME NOT NULL)");
   return $db;
 }
 function q(string $sql, array $p = []): PDOStatement { $s = db()->prepare($sql); $s->execute($p); return $s; }
@@ -83,6 +87,27 @@ function envoyer_mail(string $a, string $sujet, string $texte): void {
   @mail($a, '=?UTF-8?B?' . base64_encode($sujet) . '?=', $texte,
     "From: Comptoir des Matériaux <{$CFG['mail_expediteur']}>\r\nContent-Type: text/plain; charset=utf-8");
 }
+// Photos envoyées (dépôts, outils, camionnette, atelier) : rangées dans photos/ du site, sous un nom aléatoire.
+function sauver_photo(string $tmp, string $sous = ''): ?string {
+  global $CFG;
+  $info = @getimagesize($tmp);
+  $ext = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'][$info['mime'] ?? ''] ?? null;
+  if (!$ext || filesize($tmp) > 8 * 1024 * 1024) return null;
+  $dos = __DIR__ . '/' . $CFG['dossier_site'] . '/photos/' . $sous;
+  if (!is_dir($dos) && !@mkdir($dos, 0755, true)) return null;
+  $nom = bin2hex(random_bytes(10)) . '.' . $ext;
+  return move_uploaded_file($tmp, "$dos/$nom") ? 'photos/' . ($sous ? "$sous/" : '') . $nom : null;
+}
+// Adresse publique du site (pour les liens dans les e-mails et les fiches).
+function base_site(): string {
+  $s = (!empty($_SERVER['HTTPS']) ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
+  return $s . rtrim(dirname(dirname($_SERVER['SCRIPT_NAME'] ?? '/api/index.php')), '/') . '/';
+}
+function fichiers(string $champ): array {
+  $f = $_FILES[$champ] ?? null; if (!$f) return [];
+  if (!is_array($f['tmp_name'])) return $f['error'] === UPLOAD_ERR_OK ? [$f['tmp_name']] : [];
+  return array_values(array_filter($f['tmp_name'], fn($t, $i) => $f['error'][$i] === UPLOAD_ERR_OK, ARRAY_FILTER_USE_BOTH));
+}
 function libelle(array $r): string {
   $o = q('SELECT nom FROM outils WHERE ref=?', [$r['ref']])->fetchColumn() ?: $r['ref'];
   return $o . ' du ' . date('d/m/Y H\hi', strtotime($r['debut'])) . ' au ' . date('d/m/Y H\hi', strtotime($r['fin']));
@@ -101,7 +126,7 @@ function deverrouillage(array $r, array $m): ?string {
 
 $a = $_GET['a'] ?? '';
 $post = $_SERVER['REQUEST_METHOD'] === 'POST';
-if (in_array($a, ['inscription', 'connexion', 'deconnexion', 'reserver', 'annuler', 'profil']) || str_starts_with($a, 'c_')) {
+if (in_array($a, ['inscription', 'connexion', 'deconnexion', 'reserver', 'annuler', 'profil', 'depot']) || str_starts_with($a, 'c_')) {
   if (!$post) err('Méthode non permise.', 405);
 }
 
@@ -180,13 +205,40 @@ switch ($a) {
     envoyer_mail($CFG['mail_equipe'], 'Réservation annulée', "{$m['nom']} a annulé : " . libelle($r));
     rep(['ok' => true]);
 
+  case 'depot':   // proposition de dons de matériaux (sans compte), avec photos
+    if (champ('site') !== '') rep(['ok' => true]);   // champ piège : robot
+    $quoi = champ('quoi', 3000); $nom = champ('nom', 190); $tel = champ('tel', 40); $email = strtolower(champ('email', 190));
+    if (mb_strlen($quoi) < 3 || mb_strlen($nom) < 2) err('Décrivez les matériaux et indiquez votre nom.');
+    if (!$tel && !filter_var($email, FILTER_VALIDATE_EMAIL)) err('Indiquez un téléphone ou un e-mail valide.');
+    $ph = array_values(array_filter(array_map(fn($t) => sauver_photo($t, 'depots'), array_slice(fichiers('photos'), 0, 5))));
+    q('INSERT INTO depots (nom, tel, email, quoi, lieu, enlevement, photos, cree, maj) VALUES (?,?,?,?,?,?,?,?,?)',
+      [$nom, $tel, $email, $quoi, champ('lieu', 190), champ('enlevement') ? 1 : 0, json_encode($ph, JSON_UNESCAPED_SLASHES), maintenant(), maintenant()]);
+    global $CFG;
+    envoyer_mail($CFG['mail_equipe'], 'Proposition de dépôt : ' . mb_substr($quoi, 0, 60), "$nom ($tel $email) propose :\n$quoi\n" . (champ('lieu') ? 'Lieu : ' . champ('lieu') . "\n" : '') . (champ('enlevement') ? "Demande un enlèvement.\n" : '') . implode("\n", array_map(fn($p) => base_site() . $p, $ph)) . "\nÀ traiter dans la caisse, onglet Locations > Dépôts.");
+    rep(['ok' => true]);
+
   // ——— Caisse (clé X-Cle-Caisse) ———
   case 'c_tout':   // tout ce que l'onglet Locations de la caisse affiche
     caisse();
     rep(['outils' => array_map('outil_public', q('SELECT * FROM outils ORDER BY type, cat, nom')->fetchAll()),
       'membres' => array_map('public_membre', q('SELECT * FROM membres ORDER BY nom')->fetchAll()),
       'reservations' => q("SELECT * FROM reservations WHERE fin > ? OR statut IN ('demandee','en_cours') ORDER BY debut", [date('Y-m-d', strtotime('-120 days'))])->fetchAll(),
+      'depots' => array_map(fn($d) => ['photos' => array_map(fn($p) => base_site() . $p, json_decode($d['photos'] ?: '[]', true) ?: [])] + $d,
+        q("SELECT * FROM depots WHERE statut IN ('nouveau','accepte') OR maj > ? ORDER BY cree DESC", [date('Y-m-d', strtotime('-60 days'))])->fetchAll()),
       'heure' => maintenant()]);
+
+  case 'c_depot':  // suite donnée à une proposition de dépôt
+    caisse();
+    $c = corps();
+    if (!in_array($c['statut'] ?? '', ['nouveau', 'accepte', 'refuse', 'recu'])) err('Statut inconnu.');
+    q('UPDATE depots SET statut=?, note=?, maj=? WHERE id=?', [$c['statut'], (string)($c['note'] ?? ''), maintenant(), (int)($c['id'] ?? 0)]);
+    rep(['ok' => true]);
+
+  case 'c_photo':  // photo d'un outil, de la camionnette ou de l'atelier, envoyée depuis la caisse
+    caisse();
+    $p = ($t = fichiers('photo')) ? sauver_photo($t[0], 'outils') : null;
+    if (!$p) err('Photo refusée (JPEG, PNG ou WebP, 8 Mo au plus).');
+    rep(['url' => base_site() . $p]);
 
   case 'c_outil':  // créer ou modifier un outil (ou la camionnette, l'atelier)
     caisse();
