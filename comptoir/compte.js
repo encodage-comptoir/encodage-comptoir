@@ -23,7 +23,8 @@ const Compte = {
   // Outils, camionnette et atelier : l'API en direct, sinon le fichier publié par la caisse.
   async outils() {
     if (this.demo === null) await this.sonder();
-    if (!this.demo) try { return await this.api('outils'); } catch {}
+    // Tant que la caisse n'a pas repris les outils (base vide), on montre le fichier publié.
+    if (!this.demo) try { const l = await this.api('outils'); if (l.length) return l; } catch {}
     const r = await fetch(new URL('outils.json', RACINE), { cache: 'no-cache' });
     return r.ok ? (await r.json()).filter(o => o.en_ligne !== 0) : [];
   },

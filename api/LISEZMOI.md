@@ -1,26 +1,36 @@
 # API du site comptoir-materiaux.be
 
-Petit serveur PHP (PlanetHoster) pour ce que GitHub Pages ne sait pas faire : comptes membres, outilthèque,
-réservations de la camionnette et de l'atelier partagé. Le site l'appelle avec la session du membre ; la caisse
-(onglet Locations) l'appelle avec sa clé. Base SQLite (fichier `api/donnees/comptoir.sqlite`, créé tout seul) ou MySQL.
+Petit serveur PHP (PlanetHoster) : comptes membres, outilthèque, réservations de la camionnette et de l'atelier
+partagé, et depuis le 30/10/2026 la liaison de la caisse et de l'app d'encodage (qui passait avant par GitHub).
+Le site l'appelle avec la session du membre ; la caisse et l'app d'encodage l'appellent avec la clé de la caisse.
+Base SQLite (fichier `api/donnees/comptoir.sqlite`, créé tout seul) ou MySQL ; fichiers partagés dans `api/donnees/fichiers/`.
 
 ## Mise en ligne sur PlanetHoster
 
-1. Envoyer le contenu de `comptoir/` à la racine du site (`public_html/`), et le dossier `api/` dans `public_html/api/`.
-2. Copier `api/config.exemple.php` en `api/config.php` et remplir : `cle_caisse` (longue phrase aléatoire),
-   `mail_equipe` (reçoit les demandes), `mail_expediteur` (une adresse @comptoir-materiaux.be créée dans PlanetHoster).
-3. Vérifier que `https://www.comptoir-materiaux.be/api/index.php?a=outils` répond `[]`, et que
-   `…/api/donnees/` et `…/api/config.php` sont refusés (403).
-4. Dans la caisse : onglet Locations, indiquer `https://www.comptoir-materiaux.be/api/` et la clé, puis
-   « Reprendre l'ancienne outilthèque » (les 45 outils lus sur outils.la-pile.be le 30/10/2026).
-5. Retirer `<meta name="robots" content="noindex">` des pages et changer `BASE` dans `outils/site_comptoir.py`.
+Tout tient dans un seul paquet : `python3 outils/paquet_planethoster.py <dossier>` produit `comptoir-materiaux.zip`
+(contenu de `public_html/`, avec un `api/config.php` et une clé de caisse tirée au hasard) et `INSTALLATION.txt`
+(les étapes et la clé). Organisation dans `public_html/` :
+
+| Adresse | Contenu |
+|---|---|
+| `/` | le site (dossier `comptoir/`) |
+| `/api/` | cette API (`config.php` jamais servi, `donnees/` jamais servi) |
+| `/caisse/` | la caisse |
+| `/encodage/` | l'app d'encodage (`index.html` de la racine du dépôt et `essai/` pour la reconnaissance photo) |
+
+Vérifications : `https://www.comptoir-materiaux.be/api/index.php?a=outils` répond (liste JSON), et
+`…/api/donnees/` et `…/api/config.php` sont refusés (403). Pour l'ouverture au public : retirer
+`<meta name="robots" content="noindex">` et le bandeau « Maquette » des pages.
 
 ## Ce que fait l'API (`index.php?a=…`)
 
 - Public : `outils`, `dispo&ref=` (créneaux pris, sans nom), `inscription`, `connexion`, `deconnexion`, `moi`,
   `profil`, `reserver`, `mes`, `annuler`.
 - Caisse (en-tête `X-Cle-Caisse`) : `c_tout`, `c_outil`, `c_outils` (import), `c_statut` (confirmer, refuser, sortie,
-  retour, annuler), `c_reserver` (au comptoir), `c_membre` (créer, adhésion, suspendre), `c_publier&f=stock.json`.
+  retour, annuler), `c_reserver` (au comptoir), `c_membre` (créer, adhésion, suspendre), `c_publier&f=stock.json`,
+  et les fichiers partagés `c_fichiers&dossier=journaux|envois`, `c_lire&chemin=`, `c_ecrire&chemin=` : un journal par
+  appareil de caisse (`journaux/journal-<appareil>.json`, ventes, mouvements, fiches) et les envois de l'app d'encodage
+  (`envois/…json`, annonces et photos).
 - Un créneau est bloqué par une réservation confirmée ou sortie ; une simple demande ne bloque pas (elle est signalée).
 - E-mails (fonction `mail()` de PHP) : à l'équipe pour chaque compte et demande, au membre à la confirmation ou au refus.
 

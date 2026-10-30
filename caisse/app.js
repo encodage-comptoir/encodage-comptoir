@@ -1,6 +1,6 @@
 "use strict";
 // Caisse & stock du Comptoir des Matériaux. Tout est gardé sur l'appareil (IndexedDB) ; rien n'est écrit dans Impulsion.
-const VERSION="2.8 (essai)";
+const VERSION="3.0 (essai)";
 const CATS=[["SA","Sanitaire"],["PA","Parois de douche"],["CH","Châssis"],["PO","Portes"],["CAR","Carrelage"],["GRO","Gros œuvre"],["RA","Chauffage"],
  ["ELEC","Électricité"],["LUM","Luminaires"],["BOI","Bois"],["PAR","Parquet & bardage"],["LAM","Lambris"],["TOI","Toiture"],["ISO","Isolant"],
  ["Q","Quincaillerie"],["OUT","Outillage"],["ELECTRO","Électroménager"],["DIV","Divers"]];
@@ -413,12 +413,12 @@ function stockListe(){const mots=sans(stQ).split(/\s+/).filter(Boolean);
  return L.sort((a,b)=>{const x=cle(a),y=cle(b);return x<y?-1:x>y?1:0})}
 function stockTotaux(){let n=0,val=0,kg=0;CAT.forEach(a=>{const r=reste(a);if(r>0){n++;val+=r*(a.p||0);if(a.kg!=null)kg+=r*a.kg}});return {n,val:r2(val),kg}}
 // ---------- Fiches envoyées par l'app d'encodage (provisoire, demande de Jérôme du 24/10/2026) ----------
-// L'app d'encodage dépose dans donnees/envois/ un fichier chiffré (même phrase secrète) avec les annonces et les photos.
+// L'app d'encodage dépose sur le serveur du site (envois/) un fichier avec les annonces et les photos.
 // Ici : juste la liste et un lien pour l'ouvrir, puis les placer dans Impulsion. « Placé » est noté sur cet appareil.
 let ENVOIS=null;
 const infoEnvoi=n=>{const m=/^(\d{4})-(\d\d)-(\d\d)-(\d\d)h(\d\d)-(.+?)-(\d+)f-/.exec(n);return m?{date:`${m[3]}/${m[2]}/${m[1]} à ${m[4]}h${m[5]}`,par:m[6].replace(/-/g," ").replace(/\bsaid\b/,"Saïd").replace(/\baudrey\b/,"Audrey"),n:+m[7]}:{date:n,par:"",n:0}};
 async function chargerEnvois(){if(!syncPret()){ENVOIS=[];return}
- try{ENVOIS=((await gh(GH.dossier+"/envois"))||[]).filter(f=>f.type==="file"&&f.name.endsWith(".json")).sort((a,b)=>b.name.localeCompare(a.name))}catch(e){ENVOIS=ENVOIS||[]}
+ try{ENVOIS=(await ficListe(SRV.envois)).filter(f=>f.name.endsWith(".json")).sort((a,b)=>b.name.localeCompare(a.name))}catch(e){ENVOIS=ENVOIS||[]}
  if(screen==="stock"&&!panneauRef)render()}
 function envoisHtml(){if(!syncPret())return "";if(ENVOIS===null){chargerEnvois();return ""}
  const a=ENVOIS.filter(f=>!REG["envoiPlace:"+f.name]),faits=ENVOIS.length-a.length;
@@ -431,9 +431,9 @@ function envoisHtml(){if(!syncPret())return "";if(ENVOIS===null){chargerEnvois()
   ${faits?`<details class="muted"><summary>Déjà placés (${faits})</summary>${ENVOIS.filter(f=>REG["envoiPlace:"+f.name]).map(ligne).join("")}</details>`:""}</div>`}
 function brancherEnvois(){
  $$("[data-envoi]").forEach(b=>b.onclick=async()=>{const w=window.open("","_blank");b.disabled=true;const t=b.textContent;b.textContent="Ouverture…";
-  try{const o=await dechiffrer(await gh(b.dataset.envoi,{},true)),u=URL.createObjectURL(new Blob([o.html],{type:"text/html"}));
+  try{const o=await dechiffrer(await ficLire(b.dataset.envoi)),u=URL.createObjectURL(new Blob([o.html],{type:"text/html"}));
    if(w)w.location.href=u;else{const x=document.createElement("a");x.href=u;x.download=o.fichier||"comptoir.html";x.click()}}
-  catch(e){if(w)w.close();toast(e.status?"GitHub répond "+e.status:"Impossible d'ouvrir : vérifiez la phrase secrète",true)}
+  catch(e){if(w)w.close();toast(e.status?"Le site répond "+e.status:"Impossible d'ouvrir : ancien envoi chiffré, entrez l'ancienne phrase secrète (Réglages)",true)}
   b.disabled=false;b.textContent=t});
  $$("[data-place]").forEach(b=>b.onclick=async()=>{await putSet("envoiPlace:"+b.dataset.place,new Date().toISOString());render()})}
 
@@ -835,7 +835,6 @@ function ecranReglages(){return `<div class="titre"><h2>Réglages</h2></div><div
   <label class="f">BIC (facultatif)<input class="champ" id="rBic" value="${esc(REG.bic||"")}" placeholder="ex. GEBABEBB"></label><p class="muted" id="rIbanOk">${REG.iban?(ibanOk(REG.iban)?"IBAN valide.":"IBAN incorrect : vérifiez-le."):""}</p></div>
  ${carteSauvAuto()}
  ${carteSync()}
- <div class="carte">${formSite()}</div>
  <div class="carte"><h3>Factures</h3><label class="f">Dernier n° de facture utilisé<input class="champ" id="dFact" value="${esc(REG.derniereFacture||"")}" placeholder="ex. F49-26"></label></div>
  <div class="carte"><h3>À propos</h3><p class="muted">Caisse & stock ${VERSION} · ${CAT.length} articles (export Impulsion du 14/10/2026, annonces du site, fiches) · ${ventes.length} tickets · ${MVT.length} mouvements.</p></div></div>`}
 function brancherReglages(){
@@ -849,7 +848,7 @@ function brancherReglages(){
   location.reload()};
  const t=$("#testScan");t.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();const r=lireCode(t.value);$("#testRes").innerHTML=r?`Reconnu : <b>${esc(r)}</b> · ${esc(parRef(r).n)}`:`Non reconnu : « ${esc(t.value)} »`;t.value=""}};
  brancherSauvAuto();
- $("#dFact").onchange=e=>putSet("derniereFacture",e.target.value.trim().toUpperCase());brancherSync();brancherSite();
+ $("#dFact").onchange=e=>putSet("derniereFacture",e.target.value.trim().toUpperCase());brancherSync();
  $("#rIban").onchange=async e=>{const v=ibanNet(e.target.value);await putSet("iban",v);$("#rIbanOk").textContent=v?(ibanOk(v)?"IBAN valide.":"IBAN incorrect : vérifiez-le."):""};
  $("#rBenef").onchange=e=>putSet("beneficiaire",e.target.value.trim()||"La Pile asbl");$("#rBic").onchange=e=>putSet("bic",e.target.value.trim())}
 
@@ -860,7 +859,7 @@ function bandeau(){const el=$("#bandeau");if(!el)return;let t,mal=false;
  if(!stockageKo&&sauvAuto==="pause"){el.textContent="Sauvegarde automatique en pause depuis le redémarrage du navigateur : cliquez ici pour la réactiver.";el.classList.add("mal");el.style.cursor="pointer";return}
  el.style.cursor="";
  if(stockageKo){t="Stockage indisponible dans ce navigateur (fenêtre privée ?) : les ventes ne sont pas gardées. Notez-les dans le carnet papier.";mal=true}
- else if(syncPret())t=Sync.etat==="err"?"Liaison en erreur : les ventes sont gardées sur cet appareil, mais pas encore copiées. Voir Réglages.":"Version d'essai : les ventes sont gardées sur cet appareil et copiées dans le dépôt du Comptoir. Le carnet papier fait toujours foi.";
+ else if(syncPret())t=Sync.etat==="err"?"Liaison en erreur : les ventes sont gardées sur cet appareil, mais pas encore copiées. Voir Réglages.":"Version d'essai : les ventes sont gardées sur cet appareil et copiées sur le serveur du site. Le carnet papier fait toujours foi.";
  else if(j==null||j>=7){t=`Version d'essai : les ventes ne sont gardées que dans ce navigateur. ${j==null?"Aucune sauvegarde faite":"Dernière sauvegarde il y a "+j+" jours"} : Réglages › Télécharger une sauvegarde.`;mal=ventes.length>0}
  else t="Version d'essai : les ventes sont gardées dans ce navigateur, dernière sauvegarde "+(j?"il y a "+j+" jour"+(j>1?"s":""):"aujourd'hui")+". Le carnet papier fait toujours foi.";
  el.textContent=t;el.classList.toggle("mal",mal)}
@@ -889,7 +888,7 @@ function brancherSauvAuto(){const d=$("#sauvDos");if(d)d.onclick=async()=>{let h
 document.addEventListener("click",e=>{if(e.target.closest("#bandeau")&&sauvAuto==="pause")sauvegardeAuto(true)});
 
 // Le jeton GitHub et la phrase secrète ne sortent jamais de cet appareil.
-const sansSecrets=r=>{const o={...r};delete o.ghJeton;delete o.ghPhrase;delete o.dossierSauv;delete o.ticketEnCours;Object.keys(o).forEach(k=>{if(k.startsWith("sha:")||k.startsWith("empreinte"))delete o[k]});return o};
+const sansSecrets=r=>{const o={...r};delete o.ghJeton;delete o.ghPhrase;delete o.siteCle;delete o.dossierSauv;delete o.ticketEnCours;Object.keys(o).forEach(k=>{if(k.startsWith("sha:")||k.startsWith("empreinte"))delete o[k]});return o};
 
 // ---------- Démarrage ----------
 (async()=>{

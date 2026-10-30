@@ -10,7 +10,8 @@ const TYPES = ['outil', 'camionnette', 'atelier'];
 
 header('Content-Type: application/json; charset=utf-8');
 header('X-Content-Type-Options: nosniff');
-// La caisse tourne sur une autre adresse (GitHub Pages ou PC) : elle a le droit d'appeler l'API, sans cookie.
+// La caisse et l'app d'encodage tournent en principe sur le même site, mais peuvent aussi être ouvertes ailleurs (fichier
+// local, ancienne adresse) : elles ont le droit d'appeler l'API, sans cookie.
 if (isset($_SERVER['HTTP_ORIGIN'])) {
   header('Access-Control-Allow-Origin: *');
   header('Access-Control-Allow-Headers: Content-Type, X-Cle-Caisse');
@@ -107,6 +108,12 @@ function fichiers(string $champ): array {
   $f = $_FILES[$champ] ?? null; if (!$f) return [];
   if (!is_array($f['tmp_name'])) return $f['error'] === UPLOAD_ERR_OK ? [$f['tmp_name']] : [];
   return array_values(array_filter($f['tmp_name'], fn($t, $i) => $f['error'][$i] === UPLOAD_ERR_OK, ARRAY_FILTER_USE_BOTH));
+}
+function dossier_fichiers(): string { return __DIR__ . '/donnees/fichiers'; }
+function chemin_fichier(): string {
+  $c = (string)($_GET['chemin'] ?? '');
+  if (!preg_match('~^(journaux/journal-[a-z0-9-]{1,60}|envois/[A-Za-z0-9_-][A-Za-z0-9._-]{0,120})\.json$~', $c)) err('Chemin non permis.');
+  return $c;
 }
 function libelle(array $r): string {
   $o = q('SELECT nom FROM outils WHERE ref=?', [$r['ref']])->fetchColumn() ?: $r['ref'];
@@ -324,6 +331,34 @@ switch ($a) {
     if (!is_array(json_decode($t, true))) err('JSON invalide.');
     if (file_put_contents(__DIR__ . '/' . $CFG['dossier_site'] . '/' . $nom, $t, LOCK_EX) === false) err('Écriture impossible dans le dossier du site.', 500);
     rep(['ok' => true, 'octets' => strlen($t)]);
+
+  // ——— Fichiers partagés de la caisse et de l'app d'encodage (remplacent le dépôt GitHub) ———
+  // journaux/journal-<appareil>.json : ventes, mouvements et fiches de chaque appareil de caisse ;
+  // envois/<date>-<qui>-….json : fiches et photos envoyées par l'app d'encodage. Rangés dans api/donnees/fichiers/ (jamais servi).
+  case 'c_fichiers':
+    caisse();
+    $d = (string)($_GET['dossier'] ?? '');
+    if (!in_array($d, ['journaux', 'envois'])) err('Dossier inconnu.');
+    $l = [];
+    foreach (glob(dossier_fichiers() . "/$d/*.json") ?: [] as $f) $l[] = ['name' => basename($f), 'path' => "$d/" . basename($f), 'sha' => md5_file($f), 'size' => filesize($f), 'type' => 'file'];
+    rep($l);
+
+  case 'c_lire':
+    caisse();
+    $f = dossier_fichiers() . '/' . chemin_fichier();
+    if (!is_file($f)) err('Fichier introuvable.', 404);
+    header('Content-Type: text/plain; charset=utf-8');
+    readfile($f); exit;
+
+  case 'c_ecrire':
+    caisse();
+    $c = chemin_fichier();
+    $t = file_get_contents('php://input');
+    if (!is_array(json_decode($t, true))) err('JSON invalide.');
+    $f = dossier_fichiers() . '/' . $c;
+    if (!is_dir(dirname($f)) && !mkdir(dirname($f), 0750, true)) err('Dossier impossible à créer.', 500);
+    if (file_put_contents($f, $t, LOCK_EX) === false) err('Écriture impossible.', 500);
+    rep(['ok' => true, 'content' => ['sha' => md5($t)]]);
 
   default:
     err('Action inconnue.', 404);
