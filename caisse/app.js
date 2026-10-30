@@ -1,6 +1,6 @@
 "use strict";
 // Caisse & stock du Comptoir des Matériaux. Tout est gardé sur l'appareil (IndexedDB) ; rien n'est écrit dans Impulsion.
-const VERSION="3.6 (essai)";
+const VERSION="3.7 (essai)";
 const CATS=[["SA","Sanitaire"],["PA","Parois de douche"],["CH","Châssis"],["PO","Portes"],["CAR","Carrelage"],["GRO","Gros œuvre"],["RA","Chauffage"],
  ["ELEC","Électricité"],["LUM","Luminaires"],["BOI","Bois"],["PAR","Parquet & bardage"],["LAM","Lambris"],["TOI","Toiture"],["ISO","Isolant"],
  ["Q","Quincaillerie"],["OUT","Outillage"],["ELECTRO","Électroménager"],["DIV","Divers"]];
@@ -487,15 +487,15 @@ async function chargerEnvois(){if(!syncPret()){ENVOIS=[];return}
  try{ENVOIS=(await ficListe(SRV.envois)).filter(f=>f.name.endsWith(".json")).sort((a,b)=>b.name.localeCompare(a.name))}catch(e){ENVOIS=ENVOIS||[]}
  if(screen==="stock"&&!panneauRef)render()}
 function envoisHtml(){if(!syncPret())return "";if(ENVOIS===null){chargerEnvois();return ""}
- const a=ENVOIS.filter(f=>!REG["envoiPlace:"+f.name]),faits=ENVOIS.length-a.length;
+ const enAttente=f=>!REG["envoiPlace:"+f.name]||CAT.some(x=>x.aVerif===f.name),a=ENVOIS.filter(enAttente),faits=ENVOIS.length-a.length;
  const ligne=f=>{const i=infoEnvoi(f.name);return `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--ligne,#ddd)">
   <span style="flex:1;min-width:200px"><b>${i.n} fiche${i.n>1?"s":""}</b>${i.par?" de "+esc(i.par):""} <span class="muted">· ${esc(i.date)}</span></span>
   <button class="btn petit" data-envoi="${esc(f.path)}">Voir les fiches et photos</button>
-  ${REG["envoiPlace:"+f.name]?"":`<button class="btn clair petit" data-place="${esc(f.name)}">Vérifié</button>`}</div>`};
+  ${enAttente(f)?`<button class="btn clair petit" data-place="${esc(f.name)}">Vérifié</button>`:""}</div>`};
  return `<div class="carte" style="margin-bottom:14px"><h3>Envois de l'app d'encodage (${a.length} à vérifier)</h3>
   <p class="muted">Les nouvelles fiches entrent toutes seules dans le stock (filtre « Nouvelles fiches »). Elles ne passent sur le site qu'après « Vérifié » et si elles ont un prix. Ouvrez l'envoi pour revoir les annonces et les photos.</p>
   ${a.map(ligne).join("")||'<p class="muted">Rien en attente.</p>'}
-  ${faits?`<details class="muted"><summary>Déjà vérifiés (${faits})</summary>${ENVOIS.filter(f=>REG["envoiPlace:"+f.name]).map(ligne).join("")}</details>`:""}</div>`}
+  ${faits?`<details class="muted"><summary>Déjà vérifiés (${faits})</summary>${ENVOIS.filter(f=>!enAttente(f)).map(ligne).join("")}</details>`:""}</div>`}
 // Fiches d'un envoi, revues dans la caisse avant de passer sur le site.
 function verifEnvoi(nom){const L=CAT.filter(a=>a.envoi===nom),i=infoEnvoi(nom),fait=REG["envoiPlace:"+nom]&&!L.some(a=>a.aVerif);
  const ph=a=>(a.fs&&a.fs.length?a.fs:[a.f]).filter(Boolean);
@@ -538,7 +538,7 @@ function ecranStock(){const L=stockListe(),T=stockTotaux(),PAR=100,pages=Math.ce
  <div class="tab-wrap"><table class="t"><thead><tr><th></th>${th("r","Référence")}${th("n","Nom")}<th>Catégorie</th>${th("e","Emplacement")}${th("s","Stock","r")}<th>Unité</th>${th("p","Prix TTC","r")}<th class="r">Poids</th><th>Matière</th><th>Statut</th></tr></thead><tbody>
  ${L.slice(stPage*PAR,(stPage+1)*PAR).map(a=>{const r=reste(a),st=statut(a);
   return `<tr class="cl" data-art="${esc(a.r)}"><td><span class="vig">${a.f?`<img src="${esc(a.f)}" alt="" loading="lazy" onerror="this.remove()">`:esc(a.c||"")}</span></td>
-  <td><b>${esc(refAff(a))||'<span class="muted">sans réf.</span>'}</b></td><td>${esc(a.n)}${a.src?' <span class="pill violet">nouvelle fiche</span>':""}</td><td>${esc(catLabel(a.c)||a.c||"")}</td><td>${esc(a.e||"")}</td>
+  <td><b>${esc(refAff(a))||'<span class="muted">sans réf.</span>'}</b></td><td>${esc(a.n)}${a.src?' <span class="pill violet">nouvelle fiche</span>':""}${a.aVerif?' <span class="pill jaune">à vérifier : pas encore sur le site</span>':""}</td><td>${esc(catLabel(a.c)||a.c||"")}</td><td>${esc(a.e||"")}</td>
   <td class="r"><b>${r==null?"?":virg(r)}</b>${a.pm&&r>0?`<br><small class="muted">${m2Txt(a,r).trim()}</small>`:""}</td><td>${esc(a.u||"pièce")}</td><td class="r">${a.p?eur(a.p):'<span class="pill jaune">?</span>'}</td>
   <td class="r">${a.kg!=null?virg(a.kg)+" kg":""}</td><td>${esc(a.m||"")}</td><td><span class="pill ${STATUTS[st][1]}">${STATUTS[st][0]}</span></td></tr>`}).join("")||'<tr><td colspan="11" class="vide">Aucun article.</td></tr>'}
  </tbody></table></div>
