@@ -17,13 +17,16 @@ FAMILLES = [  # nom de l'outil → famille, à la place de « Divers »
     (r'tapiss|d[ée]coll|calfeutr|silicone', 'Finitions'), (r'tour à bois|rabot|d[ée]fonceuse', 'Menuiserie'), (r'radiateur|chauff', 'Chauffage'), (r'ventouse|tournevis|valise|cl[ée]', 'Petit outillage'),
 ]
 ETAT = {'new': 'Neuf', 'good': 'Bon état', 'used': "Usagé, en état de marche"}
+# Familles regroupées (Jérôme, 30/10/2026).
+REGROUPE = {'Petit outillage': 'Petit outillage et accessoires', 'Accessoires': 'Petit outillage et accessoires', 'Ponçage': 'Menuiserie', 'Sciage et découpe': 'Menuiserie'}
+
 def famille(it):
     t = it['title'].lower()
     for motif, f in FAMILLES:
         if re.search(motif, t):
-            return f
+            return REGROUPE.get(f, f)
     c = (it.get('category') or [{}])[0].get('title', '')
-    return c if c and c != 'Divers' else 'Divers'
+    return REGROUPE.get(c, c) if c and c != 'Divers' else 'Divers'
 
 out = []
 for i, it in sorted(items.items()):

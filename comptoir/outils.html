@@ -37,7 +37,9 @@ function maj(){const mots=sans($('q').value).split(/\s+/).filter(Boolean),c=$('c
  $('familles').innerHTML=[['','Tout'],...[...new Set(O.map(o=>o.cat).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fr')).map(x=>[x,x])].map(([v,l])=>`<button type="button" data-f="${escH(v)}" class="${v===c?'sel':''}">${escH(l)}</button>`).join('')}
 const carteOutil=o=>`<a class="carte" href="outil.html?r=${encodeURIComponent(o.ref)}"><div class="img">${o.photos[0]?`<img loading="lazy" src="${escH(o.photos[0])}" alt="${escH(o.nom)}">`:'<div class="sans-photo">🔧</div>'}</div><div class="txt"><h3>${escH(o.nom)}</h3><p class="prix">${prixCourt(o)}</p><p class="petit">${escH(o.cat||'')}${o.tarif?` · catégorie ${o.tarif}`:''}</p></div></a>`;
 $('familles').onclick=e=>{const b=e.target.closest('[data-f]');if(!b)return;$('cat').value=b.dataset.f;maj()};
-Compte.outils().then(l=>{O=l.filter(o=>(o.type||'outil')==='outil');
+// Familles regroupées (aussi pour les outils déjà enregistrés sur le serveur avec l'ancienne famille).
+const REGROUPE={"Petit outillage": "Petit outillage et accessoires", "Accessoires": "Petit outillage et accessoires", "Ponçage": "Menuiserie", "Sciage et découpe": "Menuiserie"};
+Compte.outils().then(l=>{O=l.filter(o=>(o.type||'outil')==='outil').map(o=>({...o,cat:REGROUPE[o.cat]||o.cat}));
  [...new Set(O.map(o=>o.cat).filter(Boolean))].sort().forEach(c=>$('cat').add(new Option(c,c)));
  const P=new URLSearchParams(location.search);if(P.get('q'))$('q').value=P.get('q');maj()});
 document.querySelectorAll('#filtres input,#filtres select').forEach(e=>e.addEventListener('input',maj));</script>
