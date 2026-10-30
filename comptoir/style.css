@@ -25,6 +25,7 @@ nav a:hover{color:var(--jaune)}
 .hero-in{max-width:880px;margin:0 auto;text-align:center}
 .hero h1{font-size:clamp(2rem,7vw,3.6rem);text-transform:uppercase;letter-spacing:.06em;font-weight:600}
 .hero h1 span{color:var(--jaune);text-transform:none;letter-spacing:0;font-weight:800}
+.hero-logo{margin:0 0 18px}.hero-logo img{display:block;width:min(560px,86vw);height:auto;margin:0 auto}
 .hero p{font-size:1.1rem;max-width:640px;margin:0 auto 24px}
 .cherche{display:flex;gap:8px;max-width:620px;margin:0 auto;background:#fff;border-radius:40px;padding:6px}
 .cherche input{flex:1;min-width:0;border:0;font:inherit;padding:8px 14px;border-radius:30px;outline:none}
@@ -280,7 +281,12 @@ button.lien{background:none;border:0;padding:0;font:inherit;font-size:14px;color
 .petit-pied{font-size:12px;opacity:.85}
 /* accueil : services */
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
-.services{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px}
+.services{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+@media(min-width:860px){.services{grid-template-columns:repeat(4,1fr);gap:16px}}
+@media(max-width:520px){.service .txt p{display:none}.service .txt{padding:10px 12px 12px}.service h3{font-size:1rem}}
+.bandeau-don{display:flex;align-items:center;gap:14px;margin-top:18px;padding:14px 18px;border-radius:18px;background:#fff8dc;border:2px solid var(--jaune);color:var(--encre);text-decoration:none}
+.bandeau-don>span:first-child{font-size:30px}.bandeau-don>span:nth-child(2){flex:1}
+@media(max-width:620px){.bandeau-don{flex-wrap:wrap}.bandeau-don .bouton{width:100%;text-align:center}}
 .service{display:flex;flex-direction:column;border-radius:18px;overflow:hidden;text-decoration:none;color:var(--encre);background:#fff;border:2px solid var(--ligne);transition:border-color .15s,transform .15s}
 .service:hover{border-color:var(--bleu);transform:translateY(-2px)}
 .service .img{position:relative;aspect-ratio:16/10;background:linear-gradient(135deg,var(--bleu),var(--bleu-f));display:grid;place-items:center}
