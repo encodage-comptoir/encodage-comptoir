@@ -1,6 +1,6 @@
 "use strict";
 // Caisse & stock du Comptoir des Matériaux. Tout est gardé sur l'appareil (IndexedDB) ; rien n'est écrit dans Impulsion.
-const VERSION="3.9 (essai)";
+const VERSION="4.0 (essai)";
 const CATS=[["SA","Sanitaire"],["PA","Parois de douche"],["CH","Châssis"],["PO","Portes"],["CAR","Carrelage"],["GRO","Gros œuvre"],["RA","Chauffage"],
  ["ELEC","Électricité"],["LUM","Luminaires"],["BOI","Bois"],["PAR","Parquet & bardage"],["LAM","Lambris"],["TOI","Toiture"],["ISO","Isolant"],
  ["Q","Quincaillerie"],["OUT","Outillage"],["ELECTRO","Électroménager"],["DIV","Divers"]];
@@ -531,9 +531,28 @@ function verifEnvoi(nom){const L=CAT.filter(a=>a.envoi===nom),i=infoEnvoi(nom),f
    ${fait?'<span class="muted" style="align-self:center">Déjà vérifié</span>':`<button class="btn" data-verifie>Vérifié : mettre en ligne</button>`}</div>`);
  $$("#modal [data-modif]").forEach(b=>b.onclick=()=>{fermerModal();ouvrirPanneau(b.dataset.modif)});
  const v=$("#modal [data-verifie]");if(v)v.onclick=()=>{fermerModal();marquerVerifie(nom)}}
-async function marquerVerifie(nom){await putSet("envoiPlace:"+nom,new Date().toISOString());
+// Étiquettes 76 × 50 mm pour l'imprimante thermique (MUNBYN) : une par page, QR à gauche (lien vers la fiche du site,
+// que la douchette relit en caisse), référence, nom, prix et emplacement à droite.
+const SITE_FICHE="https://www.comptoir-materiaux.be/fiche.html?r=";
+function qrRef(r){qrcode.stringToBytes=qrcode.stringToBytesFuncs["UTF-8"];const q=qrcode(0,"M");q.addData(SITE_FICHE+r,"Byte");q.make();return q.createSvgTag({cellSize:4,margin:0,scalable:true})}
+function etiquettes(L,w){L=L.filter(a=>a&&a.r);if(!L.length){if(w)w.close();return}w=w||window.open("","_blank");
+ if(!w){toast("Autorisez les fenêtres pour imprimer les étiquettes",true);return}
+ const prix=a=>a.p>0?eur(a.p)+(a.u&&a.u!=="pièce"?" / "+esc(a.u):""):"";
+ w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Étiquettes</title><style>
+  @page{size:76mm 50mm;margin:0}*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#000}
+  .e{width:76mm;height:50mm;padding:3mm;display:flex;gap:3mm;align-items:center;page-break-after:always;overflow:hidden}
+  .q{flex:0 0 36mm;height:36mm}.q svg{width:36mm;height:36mm;display:block}
+  .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1.2mm}
+  .r{font-size:17pt;font-weight:700;letter-spacing:.3pt}.n{font-size:8.5pt;line-height:1.15;max-height:3.5em;overflow:hidden}
+  .p{font-size:12pt;font-weight:700}.l{font-size:8pt}.c{font-size:6.5pt;margin-top:auto}
+  @media screen{body{background:#ddd}.e{background:#fff;margin:8px auto;box-shadow:0 1px 4px #0004}}</style></head><body>
+  ${L.map(a=>`<div class="e"><div class="q">${qrRef(a.r)}</div><div class="t"><div class="r">${esc(a.r)}</div><div class="n">${esc(a.n||"")}</div>
+   ${prix(a)?`<div class="p">${prix(a)}</div>`:""}${a.e?`<div class="l">Emplacement ${esc(a.e)}</div>`:""}<div class="c">Comptoir des Matériaux</div></div></div>`).join("")}
+  <script>onload=()=>setTimeout(()=>print(),300)<\/script></body></html>`);w.document.close()}
+async function marquerVerifie(nom){const L=CAT.filter(a=>a.aVerif===nom).map(a=>({...a})),w=L.length?window.open("","_blank"):null;await putSet("envoiPlace:"+nom,new Date().toISOString());
  // vérifié : les fiches de cet envoi peuvent passer sur le site
  for(const a of CAT.filter(a=>a.aVerif===nom)){a.aVerif="";const x={...(ARTS[a.r]||{r:a.r}),aVerif:"",modifie:Date.now()};ARTS[a.r]=x;await put("articles",x)}
+ etiquettes(L,w);
  if(typeof planifierSync==="function")planifierSync(2e3);render()}
 function brancherEnvois(){
  if($("#envGh"))$("#envGh").onclick=reprendreGithub;
@@ -615,12 +634,13 @@ function ouvrirPanneau(r,refresh,nouveau){
   ${nouveau?"":`<div><h3>Historique</h3><div class="hist">${hist.map(e=>`<div><span>${dateBe(jour(new Date(e.ts)))}</span><span>${lib[e.type]}${e.motif?" · "+esc(MOTIFS[e.motif]||e.motif):""}${e.note?" · "+esc(e.note):""}${e.vid?" · ticket "+esc(e.vid.slice(11)):""}</span><b>${e.type==="correction"?"= ":e.type==="entree"?"+":"−"}${virg(e.q)}</b></div>`).join("")||'<div><span></span><span class="muted">Aucun mouvement depuis l\'export du 14/10.</span><b></b></div>'}
    <div><span></span><span>Stock de départ (export Impulsion ou fiche)</span><b>${a.s==null?"?":virg(a.s)}</b></div></div></div>`}
  </div>
- <div class="pied">${nouveau?"":`<button class="btn clair" id="aVendre">Ajouter au ticket</button>`}<span style="flex:1"></span><button class="btn clair" data-fermep>Fermer</button><button class="btn" id="aSave">Enregistrer</button></div></aside>`;
+ <div class="pied">${nouveau?"":`<button class="btn clair" id="aEtiq">Étiquette</button><button class="btn clair" id="aVendre">Ajouter au ticket</button>`}<span style="flex:1"></span><button class="btn clair" data-fermep>Fermer</button><button class="btn" id="aSave">Enregistrer</button></div></aside>`;
  $("#panneau").hidden=false;
  $$("[data-fermep]").forEach(b=>b.onclick=fermerPanneau);
  if(nouveau)$("#aC").onchange=e=>{$("#aR").placeholder=prochaineRef(e.target.value)},$("#aR").placeholder=prochaineRef(a.c);
  $$("[data-mv]").forEach(b=>b.onclick=()=>formMouvement(a,b.dataset.mv));
  const v=$("#aVendre");if(v)v.onclick=()=>{fermerPanneau();screen="caisse";ajouterAuPanier(a)};
+ const et=$("#aEtiq");if(et)et.onclick=()=>etiquettes([parRef(a.r)||a]);
  $("#aSave").onclick=()=>enregistrerArticle(a,nouveau);
  if(!refresh&&!nouveau){const n=$("#aN");n&&n.blur()}}
 function fermerPanneau(){panneauRef=null;const p=$("#panneau");p.hidden=true;p.innerHTML=""}
