@@ -3,27 +3,27 @@
 // comptoir-materiaux.be. Tout est sur le serveur du site (PlanetHoster, api/index.php) : la caisse le lit et le modifie
 // avec sa clé (Réglages > Site). Sans connexion internet, l'onglet ne peut rien afficher ; la caisse, elle, continue.
 const Loc={d:null,err:"",vue:"demandes",charge:false,q:""};
-const siteApiPret=()=>!!(REG.siteApi&&REG.siteCle);
+const siteApiPret=syncPret;   // même liaison que la synchro (sync.js)
 const LOC_ST={demandee:["Demandée","jaune"],confirmee:["Confirmée","ok"],refusee:["Refusée","bad"],annulee:["Annulée",""],en_cours:["Sortie","violet"],rendue:["Rendue",""]};
 const MEMBRE_ST={en_attente:["Adhésion à valider","jaune"],actif:["Actif","ok"],suspendu:["Suspendu","bad"]};
 const TYPES_LOC={outil:"Outil",camionnette:"Camionnette",atelier:"Atelier"};
 
 async function siteApi(a,corps,get={},brut){
- const u=new URL(REG.siteApi.replace(/\/?(index\.php)?$/,"/index.php"));u.searchParams.set("a",a);Object.entries(get).forEach(([k,v])=>u.searchParams.set(k,v));
+ const u=new URL(apiSite());u.searchParams.set("a",a);Object.entries(get).forEach(([k,v])=>u.searchParams.set(k,v));
  const r=await fetch(u,{method:"POST",headers:{"X-Cle-Caisse":REG.siteCle,"Content-Type":"application/json"},body:brut??JSON.stringify(corps||{})});
  const j=await r.json().catch(()=>({erreur:"Réponse illisible du site ("+r.status+")"}));
  if(!r.ok||j.erreur)throw new Error(j.erreur||"Erreur "+r.status);return j}
 // Photo réduite à 1600 px avant l'envoi au site.
-async function envoyerPhoto(f){const i=await createImageBitmap(f),k=Math.min(1,1600/Math.max(i.width,i.height)),c=document.createElement("canvas");
+async function envoyerPhoto(f,dossier){const i=await createImageBitmap(f),k=Math.min(1,1600/Math.max(i.width,i.height)),c=document.createElement("canvas");
  c.width=Math.round(i.width*k);c.height=Math.round(i.height*k);c.getContext("2d").drawImage(i,0,0,c.width,c.height);
  const b=await new Promise(ok=>c.toBlob(ok,"image/jpeg",.85)),fd=new FormData();fd.append("photo",b,"photo.jpg");
- const u=new URL(REG.siteApi.replace(/\/?(index\.php)?$/,"/index.php"));u.searchParams.set("a","c_photo");
+ const u=new URL(apiSite());u.searchParams.set("a","c_photo");if(dossier)u.searchParams.set("dossier",dossier);
  const r=await fetch(u,{method:"POST",headers:{"X-Cle-Caisse":REG.siteCle},body:fd}),j=await r.json().catch(()=>({erreur:"Réponse illisible"}));
  if(!r.ok||j.erreur)throw new Error(j.erreur||"Erreur "+r.status);return j.url}
 async function chargerLoc(){if(!siteApiPret()||Loc.charge)return;Loc.charge=true;
  try{Loc.d=await siteApi("c_tout");Loc.err=""}catch(e){Loc.err=navigator.onLine?e.message:"Hors ligne : les locations ont besoin d'internet."}
  Loc.charge=false;if(screen==="locations")render()}
-// Le stock publié pour le site GitHub l'est aussi sur comptoir-materiaux.be (appelé par la synchro).
+// Stock publié sur le site (appelé par la synchro).
 async function publierStockSite(S){if(!siteApiPret())return;const t=JSON.stringify(S),e=await empreinte(t);
  if(e===REG.empreinteStockSite)return;await siteApi("c_publier",null,{f:"stock.json"},t);await putSet("empreinteStockSite",e)}
 
@@ -34,7 +34,7 @@ const prixLoc=(o,r)=>{if(o.type==="outil")return o.prix_periode;const h=(Date.pa
  return h<=5&&o.prix_we!=null?o.prix_we:o.prix_jour!=null?Math.ceil(h/24)*o.prix_jour:null};
 
 function ecranLocations(){
- if(!siteApiPret())return `<div class="titre"><h2>Locations</h2></div><div class="carte" style="max-width:640px">${formSite()}</div>`;
+ if(!siteApiPret())return `<div class="titre"><h2>Locations</h2></div><div class="carte" style="max-width:640px"><p>Cet appareil n'est pas encore relié au site. Entrez la clé de la caisse dans <b>Réglages › Liaison avec le site</b>.</p></div>`;
  if(!Loc.d){if(!Loc.err)chargerLoc();return `<div class="titre"><h2>Locations</h2></div><p class="muted">${Loc.err?esc(Loc.err)+` <button class="btn petit clair" id="locRe">Réessayer</button>`:"Chargement des locations…"}</p>`}
  const R=Loc.d.reservations,dem=R.filter(r=>r.statut==="demandee"),att=Loc.d.membres.filter(m=>m.statut==="en_attente");
  const dep=(Loc.d.depots||[]).filter(d=>d.statut==="nouveau");
@@ -82,14 +82,6 @@ function vueMembres(){const mots=sans(Loc.q).split(/\s+/).filter(Boolean);
  <td><span class="pill ${MEMBRE_ST[m.statut][1]}">${MEMBRE_ST[m.statut][0]}</span></td><td>${m.jusqua?dateBe(m.jusqua):""}</td><td>${dateBe(m.cree.slice(0,10))}</td>
  <td style="white-space:nowrap"><button class="btn petit" data-adh="${m.id}">${m.statut==="actif"?"Prolonger 1 an":"Adhésion payée"}</button> ${m.statut==="suspendu"?`<button class="btn petit clair" data-msus="${m.id}" data-v="actif">Réactiver</button>`:`<button class="btn petit rouge" data-msus="${m.id}" data-v="suspendu">Suspendre</button>`}</td></tr>`).join("")||`<tr><td colspan="6" class="muted">Aucun membre.</td></tr>`}</tbody></table></div>`}
 
-function formSite(){return `<h3>Site comptoir-materiaux.be</h3><p class="muted">Les comptes membres, l'outilthèque et les réservations (camionnette, atelier) sont sur le serveur du site. Indiquez son adresse et la clé de la caisse (la même que dans <code>api/config.php</code> sur PlanetHoster).</p>
- <label class="f">Adresse de l'API<input class="champ" id="sApi" value="${esc(REG.siteApi||"")}" placeholder="https://www.comptoir-materiaux.be/api/"></label>
- <label class="f">Clé de la caisse<input class="champ" id="sCle" type="password" value="${esc(REG.siteCle||"")}" autocomplete="off"></label>
- <div style="display:flex;gap:8px;margin-top:10px"><button class="btn" id="sOk">Enregistrer et tester</button></div><p class="muted" id="sRes"></p>`}
-function brancherSite(){const b=$("#sOk");if(!b)return;b.onclick=async()=>{await putSet("siteApi",$("#sApi").value.trim());await putSet("siteCle",$("#sCle").value.trim());
- $("#sRes").textContent="Test…";try{Loc.d=await siteApi("c_tout");Loc.err="";$("#sRes").textContent=`Liaison OK : ${Loc.d.outils.length} outils, ${Loc.d.membres.length} membres.`;toast("Site relié")}
- catch(e){$("#sRes").textContent="Échec : "+e.message;Loc.d=null}}}
-
 function formOutil(o){o=o||{type:"outil",en_ligne:1,qte:1,photos:[]};const n=!o.ref;
  const F=(id,l,v,ph="")=>`<label class="f">${l}<input class="champ" id="${id}" value="${esc(v??"")}" placeholder="${esc(ph)}"></label>`;
  modal(`<h3>${n?"Nouvel outil":esc(o.nom)}</h3><div class="form-loc">
@@ -130,7 +122,7 @@ function encaisserLoc(r){const o=outilDe(r.ref),m=membreDe(r.membre),p=prixLoc(o
  panier.push({r:"",n:`Location ${o.nom} (${r.ref}) · ${m.nom} · ${ddmm(r.debut)} → ${ddmm(r.fin)}`,p:p??null,q:1,loc:r.id});
  screen="caisse";render();toast(p==null?"Ligne ajoutée : indiquez le prix":"Location ajoutée au ticket")}
 
-function brancherLocations(){brancherSite();
+function brancherLocations(){
  const re=$("#locRe");if(re)re.onclick=()=>{Loc.d=null;Loc.err="";render()};
  if(!Loc.d)return;
  $$("[data-lv]").forEach(b=>b.onclick=()=>{Loc.vue=b.dataset.lv;Loc.q="";render()});
@@ -143,7 +135,7 @@ function brancherLocations(){brancherSite();
    const enc=st==="en_cours"&&confirm("Encaisser la location maintenant ?");if(enc)encaisserLoc(r);Loc.d=null;render()}catch(e){toast(e.message,true)}});
  $$("[data-outil]").forEach(t=>t.onclick=()=>formOutil(Loc.d.outils.find(o=>o.ref===t.dataset.outil)));
  const ao=$("#locAjOutil");if(ao)ao.onclick=()=>formOutil();
- const im=$("#locImport");if(im)im.onclick=async()=>{try{const o=await (await fetch("../comptoir/outils.json",{cache:"no-cache"})).json();const j=await siteApi("c_outils",{outils:o});toast(j.ajoutes+" outils repris");Loc.d=null;render()}catch(e){toast(e.message,true)}};
+ const im=$("#locImport");if(im)im.onclick=async()=>{try{const r=await fetch("../outils.json",{cache:"no-cache"}).then(r=>r.ok?r:fetch("../comptoir/outils.json",{cache:"no-cache"})),o=await r.json();const j=await siteApi("c_outils",{outils:o});toast(j.ajoutes+" outils repris");Loc.d=null;render()}catch(e){toast(e.message,true)}};
  const am=$("#locAjMembre");if(am)am.onclick=formMembre;
  $$("[data-dep]").forEach(b=>b.onclick=async()=>{let note="";if(b.dataset.v==="refuse"){note=prompt("Motif (pour mémoire, facultatif) :","");if(note===null)return}
   try{await siteApi("c_depot",{id:+b.dataset.dep,statut:b.dataset.v,note});Loc.d=null;render()}catch(e){toast(e.message,true)}});

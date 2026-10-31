@@ -17,13 +17,16 @@ FAMILLES = [  # nom de l'outil → famille, à la place de « Divers »
     (r'tapiss|d[ée]coll|calfeutr|silicone', 'Finitions'), (r'tour à bois|rabot|d[ée]fonceuse', 'Menuiserie'), (r'radiateur|chauff', 'Chauffage'), (r'ventouse|tournevis|valise|cl[ée]', 'Petit outillage'),
 ]
 ETAT = {'new': 'Neuf', 'good': 'Bon état', 'used': "Usagé, en état de marche"}
+# Familles regroupées (Jérôme, 30/10/2026).
+REGROUPE = {'Petit outillage': 'Petit outillage et accessoires', 'Accessoires': 'Petit outillage et accessoires', 'Ponçage': 'Menuiserie', 'Sciage et découpe': 'Menuiserie'}
+
 def famille(it):
     t = it['title'].lower()
     for motif, f in FAMILLES:
         if re.search(motif, t):
-            return f
+            return REGROUPE.get(f, f)
     c = (it.get('category') or [{}])[0].get('title', '')
-    return c if c and c != 'Divers' else 'Divers'
+    return REGROUPE.get(c, c) if c and c != 'Divers' else 'Divers'
 
 out = []
 for i, it in sorted(items.items()):
@@ -42,11 +45,11 @@ for i, it in sorted(items.items()):
                 'source': f'https://outils.la-pile.be/items/{i}'})
 out += [
     {'ref': 'CAMION', 'type': 'camionnette', 'nom': 'Camionnette partagée', 'cat': 'Transport',
-     'descr': "Pour transporter vos achats du Comptoir ou pour vos besoins personnels, réservée aux membres de La Pile.\nClé dans la boîte à clé à l'entrée du Comptoir, accessible 7 jours sur 7 : le code arrive avec la confirmation.\nÀ rendre avec le plein fait.\nFiat Ducato aux couleurs du Comptoir. Volume de chargement et tarifs à compléter par l'équipe.",
+     'descr': "Pour transporter vos achats du Comptoir ou pour vos besoins personnels.\nOuverture avec l'appli Wibee, même quand le Comptoir est fermé.\nFiat Ducato aux couleurs du Comptoir.",
      'prix_jour': None, 'prix_we': None, 'prix_periode': None, 'tarif': None, 'caution': None, 'qte': 1, 'etat': '', 'photos': ['img/camionnette.jpg'], 'en_ligne': 1},
     {'ref': 'ATELIER', 'type': 'atelier', 'nom': 'Atelier partagé', 'cat': 'Atelier',
-     'descr': "Un atelier équipé et son parc machines, à réserver à la demi-journée ou à la journée.\nListe des machines, règles de sécurité et tarifs à compléter par l'équipe.",
-     'prix_jour': None, 'prix_we': None, 'prix_periode': None, 'tarif': None, 'caution': None, 'qte': 1, 'etat': '', 'photos': [], 'en_ligne': 1},
+     'descr': "Un atelier équipé et son parc machines : scies à ruban, scie à panneaux, scie à onglets, perceuse à colonne, établis…",
+     'prix_jour': None, 'prix_we': None, 'prix_periode': None, 'tarif': None, 'caution': None, 'qte': 1, 'etat': '', 'photos': ['img/atelier.jpg', 'img/atelier-2.jpg', 'img/atelier-3.jpg'], 'en_ligne': 1},
 ]
 json.dump(out, open(dest, 'w'), ensure_ascii=False, indent=1)
 print(len(out), 'fiches ;', sum(o['type'] == 'outil' for o in out), 'outils')

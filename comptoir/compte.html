@@ -4,8 +4,8 @@
 <meta name="robots" content="noindex"><!-- maquette : à retirer à la mise en ligne réelle -->
 <meta property="og:title" content="Mon compte – Comptoir des Matériaux"><meta property="og:description" content="Connexion, inscription et réservations des membres de La Pile.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=p5"><script src="panier.js?v=p5" defer></script><script src="compte.js?v=p5"></script>
-</head><body>
+<link rel="stylesheet" href="style.css?v=p8"><script src="panier.js?v=p8" defer></script><script src="compte.js?v=p8"></script>
+<!--ico--><link rel="icon" href="favicon.ico" sizes="any"><link rel="icon" type="image/png" href="favicon-32.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><!--/ico--></head><body>
 <div class="maquette">Maquette : textes, prix et photos à valider par l'équipe.</div>
 <header class="haut"><div class="haut-in">
 <a class="logo" href="index.html"><img src="img/logo-comptoir.png" alt="Comptoir des Matériaux" width="168" height="63"></a>
@@ -18,7 +18,7 @@ const $=id=>document.getElementById(id);const retour=new URLSearchParams(locatio
 function connexion(){ $('zone').innerHTML=bandeauDemo()+`<h1>Mon compte</h1><div class="deux-grand">
  <form id="fc" class="form-res"><h2>J'ai un compte</h2><label>E-mail <input type="email" id="ce" required autocomplete="email"></label><label>Mot de passe <input type="password" id="cm" required autocomplete="current-password"></label><button class="bouton">Me connecter</button><p class="retour" id="rc"></p><p class="petit">Mot de passe oublié ? Appelez le Comptoir, l'équipe vous aide.</p></form>
  <form id="fi" class="form-res"><h2>Devenir membre</h2><label>Nom et prénom <input id="in" required autocomplete="name"></label><label>E-mail <input type="email" id="ie" required autocomplete="email"></label><label>Téléphone <input type="tel" id="it" autocomplete="tel"></label><label>Adresse <input id="ia" autocomplete="street-address"></label><label>Mot de passe (8 caractères au moins) <input type="password" id="im" minlength="8" required autocomplete="new-password"></label>
- <p class="petit">L'adhésion à La Pile se règle au Comptoir ; l'équipe active alors votre compte. En attendant, vous pouvez déjà envoyer des demandes.</p><button class="bouton jaune">Créer mon compte</button><p class="retour" id="ri"></p></form></div>`;
+ <p class="petit">L'adhésion (30 €/an) se règle au Comptoir ; l'équipe active alors votre compte. En attendant, vous pouvez déjà envoyer des demandes.</p><button class="bouton jaune">Créer mon compte</button><p class="retour" id="ri"></p></form></div>`;
  $('fc').onsubmit=e=>envoi(e,'connexion',{email:$('ce').value,mdp:$('cm').value},'rc');
  $('fi').onsubmit=e=>envoi(e,'inscription',{nom:$('in').value,email:$('ie').value,tel:$('it').value,adresse:$('ia').value,mdp:$('im').value},'ri')}
 async function envoi(e,a,c,r){e.preventDefault();try{const j=await Compte.api(a,c);Compte.membre=j.membre;if(retour&&/^https?:/.test(retour)&&new URL(retour).origin===location.origin)location.href=retour;else espace()}catch(x){$(r).className='retour bad';$(r).textContent=x.message}}
@@ -35,6 +35,6 @@ async function espace(){const m=Compte.membre,L=await Compte.api('mes');
 Compte.moi().then(m=>m?espace():connexion());</script>
 <footer class="pied"><div class="pied-in">
 <img src="img/logo-comptoir.png" alt="Comptoir des Matériaux" class="pied-logo">
-<div><b>Comptoir des Matériaux</b><br>Rue Frédéric Lang 3, 4960 Malmedy<br>Magasin : mercredi et samedi, 9 h – 16 h<br>Tél. <a href="tel:+32455100921">+32 (0)455 10 09 21</a> · <a href="https://wa.me/32455100921">WhatsApp</a><br><a href="mailto:info@la-pile.be">info@la-pile.be</a></div>
+<div><b>Comptoir des Matériaux</b><br>Rue Frédéric Lang 3, 4960 Malmedy<br>Magasin : mercredi et samedi, 9 h – 16 h<br>Tél. <a href="tel:+32455100921">+32 (0)455 10 09 21</a> · <a href="https://wa.me/32455100921">WhatsApp</a><br><a href="mailto:info@comptoir-materiaux.be">info@comptoir-materiaux.be</a></div>
 <div><a href="depot.html">Donner des matériaux</a><br><a href="comprendre.html">Pourquoi le réemploi ?</a><br><a href="https://www.facebook.com/p/Comptoir-des-mat%C3%A9riaux-PILE-61557432835398/">Facebook</a><br><span class="petit-pied">Un projet de <a href="https://www.la-pile.be">La Pile asbl</a></span></div>
 </div></footer></body></html>

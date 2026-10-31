@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Encodage Comptoir</title>
 <meta name="theme-color" content="#f2b705">
-<link rel="manifest" href="manifest.webmanifest">
+<link rel="manifest" href="manifest.webmanifest" crossorigin="use-credentials">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@700;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap">
@@ -134,7 +134,7 @@ body.said .steps i.on{background:#ffd800}
 <script src="essai/poids.js"></script>
 <script>
 "use strict";
-const VERSION="8.0 (envoi à la caisse)";
+const VERSION="8.3 (références libres reprises du stock)";
 // ---------- Données de référence ----------
 // Préfixes et catégories : les noms doivent être identiques aux catégories du back-office Impulsion (vérifiés le 14/10/2026).
 const CATS=[
@@ -210,7 +210,7 @@ const getSet=k=>tx("reglages","readonly",s=>s.get(k));
 const putSet=(k,v)=>tx("reglages","readwrite",s=>s.put(v,k));
 
 let fiches=[], LAST={...LAST0};
-async function load(){fiches=(await dbAll()).sort((a,b)=>b.cree-a.cree);const l=await getSet("last");if(l)LAST={...LAST0,...l};recoOn=(await getSet("reco"))!==false;ENVOI_URL=(await getSet("envoi"))||ENVOI_URL0;GH_JETON=(await getSet("ghJeton"))||"";GH_PHRASE=(await getSet("ghPhrase"))||""}
+async function load(){fiches=(await dbAll()).sort((a,b)=>b.cree-a.cree);const l=await getSet("last");if(l)LAST={...LAST0,...l};recoOn=(await getSet("reco"))!==false;ENVOI_URL=(await getSet("envoi"))||ENVOI_URL0;SITE_CLE=(await getSet("siteCle"))||"";SITE_API=(await getSet("siteApi"))||""}
 
 // ---------- Outils ----------
 let screen="home", cur=null, step=0, openId=null;
@@ -224,6 +224,10 @@ let garderT;document.addEventListener("input",()=>{clearTimeout(garderT);garderT
 document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")garderBrouillon()});
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+// Dernières références réellement prises (stock publié par la caisse sur le site) : évite de redonner une référence existante.
+async function majLastStock(){try{const j=await (await fetch("../stock.json",{cache:"no-cache"})).json(),l={...LAST};let ch=false;
+ (j.articles||[]).forEach(x=>{const m=/^([A-Z]+)(\d+)$/.exec(x.r||"");if(m&&+m[2]>(l[m[1]]||0)&&+m[2]<1e5){l[m[1]]=+m[2];ch=true}});
+ if(ch){LAST=l;await putSet("last",l)}}catch(e){}}
 function nextCode(cat){let n=LAST[cat]||0;fiches.forEach(f=>{if(f.cat===cat&&f.id!==cur?.id){const m=+f.code.slice(cat.length);if(m>n)n=m}});return cat+(n+1)}
 function dimTxt(f){const d=[f.L,f.l,f.h].filter(Boolean);return d.length?d.join(" × ")+" cm":""}
 // L1 ≥ L2 ≥ L3 : les mesures sont toujours rangées de la plus grande à la plus petite (cm)
@@ -241,36 +245,33 @@ const DEST="audrey@la-pile.be", ENVOI_URL0="", ENVOI_CLE="comptoir-pile-2026";
 let ENVOI_URL=ENVOI_URL0;
 const marquerEnvoye=async list=>{const d=new Date().toLocaleDateString("fr-BE");for(const f of list){f.envoye=d;await dbPut(f)}
  const l={...LAST};list.forEach(f=>{const m=+f.code.slice(f.cat.length);if(m>(l[f.cat]||0))l[f.cat]=m});LAST=l;await putSet("last",l)};
-// Envoi à la caisse (provisoire, demande de Jérôme du 24/10) : le fichier habituel (fiches + photos) est déposé, chiffré avec la
-// phrase secrète du Comptoir, dans donnees/envois/ du dépôt GitHub. La caisse l'affiche dans l'onglet Stock avec un lien pour l'ouvrir.
-// Même jeton et même phrase que la caisse (Réglages des deux côtés) ; même chiffrement que caisse/sync.js.
-const GH={depot:"encodage-comptoir/encodage-comptoir",branche:"main",dossier:"donnees/envois"};
-let GH_JETON="",GH_PHRASE="";
-const lieCaisse=()=>!!(GH_JETON&&GH_PHRASE);
-// Vérifie le jeton dès l'enregistrement : mieux vaut le savoir dans les Réglages qu'au moment d'envoyer.
-async function testerJeton(){try{const r=await fetch(`https://api.github.com/repos/${GH.depot}`,{cache:"no-store",headers:{Authorization:"Bearer "+GH_JETON,Accept:"application/vnd.github+json"}});
- if(r.status===401)return "GitHub ne reconnaît pas ce jeton : recopiez-le en entier (il commence par github_pat_)";
- if(!r.ok)return "Le jeton n'a pas accès au dépôt encodage-comptoir";
- const j=await r.json();return j.permissions&&!j.permissions.push?"Le jeton peut lire mais pas écrire (Contents : Read and write)":""}catch(e){return ""}}
-const utf8=s=>new TextEncoder().encode(s);
-async function cleChiffre(sel){const k=await crypto.subtle.importKey("raw",utf8(GH_PHRASE),"PBKDF2",false,["deriveKey"]);
- return crypto.subtle.deriveKey({name:"PBKDF2",salt:sel,iterations:200000,hash:"SHA-256"},k,{name:"AES-GCM",length:256},false,["encrypt"])}
-async function chiffrer(obj,app){const sel=crypto.getRandomValues(new Uint8Array(16)),iv=crypto.getRandomValues(new Uint8Array(12));
- const d=await crypto.subtle.encrypt({name:"AES-GCM",iv},await cleChiffre(sel),utf8(JSON.stringify(obj)));
- return JSON.stringify({v:1,appareil:app,sel:b64(sel),iv:b64(iv),d:b64(new Uint8Array(d))})}
-async function envoyerCaisse(list,suivi){const P=paquets(list,8e6),pile=n=>String(n).padStart(2,"0"),t=new Date();
+// Envoi à la caisse : le fichier habituel (fiches + photos) est déposé sur le serveur du site comptoir-materiaux.be
+// (api/index.php, dossier envois/ jamais servi au public). La caisse l'affiche dans l'onglet Stock avec un lien pour l'ouvrir.
+// Même clé que la caisse (Réglages des deux côtés). Avant le 30/10/2026, cela passait par le dépôt GitHub (bac à sable).
+let SITE_CLE="",SITE_API="";
+// Adresse de l'API : celle du réglage, sinon celle du site où l'app est ouverte (…/encodage/ → …/api/index.php).
+const apiSite=()=>(SITE_API||(/^https?:$/.test(location.protocol)&&!/github\.io$/.test(location.hostname)?new URL("../api/",location.href).href:"")).replace(/\/?(index\.php)?$/,"/index.php");
+const lieCaisse=()=>!!(SITE_CLE&&apiSite());
+const appelSite=(a,get,corps)=>{const u=new URL(apiSite());u.searchParams.set("a",a);Object.entries(get).forEach(([k,v])=>u.searchParams.set(k,v));
+ return fetch(u,{method:"POST",cache:"no-store",headers:{"X-Cle-Caisse":SITE_CLE},body:corps??""})};
+// Vérifie la clé dès l'enregistrement : mieux vaut le savoir dans les Réglages qu'au moment d'envoyer.
+async function testerCle(){try{const r=await appelSite("c_fichiers",{dossier:"envois"});
+ return r.status===403?"Le site refuse cette clé : recopiez-la en entier":!r.ok?"Le site ne répond pas ("+r.status+")":""}catch(e){return navigator.onLine?"Site introuvable : vérifiez l'adresse":""}}
+async function envoyerCaisse(list,suivi){const P=paquets(list,6e6),pile=n=>String(n).padStart(2,"0"),t=new Date();
  const base=`${t.getFullYear()}-${pile(t.getMonth()+1)}-${pile(t.getDate())}-${pile(t.getHours())}h${pile(t.getMinutes())}`;
  for(let i=0;i<P.length;i++){const l=P[i],par=[...new Set(l.map(f=>f.par).filter(Boolean))].join(" et ")||"app d'encodage";suivi(i,P.length);
   // Le nom du fichier dit déjà quand, qui et combien : la caisse affiche la liste sans tout télécharger.
   const qui_=par.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");
   const nom=`${base}-${qui_}-${l.length}f-${Math.random().toString(36).slice(2,6)}${P.length>1?"-"+(i+1):""}`;
-  const contenu=await chiffrer({quand:t.toISOString(),par,n:l.length,nPhotos:l.reduce((s,f)=>s+f.photos.length,0),
+  const contenu=JSON.stringify({quand:t.toISOString(),par,n:l.length,nPhotos:l.reduce((s,f)=>s+f.photos.length,0),
    liste:l.map(f=>({code:f.code,nom:f.type==="maj"?(f.statut==="introuvable"?"introuvable":titrePropose(f)):f.nom,note:f.note||""})),
-   fichier:`comptoir-${today()}${P.length>1?"-"+(i+1):""}.html`,html:reportHtml(l)},par);
-  const r=await fetch(`https://api.github.com/repos/${GH.depot}/contents/${GH.dossier}/${nom}.json`,{method:"PUT",cache:"no-store",
-   headers:{Authorization:"Bearer "+GH_JETON,Accept:"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"},
-   body:JSON.stringify({message:`Encodage : ${l.length} fiche${l.length>1?"s":""} de ${par} pour la caisse`,content:b64(utf8(contenu)),branch:GH.branche})});
-  if(!r.ok)throw new Error(r.status===401?"jeton refusé ou expiré":r.status===403||r.status===404?"le jeton n'a pas le droit d'écrire":"GitHub "+r.status);
+   fichier:`comptoir-${today()}${P.length>1?"-"+(i+1):""}.html`,html:reportHtml(l),
+   // Les fiches elles-mêmes : la caisse les ajoute directement au stock (et donc au site), photos comprises.
+   fiches:l.map(f=>({type:f.type||"",code:f.code,nom:f.nom,titre:f.type==="maj"?titrePropose(f):"",annonce:f.annonce||"",statut:f.statut||"",cat:f.cat,
+    L:f.L,l:f.l,h:f.h,matiere:f.matiere||"",couleur:f.couleur||"",etat:f.etat||"",qte:f.qte,unite:f.unite||"pièce",prix:f.prix||"",prov:f.prov||"",
+    empl:f.empl||"",poids:f.poids||"",poidsEst:!!f.poidsEst,note:f.note||"",descr:descr(f),par:f.par||"",cree:f.cree,photos:(f.photos||[]).filter(Boolean)}))});
+  const r=await appelSite("c_ecrire",{chemin:`envois/${nom}.json`},contenu);
+  if(!r.ok)throw new Error(r.status===403?"clé de la caisse refusée":r.status===413?"envoi trop lourd pour le site":"le site répond "+r.status);
   await marquerEnvoye(l)}}
 // Les photos pèsent lourd : plusieurs envois si besoin (environ 15 Mo par e-mail).
 function paquets(list,max=15e6){const P=[];let p=[],t=0;for(const f of list){const n=f.photos.reduce((s,x)=>s+x.length,0)+5000;if(p.length&&t+n>max){P.push(p);p=[];t=0}p.push(f);t+=n}if(p.length)P.push(p);return P}
@@ -395,7 +396,7 @@ function render(){
   const caisse=lieCaisse(),direct=caisse||!!ENVOI_URL;
   a.innerHTML=`<div class="top"><span class="brand">Envoi au bureau</span></div>
    <h1>${todo.length} matériau${todo.length>1?"x":""}, ${nPh} photo${nPh>1?"s":""}</h1>
-   <p class="hint">${caisse?`Appuyez sur le bouton jaune : tout part dans la caisse, onglet <b>Stock</b>, où Audrey ouvre les annonces et les photos.`:direct?`Appuyez sur le bouton jaune : tout part par e-mail à <b>${DEST}</b>.`:`Appuyez sur le bouton jaune, puis choisissez <b>Drive</b> et le dossier <b>À encoder</b>.<br><span class="warn" style="display:block;margin-top:6px">Ce téléphone n'est pas encore relié à la caisse : entrez le jeton GitHub et la phrase secrète dans <b>Réglages</b>.</span>`}</p>
+   <p class="hint">${caisse?`Appuyez sur le bouton jaune : tout part dans la caisse, onglet <b>Stock</b>, où Audrey ouvre les annonces et les photos.`:direct?`Appuyez sur le bouton jaune : tout part par e-mail à <b>${DEST}</b>.`:`Appuyez sur le bouton jaune, puis choisissez <b>Drive</b> et le dossier <b>À encoder</b>.<br><span class="warn" style="display:block;margin-top:6px">Ce téléphone n'est pas encore relié à la caisse : entrez la clé de la caisse dans <b>Réglages</b>.</span>`}</p>
    <div class="card"><pre class="txt">${todo.map(f=>f.code+"  "+(f.type==="maj"?(f.statut==="introuvable"?"introuvable":"annonce complétée"):"nouveau : "+f.nom)).map(esc).join("\n")}</pre></div>
    <p class="hint" id="etatEnvoi">Un seul fichier part au bureau. Sur l'ordinateur, Audrey l'ouvre : il contient le fichier d'import pour Impulsion et les photos de chaque produit, nommées avec leur référence.</p>
    ${direct?`<button class="big ghost" id="autre">Pas de réseau ? Envoyer autrement</button>`:`<button class="big ghost" id="sent">C'est bien envoyé</button>`}`;
@@ -408,7 +409,7 @@ function render(){
    $("#go").onclick=async()=>{const b=$("#go");b.disabled=true;
     try{await (caisse?envoyerCaisse:envoyerAudrey)(todo,(i,n)=>{b.textContent=n>1?`Envoi ${i+1} sur ${n}…`:"Envoi en cours…"});await load();toast(caisse?"Envoyé à la caisse":"Envoyé à Audrey");screen="home";render()}
     catch(e){await load();b.disabled=false;b.textContent="Réessayer";$("#etatEnvoi").innerHTML=`<span class="warn" style="display:block">L'envoi n'a pas marché (${esc(navigator.onLine?e.message:"pas de réseau")}). Les fiches restent dans « À envoyer » : réessayez plus tard, ou envoyez autrement.</span>`}};
-   $("#autre").onclick=()=>{const u=ENVOI_URL,j=GH_JETON;ENVOI_URL="";GH_JETON="";render();ENVOI_URL=u;GH_JETON=j}}
+   $("#autre").onclick=()=>{const u=ENVOI_URL,j=SITE_CLE;ENVOI_URL="";SITE_CLE="";render();ENVOI_URL=u;SITE_CLE=j}}
   else{
    $("#go").onclick=partager;
    $("#sent").onclick=async()=>{await marquerEnvoye(todo);toast("Marqué comme envoyé");screen="home";render()}}
@@ -420,9 +421,9 @@ function render(){
    <p class="hint">Pour la gestionnaire. L'app continue la numérotation à partir de ces numéros. À corriger si une référence a été créée directement sur le site.</p>
    <div class="card recap"><dl>${CATS.map(([c])=>`<dt><span class="code">${c}</span> ${esc(label(c))}</dt><dd><input class="t" style="min-height:44px;font-size:18px" inputmode="numeric" data-last="${c}" value="${LAST[c]||0}"></dd>`).join("")}</dl></div>
    <h1 style="margin-top:28px">Liaison avec la caisse</h1>
-   <p class="hint">Le même jeton GitHub et la même phrase secrète que dans les Réglages de la caisse. Une fois remplis, « Envoyer » dépose les fiches et les photos dans la caisse (onglet Stock).</p>
-   <label class="f" for="ghJeton">Jeton GitHub</label><input class="t" id="ghJeton" type="password" autocomplete="off" style="font-size:16px" placeholder="${GH_JETON?"enregistré (laisser vide pour garder)":"github_pat_…"}">
-   <label class="f" for="ghPhrase">Phrase secrète du Comptoir</label><input class="t" id="ghPhrase" type="password" autocomplete="off" style="font-size:16px" placeholder="${GH_PHRASE?"enregistrée (laisser vide pour garder)":"la même que dans la caisse"}">
+   <p class="hint">La même clé que dans les Réglages de la caisse. Une fois remplie, « Envoyer » dépose les fiches et les photos dans la caisse (onglet Stock).</p>
+   <label class="f" for="siteCle">Clé de la caisse</label><input class="t" id="siteCle" type="password" autocomplete="off" style="font-size:16px" placeholder="${SITE_CLE?"enregistrée (laisser vide pour garder)":"la même que dans la caisse"}">
+   <label class="f" for="siteApi">Adresse du site (à laisser vide si l'app est ouverte depuis le site)</label><input class="t" id="siteApi" style="font-size:16px" placeholder="${esc(apiSite()||"https://www.comptoir-materiaux.be/api/")}" value="${esc(SITE_API)}">
    ${lieCaisse()?`<div class="chips"><button class="chip" id="delier">Délier de la caisse</button></div>`:""}
    <h1 style="margin-top:28px">Envoi à Audrey par e-mail</h1>
    <p class="hint">Lien du relais Google qui envoie les fiches par e-mail à ${DEST} (se termine par « /exec »). Vide : l'envoi passe par le menu de partage du téléphone.</p>
@@ -434,13 +435,13 @@ function render(){
    ${recoOn&&RECO.etat!=="pret"&&RECO.etat!=="charge"?`<button class="chip" id="recoGo">Télécharger maintenant</button>`:""}</div></div>`;
   bar(`<button class="big ghost back" id="bk">Retour</button><button class="big" id="ok">Enregistrer</button>`);
   $("#bk").onclick=()=>{screen="home";render()};
-  if($("#delier"))$("#delier").onclick=async()=>{GH_JETON=GH_PHRASE="";await putSet("ghJeton","");await putSet("ghPhrase","");toast("Délié de la caisse");render()};
+  if($("#delier"))$("#delier").onclick=async()=>{SITE_CLE="";await putSet("siteCle","");toast("Délié de la caisse");render()};
   $("#recoOn").onclick=async()=>{await putSet("reco",true);recoOn=true;render()};
   $("#recoOff").onclick=async()=>{await putSet("reco",false);recoOn=false;render()};
   if($("#recoGo"))$("#recoGo").onclick=()=>{recoCharger();$("#recoGo").remove();recoMaj()};
   $("#ok").onclick=async()=>{const l={...LAST};a.querySelectorAll("[data-last]").forEach(i=>l[i.dataset.last]=parseInt(i.value)||0);LAST=l;await putSet("last",l);ENVOI_URL=$("#envoiUrl").value.trim();await putSet("envoi",ENVOI_URL);
-   const j=$("#ghJeton").value.replace(/\s+/g,""),ph=$("#ghPhrase").value;if(j){GH_JETON=j;await putSet("ghJeton",j)}if(ph){GH_PHRASE=ph;await putSet("ghPhrase",ph)}
-   if(j&&lieCaisse()){const e=await testerJeton();if(e){toast(e);return}toast("Enregistré, la caisse répond")}else toast("Enregistré");screen="home";render()};
+   const j=$("#siteCle").value.trim();SITE_API=$("#siteApi").value.trim();await putSet("siteApi",SITE_API);if(j){SITE_CLE=j;await putSet("siteCle",j)}
+   if(j&&lieCaisse()){const e=await testerCle();if(e){toast(e);return}toast("Enregistré, la caisse répond")}else toast("Enregistré");screen="home";render()};
  }
  else if(screen==="wizs")wizSaid(a);
  else wiz(a);
@@ -817,7 +818,7 @@ $("#cam").onchange=async e=>{
 (async()=>{
  try{await openDb();await load();brouillon=await getSet("brouillon")||null;if(navigator.storage&&navigator.storage.persist)navigator.storage.persist()}
  catch(e){$("#app").innerHTML='<h1>Problème de stockage</h1><p class="hint">Le téléphone refuse d\'enregistrer les données. Ouvrez l\'app dans Chrome, pas en navigation privée.</p>';return}
- render();
+ render();majLastStock();
  if("serviceWorker" in navigator&&location.protocol==="https:")navigator.serviceWorker.register("sw.js");
 })();
 

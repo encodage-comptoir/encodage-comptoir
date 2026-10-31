@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Caisse & stock · Comptoir des Matériaux</title>
 <meta name="theme-color" content="#449ca8">
-<link rel="manifest" href="manifest.webmanifest">
+<link rel="manifest" href="manifest.webmanifest" crossorigin="use-credentials">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -17,6 +17,7 @@
  <div class="haut-in">
   <a class="logo" href="./"><img src="https://www.la-pile.be/img/logo-main.svg" alt="La Pile"><span>Comptoir des Matériaux<small>Caisse & stock</small></span></a>
   <nav class="onglets" id="nav" aria-label="Écrans"></nav>
+  <a class="lien-mail" id="lienMail" target="_blank" rel="noopener" title="Messagerie info@comptoir-materiaux.be (nouvel onglet)"></a>
   <div class="etat" id="etat"><span class="pt"></span><span>Démarrage…</span></div>
  </div>
 </header>
@@ -26,6 +27,7 @@
 <div id="modal" hidden></div>
 <div id="toast" class="toast" hidden role="status" aria-live="polite"></div>
 <script src="poids.js"></script>
+<script src="auto.js"></script>
 <script src="qrcode.js"></script>
 <script src="sync.js"></script>
 <script src="locations.js"></script>

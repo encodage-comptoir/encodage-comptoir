@@ -1,11 +1,11 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Camionnette et atelier partagé – Comptoir des Matériaux</title><meta name="description" content="Réservez en ligne la camionnette partagée (clé en boîte à clé, 7j/7) ou l&#x27;atelier partagé de La Pile, à Malmedy.">
+<title>Camionnette et atelier partagé – Comptoir des Matériaux</title><meta name="description" content="Réservez en ligne la camionnette partagée (2,50 €/h + 0,60 €/km) ou l&#x27;atelier partagé (25 € les 3 h), à Malmedy.">
 <meta name="robots" content="noindex"><!-- maquette : à retirer à la mise en ligne réelle -->
-<meta property="og:title" content="Camionnette et atelier partagé – Comptoir des Matériaux"><meta property="og:description" content="Réservez en ligne la camionnette partagée (clé en boîte à clé, 7j/7) ou l&#x27;atelier partagé de La Pile, à Malmedy.">
+<meta property="og:title" content="Camionnette et atelier partagé – Comptoir des Matériaux"><meta property="og:description" content="Réservez en ligne la camionnette partagée (2,50 €/h + 0,60 €/km) ou l&#x27;atelier partagé (25 € les 3 h), à Malmedy.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=p5"><script src="panier.js?v=p5" defer></script><script src="compte.js?v=p5"></script>
-</head><body>
+<link rel="stylesheet" href="style.css?v=p8"><script src="panier.js?v=p8" defer></script><script src="compte.js?v=p8"></script>
+<!--ico--><link rel="icon" href="favicon.ico" sizes="any"><link rel="icon" type="image/png" href="favicon-32.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><!--/ico--></head><body>
 <div class="maquette">Maquette : textes, prix et photos à valider par l'équipe.</div>
 <header class="haut"><div class="haut-in">
 <a class="logo" href="index.html"><img src="img/logo-comptoir.png" alt="Comptoir des Matériaux" width="168" height="63"></a>
@@ -17,18 +17,21 @@
 <div class="deux-grand" id="ress"><p>Chargement…</p></div>
 <h2 style="margin-top:40px">Comment ça marche ?</h2>
 <div class="infos-prat">
-<div><h3>1. Devenir membre</h3><p>Créez votre compte en ligne. L'adhésion à La Pile se règle au Comptoir : l'équipe active alors votre compte.</p></div>
+<div><h3>1. Devenir membre</h3><p>Créez votre compte en ligne : l'adhésion est de 30 €/an. Pour la camionnette, il faut aussi votre pièce d'identité et votre permis de conduire. L'équipe active ensuite votre compte.</p></div>
 <div><h3>2. Réserver</h3><p>Choisissez vos dates sur le calendrier et envoyez la demande. Vous recevez la confirmation par e-mail.</p></div>
-<div><h3>3. Camionnette : 7j/7</h3><p>La clé vous attend dans la boîte à clé à l'entrée du Comptoir, même quand il est fermé. Le code vous est envoyé avec la confirmation.</p></div>
-<div><h3>4. Au retour</h3><p>Plein fait, clé remise dans la boîte. Le paiement se fait au Comptoir (espèces, QR code ou virement).</p></div></div>
+<div><h3>3. Camionnette : sauf jeudi et vendredi</h3><p>Elle s'ouvre avec l'appli Wibee, même quand le Comptoir est fermé. Le jeudi et le vendredi, elle sert à La Pile et au Comptoir.</p></div>
+<div><h3>4. Au retour</h3><p>Notez les kilomètres : le carburant est compris dans le prix au km. Le paiement se fait au Comptoir (espèces, QR code ou virement).</p></div></div>
 </main>
 <script>
 const $=id=>document.getElementById(id);
+// Tarifs de la camionnette et de l'atelier (Jérôme, 30/10/2026). Camionnette : pas le jeudi ni le vendredi.
+const TARIFS={camionnette:{court:'2,50 €/heure + 0,60 €/km',lignes:[['Location','2,50 € / heure'],['Kilomètres','0,60 € / km, carburant compris'],['Adhésion','30 € / an']],note:'Réservée aux membres : compte en ligne avec pièce d\'identité et permis de conduire. Pas de location le jeudi ni le vendredi.',ferme:[4,5]},
+ atelier:{court:'25 € les 3 h · 50 € la journée',lignes:[['3 heures','25 €'],['Journée','50 €']],note:'Demi-tarif pour les associations. Consommables non compris.',ferme:[]}};
 Compte.outils().then(l=>{const R=l.filter(o=>o.type==='camionnette'||o.type==='atelier');
  $('ress').innerHTML=R.length?R.map(o=>`<a class="carte ress" href="outil.html?r=${encodeURIComponent(o.ref)}"><div class="img">${o.photos[0]?`<img src="${escH(o.photos[0])}" alt="">`:`<div class="sans-photo">${o.type==='camionnette'?'🚐':'🪚'}</div>`}</div>
- <div class="txt"><h2>${escH(o.nom)}</h2><p>${escH((o.descr||'').split('\n')[0])}</p><p class="prix">${o.prix_jour!=null?eurs(o.prix_jour)+' / jour':'Tarifs à venir'}${o.prix_we!=null?` · ${eurs(o.prix_we)} la demi-journée`:''}</p><span class="bouton">Voir les disponibilités</span></div></a>`).join(''):'<p>Bientôt disponible.</p>'});</script>
+ <div class="txt"><h2>${escH(o.nom)}</h2><p>${escH((o.descr||'').split('\n')[0])}</p><p class="prix">${(TARIFS[o.type]||{}).court||(o.prix_jour!=null?eurs(o.prix_jour)+' / jour':'Tarifs à venir')}</p><span class="bouton">Voir les disponibilités</span></div></a>`).join(''):'<p>Bientôt disponible.</p>'});</script>
 <footer class="pied"><div class="pied-in">
 <img src="img/logo-comptoir.png" alt="Comptoir des Matériaux" class="pied-logo">
-<div><b>Comptoir des Matériaux</b><br>Rue Frédéric Lang 3, 4960 Malmedy<br>Magasin : mercredi et samedi, 9 h – 16 h<br>Tél. <a href="tel:+32455100921">+32 (0)455 10 09 21</a> · <a href="https://wa.me/32455100921">WhatsApp</a><br><a href="mailto:info@la-pile.be">info@la-pile.be</a></div>
+<div><b>Comptoir des Matériaux</b><br>Rue Frédéric Lang 3, 4960 Malmedy<br>Magasin : mercredi et samedi, 9 h – 16 h<br>Tél. <a href="tel:+32455100921">+32 (0)455 10 09 21</a> · <a href="https://wa.me/32455100921">WhatsApp</a><br><a href="mailto:info@comptoir-materiaux.be">info@comptoir-materiaux.be</a></div>
 <div><a href="depot.html">Donner des matériaux</a><br><a href="comprendre.html">Pourquoi le réemploi ?</a><br><a href="https://www.facebook.com/p/Comptoir-des-mat%C3%A9riaux-PILE-61557432835398/">Facebook</a><br><span class="petit-pied">Un projet de <a href="https://www.la-pile.be">La Pile asbl</a></span></div>
 </div></footer></body></html>

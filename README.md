@@ -9,7 +9,10 @@ photos, catégorie, nom, mesures, quantité. Elle prépare un fichier d'import p
   Référence ; Nom ; Catégories ; Stock ; Prix de vente TTC ; Description.
 - Les derniers numéros de référence se règlent dans Réglages.
 
-Hébergement : GitHub Pages (Settings > Pages > Deploy from branch > main / root).
+Hébergement : PlanetHoster, www.comptoir-materiaux.be (décidé le 30/10/2026). Le site est à la racine, la caisse dans
+`/caisse/` et cette app dans `/encodage/`. Le paquet à déposer dans `public_html` se fait avec
+`python3 outils/paquet_planethoster.py <dossier>` (voir `api/LISEZMOI.md`). GitHub n'a servi que de bac à sable
+(GitHub Pages).
 
 ## Version d'essai (v6)
 
@@ -37,10 +40,10 @@ Fichiers : `index.html` (coquille), `style.css` (charte), `app.js` (écrans), `s
   choix : statistiques (ventes, poids par matière et catégorie), comptabilité (journal des recettes avec TVA, Z du
   jour, factures en attente), Intradel (kg réemployés par matière, déchets), Impulsion (stock à jour, articles à
   retirer), site (`stock.json`). Formats compta et Intradel standard en attendant leurs modèles.
-- **Liaison** (Réglages) : avec un jeton GitHub à grain fin (Contents : lecture et écriture sur ce dépôt) et la
-  phrase secrète du Comptoir, chaque appareil publie `comptoir/stock.json` (lu par le site : articles partis
-  retirés, quantités et emplacements à jour) et son journal chiffré `donnees/journal-<appareil>.json` (AES-GCM, le
-  dépôt étant public), et reprend les journaux des autres. Le jeton et la phrase restent dans le navigateur.
+- **Liaison** (Réglages) : avec la clé de la caisse (dans `api/config.php` sur PlanetHoster), chaque appareil
+  publie `stock.json` sur le site (articles partis retirés, quantités et emplacements à jour), dépose son journal
+  `journaux/journal-<appareil>.json` sur le serveur (dossier jamais servi au public) et reprend les journaux des autres.
+  L'app d'encodage dépose ses envois (`envois/`) avec la même clé. La clé reste dans le navigateur.
 
 `caisse/historique.json` reprend les ventes du carnet papier de janvier à septembre 2026 (comptées dans les
 statistiques, case à décocher). Rien n'est écrit dans Impulsion.

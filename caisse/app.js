@@ -1,6 +1,6 @@
 "use strict";
 // Caisse & stock du Comptoir des Matériaux. Tout est gardé sur l'appareil (IndexedDB) ; rien n'est écrit dans Impulsion.
-const VERSION="2.8 (essai)";
+const VERSION="4.6 (essai)";
 const CATS=[["SA","Sanitaire"],["PA","Parois de douche"],["CH","Châssis"],["PO","Portes"],["CAR","Carrelage"],["GRO","Gros œuvre"],["RA","Chauffage"],
  ["ELEC","Électricité"],["LUM","Luminaires"],["BOI","Bois"],["PAR","Parquet & bardage"],["LAM","Lambris"],["TOI","Toiture"],["ISO","Isolant"],
  ["Q","Quincaillerie"],["OUT","Outillage"],["ELECTRO","Électroménager"],["DIV","Divers"]];
@@ -26,6 +26,7 @@ const IC={
  especes:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></svg>',
  carte:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/></svg>',
  virement:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h14l-4-4M20 16H6l4 4"/></svg>',
+ mail:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>',
  facture:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2h9l4 4v16H6z"/><path d="M9 11h7M9 15h7M9 7h3"/></svg>'};
 
 const $=s=>document.querySelector(s);
@@ -77,18 +78,30 @@ function ajouterFiches(fiches,source){let n=0;
   if(f.type==="maj"){const a=parRef(norm(f.annonce));if(a){if(empl)a.e=empl;if(prix)a.p=prix}return}
   const r=norm(f.code);if(!r||!(f.nom||f.titre))return;
   const a=parRef(r);if(a){if(empl&&!a.e)a.e=empl;if(prix&&!a.p)a.p=prix;return}
+  const fs=(f.photos||[]).filter(p=>typeof p==="string"&&/^https?:/.test(p));
   ajouterArticle({r,n:f.titre||f.nom,t:f.nom,p:prix||0,s:num(f.qte)??1,u:f.unite||"pièce",c:f.cat,e:empl,f:photo1(f),src:source,cree:f.cree,m:f.matiere||"",
-   kg:num(f.poids),kgEst:!!f.poidsEst,L:f.L,l:f.l,h:f.h});n++});
+   kg:f.poidsEst||!num(f.poids)?(Poids.estimer({nom:f.nom,titre:f.titre,cat:f.cat,matiere:f.matiere,unite:f.unite,L:f.L,l:f.l,h:f.h})||{kg:num(f.poids)}).kg:num(f.poids),kgEst:!!f.poidsEst||!num(f.poids),L:f.L,l:f.l,h:f.h,...(fs.length?{fs}:{}),...(f.descr?{d:f.descr}:{}),...(f.etat?{et:f.etat}:{}),...(f.par?{par:f.par}:{})});n++});
  return n}
 
 // ---------- Données ----------
-let CAT=[], IDX={}, HIST=[], ventes=[], sorties=[], MVT=[], ARTS={}, REG={}, INV={}, nbFiches=0, STK={};
+let BASE={}, CAT=[], IDX={}, HIST=[], ventes=[], sorties=[], MVT=[], ARTS={}, REG={}, INV={}, nbFiches=0, STK={};
 const parRef=r=>IDX[r];
 function ajouterArticle(a){CAT.push(a);IDX[a.r]=a;a.k=sans([a.n,a.t,a.r,a.e,catLabel(a.c)].join(" "))}
 function indexer(a){a.k=sans([a.n,a.t,a.r,a.e,catLabel(a.c)].join(" "))}
 const refAff=a=>a.x?"":a.r;
 // Modifications faites dans le module stock : elles passent par-dessus le catalogue.
-function appliquerArticles(){Object.values(ARTS).forEach(o=>{const a=parRef(o.r);if(a){Object.assign(a,o);indexer(a)}else ajouterArticle({...o})})}
+// Fiche de l'app entrée sous une référence qui existait déjà au catalogue (articles du site ajoutés à la caisse en 3.6) :
+// elle reçoit la référence libre suivante et l'article du catalogue redevient lui-même.
+async function separerCollisions(){let n=0;
+ for(const o of Object.values(ARTS)){if(o.src!=="app"||!o.envoi||!BASE[o.r])continue;
+  const pre=(o.r.match(/^[A-Z]+/)||["DIV"])[0];let k=0;CAT.forEach(a=>{const m=/^([A-Z]+)(\d+)$/.exec(a.r);if(m&&m[1]===pre&&+m[2]>k)k=+m[2]});
+  const nv={...o,r:pre+(k+1),refApp:o.r,aVerif:o.aVerif||o.envoi,modifie:Date.now()};delete nv.k;ARTS[nv.r]=nv;await put("articles",nv);
+  const neutre={r:o.r,modifie:Date.now()};ARTS[o.r]=neutre;await put("articles",neutre);
+  const a=parRef(o.r);Object.keys(a).forEach(x=>delete a[x]);Object.assign(a,BASE[o.r]);indexer(a);ajouterArticle({...nv});n++}
+ return n}
+function appliquerArticles(){Object.values(ARTS).forEach(o=>{const a=parRef(o.r);if(a){Object.assign(a,o);indexer(a)}else ajouterArticle({...o})});
+ // poids estimés des fiches de l'app : recalculés avec l'estimation à jour (ex. évier inox)
+ CAT.forEach(a=>{if(a.src&&a.kgEst){const r=Poids.estimer({nom:a.n,titre:a.t,cat:a.c,matiere:a.m,unite:a.u,L:a.L,l:a.l,h:a.h});if(r)a.kg=r.kg}})}
 
 // Stock = stock de départ, puis chaque mouvement dans l'ordre : entrée +, vente −, sortie −, comptage = remise à la valeur comptée.
 function calcStock(){STK={};const ev={};
@@ -112,8 +125,11 @@ const m2Txt=(a,n)=>a.pm&&n>0?` (≈ ${nb(n/a.pm).replace(/,00$/,"")} m²)`:"";
 // ---------- Navigation ----------
 const ONGLETS={caisse:"Caisse",carnet:"Carnet de caisse",mouv:"Mouvements",stock:"Stock",locations:"Locations",rapports:"Rapports",reglages:"Réglages"};
 let screen="caisse";
+// Messagerie info@comptoir-materiaux.be : le webmail de PlanetHoster, dans un nouvel onglet (rien n'est stocké ici).
+const WEBMAIL="https://node29-eu.n0c.com/webmail/";
 function render(){
  $("#nav").innerHTML=Object.entries(ONGLETS).map(([k,t])=>`<button data-go="${k}" class="${screen===k?"sel":""}">${IC[k]}${t}</button>`).join("");
+ const lm=$("#lienMail");if(lm&&!lm.href){lm.href=WEBMAIL;lm.innerHTML=IC.mail+"<span>Mails</span>"}
  const P={caisse:ecranCaisse,stock:ecranStock,locations:ecranLocations,mouv:ecranMouv,carnet:ecranCarnet,rapports:ecranRapports,reglages:ecranReglages};
  $("#page").innerHTML=P[screen]();
  ({caisse:brancherCaisse,stock:brancherStock,locations:brancherLocations,mouv:brancherMouv,carnet:brancherCarnet,rapports:brancherRapports,reglages:brancherReglages}[screen])();
@@ -128,12 +144,19 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-go]");if(b
 // (ou l'inverse), les caractères arrivent déformés : on essaie aussi la version corrigée.
 const AZ_QW={a:"q",q:"a",z:"w",w:"z",m:";",";":"m",A:"Q",Q:"A",Z:"W",W:"Z",M:":",":":"M","&":"1","é":"2",'"':"3","'":"4","(":"5","-":"6","è":"7","_":"8","ç":"9","à":"0","!":"/","§":"!",",":"m",")":"-"};
 const QW_AZ={q:"a",a:"q",w:"z",z:"w",";":"m",m:",",Q:"A",A:"Q",W:"Z",Z:"W","1":"&","2":"é","3":'"',"4":"'","5":"(","6":"-","7":"è","8":"_","9":"ç","0":"à"};
+// Clavier belge (AZERTY BE) : les chiffres sans Maj donnent & é " ' ( § è ! ç à.
+const BE_QW={")":"-","?":"M",a:"q",q:"a",z:"w",w:"z",",":"m",A:"Q",Q:"A",Z:"W",W:"Z","&":"1","é":"2",'"':"3","'":"4","(":"5","§":"6","è":"7","!":"8","ç":"9","à":"0"};
 const tr=(s,map)=>[...s].map(c=>map[c]??c).join("");
-function lireCode(brut){const essais=[brut,tr(brut,AZ_QW),tr(brut,QW_AZ)];
+function lireCode(brut){const essais=[brut,tr(brut,AZ_QW),tr(brut,BE_QW),tr(brut,QW_AZ)];
  for(const s of essais){
   // Lien : la référence est le dernier morceau du chemin, ou le paramètre r= / ref=.
-  let m=s.match(/[?&](?:r|ref)=([A-Za-z]+[\s-]?\d+)/)||s.match(/\/(?:a|article)\/([A-Za-z]+[\s-]?\d+)(?:\.html?)?\/?$/i)||s.match(/^\s*([A-Za-z]{1,8})[\s-]?(\d{1,5})\s*$/);
+  let m=s.match(/[?&](?:r|ref)=([A-Za-z]+[\s-]?\d+)(?=$|[&#])/)||s.match(/\/(?:a|article)\/([A-Za-z]+[\s-]?\d+)(?:\.html?)?\/?$/i)||s.match(/^\s*([A-Za-z]{1,8})[\s-]?(\d{1,5})\s*$/);
   if(m){const r=norm(m[2]?m[1]+m[2]:m[1]).replace("-","");if(parRef(r))return r}
+  // Lien déformé (douchette en QWERTY) : « ?r= » devient « +r- » ou autre ; on prend la référence en fin de lien.
+  m=s.match(/r[^A-Za-z0-9]{1,2}([A-Za-z]{1,8})[\s-]?(\d{1,5})\s*$/);if(m){const r=norm(m[1]+m[2]);if(parRef(r))return r}
+  // Toute autre référence (BOI, EXPORT-4, CH46-47-48, PO1G…) : ce qui suit « r= » dans le lien, même déformé.
+  for(const sep of ["?r=","+r-","§r=","!r=","r=","r-"]){const i=s.lastIndexOf(sep);if(i<0)continue;let v=s.slice(i+sep.length);try{v=decodeURIComponent(v)}catch(e){}
+   const r=norm(v);if(r&&parRef(r))return r}
   const r=norm(s);if(parRef(r))return r}
  return null}
 let rafale="",rafaleT=0,rafaleDebut=0;
@@ -195,7 +218,7 @@ const vignette=a=>a.f?`<img src="${esc(a.f)}" alt="" loading="lazy" onerror="thi
 function ecranCaisse(){const res=resultats(),t=totalPanier();
  const cats=CATS.filter(c=>CAT.some(a=>a.c===c[0]));
  const cartes=res.slice(0,48).map(a=>{const r=reste(a),st=statut(a);
-  return `<button class="art" data-add="${esc(a.r)}"><span class="ph">${esc(a.c||"")}${vignette(a)}${st!=="ok"?`<span class="st pill ${STATUTS[st][1]}">${STATUTS[st][0]}</span>`:""}</span>
+  return `<button class="art" data-add="${esc(a.r)}"><span class="ph">${esc(a.c||"")}${vignette(a)}${st!=="ok"?`<span class="st pill ${STATUTS[st][1]}">${STATUTS[st][0]}</span>`:""}${a.r?`<span class="qr-art" title="QR de l'étiquette">${qrCache(a.r)}</span>`:""}</span>
    <span class="tx"><span class="nm">${esc(a.n)}</span><span class="rf">${esc(refAff(a))||"sans réf."}${a.e?" · "+esc(a.e):""}${r!=null&&r>0?" · stock "+virg(r)+m2Txt(a,r):""}</span>
    <span class="px">${a.p?eur(a.p):'<span class="pill jaune">prix ?</span>'}${a.u&&a.u!=="pièce"?` <small class="muted">/ ${esc(a.u)}</small>`:""}</span></span></button>`}).join("");
  const lignes=panier.map((l,i)=>`<div class="tl">
@@ -413,29 +436,144 @@ function stockListe(){const mots=sans(stQ).split(/\s+/).filter(Boolean);
  return L.sort((a,b)=>{const x=cle(a),y=cle(b);return x<y?-1:x>y?1:0})}
 function stockTotaux(){let n=0,val=0,kg=0;CAT.forEach(a=>{const r=reste(a);if(r>0){n++;val+=r*(a.p||0);if(a.kg!=null)kg+=r*a.kg}});return {n,val:r2(val),kg}}
 // ---------- Fiches envoyées par l'app d'encodage (provisoire, demande de Jérôme du 24/10/2026) ----------
-// L'app d'encodage dépose dans donnees/envois/ un fichier chiffré (même phrase secrète) avec les annonces et les photos.
-// Ici : juste la liste et un lien pour l'ouvrir, puis les placer dans Impulsion. « Placé » est noté sur cet appareil.
+// L'app d'encodage dépose sur le serveur du site (envois/) un fichier avec les annonces et les photos.
+// Ici : la liste, un lien pour revoir les annonces et photos, et « Vérifié » (noté sur cet appareil).
 let ENVOIS=null;
+// Les envois de l'app (8.2 et plus) contiennent les fiches elles-mêmes : la caisse les ajoute au stock toute seule,
+// photos envoyées sur le site. Une référence déjà connue n'est pas recréée (un autre appareil a pu l'ajouter avant).
+// Sans prix, l'article reste dans la caisse (filtre « Sans prix ») ; il apparaît sur le site dès qu'il a un prix.
+// Envois faits avant l'app 8.2 : pas de liste « fiches », on la reconstruit à partir de la page jointe
+// (fichier d'import Impulsion, caractéristiques et photos qu'elle contient).
+function lireCsv(t){const R=[];let r=[],v="",q=false;t=t.replace(/^\uFEFF/,"");
+ for(let i=0;i<t.length;i++){const c=t[i];if(q){if(c==='"'){if(t[i+1]==='"'){v+='"';i++}else q=false}else v+=c}
+  else if(c==='"')q=true;else if(c===";"){r.push(v);v=""}else if(c==="\n"){r.push(v.replace(/\r$/,""));R.push(r);r=[];v=""}else v+=c}
+ if(v||r.length){r.push(v);R.push(r)}return R}
+function fichesAncienEnvoi(o){const h=o&&o.html||"",b64=id=>{const m=new RegExp('getElementById\\("'+id+'"\\)\\.onclick=\\(\\)=>dl\\([^,]*,"data:text/csv;(?:charset=utf-8;)?base64,([A-Za-z0-9+/=]+)"').exec(h);return m?Uint8Array.from(atob(m[1]),c=>c.charCodeAt(0)):null};
+ const imp=b64("csv"),car=b64("fiches"),maj=b64("maj");
+ const P=(()=>{const m=/const P=(\{.*?\});\s*function dl/s.exec(h);try{return m?JSON.parse(m[1]):{}}catch(e){return {}}})();
+ const C={};if(car){const L=lireCsv(new TextDecoder().decode(car)),H=L[0]||[];L.slice(1).forEach(r=>{const x={};H.forEach((k,i)=>x[k]=r[i]);C[norm(r[0])]=x})}
+ // annonces existantes vérifiées au comptoir : titre, description et photos proposés
+ const M=maj?lireCsv(new TextDecoder("windows-1252").decode(maj)).slice(1).filter(r=>r[0]&&!/^Introuvable/.test(r[1])).map(r=>{const code=norm(r[0]),c=C[code]||{};
+  return {type:"maj",code,annonce:code,nom:r[3]||r[2],titre:r[3]||r[2],descr:r[6]||"",L:num(c["L1 (cm)"]),l:num(c["L2 (cm)"]),h:num(c["L3 (cm)"]),
+   matiere:c["Matière"]||"",etat:c["État"]||"",empl:r[8]||"",par:o.par||"",photos:(P[r[0]]||P[code]||[]).map(x=>x[1])}}):[];
+ if(!imp)return M;
+ return M.concat(lireCsv(new TextDecoder("windows-1252").decode(imp)).slice(1).filter(r=>r[0]).map(r=>{const code=norm(r[0]),c=C[code]||{},pre=(code.match(/^[A-Z]+/)||[""])[0];
+  return {type:"neuf",code,nom:r[1],cat:CATS.some(x=>x[0]===pre)?pre:"DIV",qte:c["Quantité"]||r[3],unite:c["Unité"]||"pièce",prix:r[4],descr:r[5]||"",
+   L:num(c["L1 (cm)"]),l:num(c["L2 (cm)"]),h:num(c["L3 (cm)"]),matiere:c["Matière"]||"",couleur:c["Couleur"]||"",etat:c["État"]||"",
+   empl:c["Emplacement"]||"",poids:c["Poids (kg)"]||"",prov:c["Provenance"]||"",par:o.par||"",cree:c["Arrivée"]?Date.parse(c["Arrivée"]):Date.parse(o.quand)||Date.now(),
+   photos:(P[r[0]]||P[code]||[]).map(x=>x[1])}}))}
+async function integrerEnvois(){if(!syncPret())return 0;let n=0;
+ const L=(await ficListe(SRV.envois)).filter(f=>f.name.endsWith(".json")&&!REG["envoiStock2:"+f.name]);
+ for(const f of L){let o;try{o=await dechiffrer(await ficLire(f.path))}catch(e){if(e.status)throw e;continue}
+  if(o&&!Array.isArray(o.fiches))o.fiches=fichesAncienEnvoi(o);
+  if(!o||!o.fiches.length){await putSet("envoiStock2:"+f.name,"vide");continue}
+  const fiches=[];
+  // référence déjà prise par un autre article (l'app ne connaissait pas toutes les références) : la suivante libre
+  const pris=new Set(),num2=q=>{const m=/^([A-Z]+)(\d+)$/.exec(q);return m?[m[1],+m[2]]:["",0]};
+  for(const x of o.fiches){if(x.type==="maj")continue;const r=norm(x.code),ex=r&&parRef(r);
+   if(!ex||ex.envoi===f.name||CAT.some(a=>a.envoi===f.name&&a.refApp===r))continue;
+   const pre=num2(r)[0]||x.cat||"DIV";let k=0;[...CAT.map(a=>a.r),...pris].forEach(q=>{const [p,i]=num2(q);if(p===pre&&i>k)k=i});
+   x.refApp=r;x.code=pre+(k+1);pris.add(x.code)}
+  for(const x of o.fiches){const r=norm(x.code),neuf=x.type!=="maj"&&r&&!parRef(r),majA=x.type==="maj"&&x.statut!=="introuvable"&&parRef(norm(x.annonce||x.code));const ph=[];
+   if(neuf||majA)for(const p of x.photos||[]){try{ph.push(await envoyerPhoto(await (await fetch(p)).blob(),"stock"))}catch(e){if(!navigator.onLine)throw e}}
+   fiches.push({...x,photos:ph})}
+  const avant=CAT.length;n+=ajouterFiches(fiches,"app");
+  for(const a of CAT.slice(avant)){a.aVerif=f.name;a.envoi=f.name;const fx=fiches.find(x=>norm(x.code)===a.r);if(fx&&fx.refApp)a.refApp=fx.refApp;const x={...a};delete x.k;x.modifie=Date.now();ARTS[a.r]=x;await put("articles",x)}
+  // fiches « annonce existante » : emplacement et prix, et la nouvelle annonce (titre, description, photos)
+  // qui remplacera celle du site après « Vérifié »
+  for(const x of fiches.filter(x=>x.type==="maj"&&x.statut!=="introuvable")){const a=parRef(norm(x.annonce||x.code));if(!a)continue;
+   const y={...(ARTS[a.r]||{r:a.r}),modifie:Date.now(),src:a.src||"maj",envoi:f.name,aVerif:f.name,majAnnonce:1};
+   if(a.e)y.e=a.e;if(a.p)y.p=a.p;if(x.titre||x.nom)y.n=x.titre||x.nom;if(x.descr)y.d=x.descr;if(x.photos.length)y.fs=x.photos;
+   for(const k of ["L","l","h"])if(x[k])y[k]=x[k];if(x.matiere)y.m=x.matiere;if(x.etat)y.et=x.etat;
+   Object.assign(a,y);indexer(a);ARTS[a.r]=y;await put("articles",y);n++}
+  await putSet("envoiStock2:"+f.name,new Date().toISOString())}
+ if(n){calcStock();toast(`${n} fiche${n>1?"s":""} de l'app ajoutée${n>1?"s":""} au stock`);if(screen==="stock"&&!panneauRef)render()}
+ return n}
 const infoEnvoi=n=>{const m=/^(\d{4})-(\d\d)-(\d\d)-(\d\d)h(\d\d)-(.+?)-(\d+)f-/.exec(n);return m?{date:`${m[3]}/${m[2]}/${m[1]} à ${m[4]}h${m[5]}`,par:m[6].replace(/-/g," ").replace(/\bsaid\b/,"Saïd").replace(/\baudrey\b/,"Audrey"),n:+m[7]}:{date:n,par:"",n:0}};
 async function chargerEnvois(){if(!syncPret()){ENVOIS=[];return}
- try{ENVOIS=((await gh(GH.dossier+"/envois"))||[]).filter(f=>f.type==="file"&&f.name.endsWith(".json")).sort((a,b)=>b.name.localeCompare(a.name))}catch(e){ENVOIS=ENVOIS||[]}
+ try{ENVOIS=(await ficListe(SRV.envois)).filter(f=>f.name.endsWith(".json")).sort((a,b)=>b.name.localeCompare(a.name))}catch(e){ENVOIS=ENVOIS||[]}
  if(screen==="stock"&&!panneauRef)render()}
 function envoisHtml(){if(!syncPret())return "";if(ENVOIS===null){chargerEnvois();return ""}
- const a=ENVOIS.filter(f=>!REG["envoiPlace:"+f.name]),faits=ENVOIS.length-a.length;
+ const enAttente=f=>!REG["envoiPlace:"+f.name]||CAT.some(x=>x.aVerif===f.name),a=ENVOIS.filter(enAttente),faits=ENVOIS.length-a.length;
  const ligne=f=>{const i=infoEnvoi(f.name);return `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:8px 0;border-top:1px solid var(--ligne,#ddd)">
   <span style="flex:1;min-width:200px"><b>${i.n} fiche${i.n>1?"s":""}</b>${i.par?" de "+esc(i.par):""} <span class="muted">· ${esc(i.date)}</span></span>
-  <button class="btn petit" data-envoi="${esc(f.path)}">Ouvrir les annonces et photos</button>
-  ${REG["envoiPlace:"+f.name]?"":`<button class="btn clair petit" data-place="${esc(f.name)}">Placé dans Impulsion</button>`}</div>`};
- return `<div class="carte" style="margin-bottom:14px"><h3>Fiches de l'app d'encodage à placer dans Impulsion (${a.length})</h3>
+  <button class="btn petit" data-envoi="${esc(f.path)}">Voir les fiches et photos</button>
+  ${enAttente(f)?`<button class="btn clair petit" data-place="${esc(f.name)}">Vérifié</button>`:""}</div>`};
+ return `<div class="carte" style="margin-bottom:14px"><h3>Envois de l'app d'encodage (${a.length} à vérifier)</h3>
+  <p class="muted">Les nouvelles fiches entrent toutes seules dans le stock (filtre « Nouvelles fiches »). Elles ne passent sur le site qu'après « Vérifié » et si elles ont un prix. Ouvrez l'envoi pour revoir les annonces et les photos.</p>
+  <p style="margin:6px 0"><button class="btn clair petit" id="envGh">Reprendre les envois restés sur GitHub</button> <span class="muted" id="envGhEtat"></span></p>
   ${a.map(ligne).join("")||'<p class="muted">Rien en attente.</p>'}
-  ${faits?`<details class="muted"><summary>Déjà placés (${faits})</summary>${ENVOIS.filter(f=>REG["envoiPlace:"+f.name]).map(ligne).join("")}</details>`:""}</div>`}
+  ${faits?`<details class="muted"><summary>Déjà vérifiés (${faits})</summary>${ENVOIS.filter(f=>!enAttente(f)).map(ligne).join("")}</details>`:""}</div>`}
+// Envois faits avec l'ancienne app (adresse github.io) : ils sont restés dans le dépôt GitHub public, chiffrés
+// avec l'ancienne phrase secrète. On les recopie tels quels sur le serveur du site, puis la caisse les intègre au stock.
+async function reprendreGithub(){const e=$("#envGhEtat"),b=$("#envGh");
+ if(!REG.ghPhrase){e.textContent="Entrez d'abord l'ancienne phrase secrète dans Réglages (Liaison avec le site).";return}
+ b.disabled=true;e.textContent="Lecture de GitHub…";
+ try{const r=await fetch("https://api.github.com/repos/encodage-comptoir/encodage-comptoir/contents/donnees/envois?ref=main",{cache:"no-store"});
+  if(!r.ok)throw new Error("GitHub "+r.status);
+  const deja=new Set((await ficListe(SRV.envois)).map(f=>f.name)),L=(await r.json()).filter(f=>f.name.endsWith(".json")&&!deja.has(f.name));
+  for(let i=0;i<L.length;i++){e.textContent=`Copie ${i+1} sur ${L.length}…`;
+   const t=await (await fetch(L[i].download_url,{cache:"no-store"})).text();await ficEcrire(SRV.envois+"/"+L[i].name,t)}
+  e.textContent=L.length?"Ajout au stock…":"";const n=await integrerEnvois();ENVOIS=null;
+  toast(L.length?`${L.length} envoi${L.length>1?"s":""} repris de GitHub, ${n} fiche${n>1?"s":""} ajoutée${n>1?"s":""} au stock`:"Tous les envois de GitHub sont déjà dans la caisse");render()}
+ catch(x){b.disabled=false;e.textContent="Ça n'a pas marché ("+x.message+"). Réessayez."}}
+// Champ prérempli par une proposition : si on ne l'a pas changé, on n'enregistre rien (le site reprend la proposition).
+const garde=(sel,f=x=>x)=>{const e=$(sel);return e.value.trim()===(e.dataset.propose||"").trim()?"":f(e.value)};
+// Fiches d'un envoi, revues dans la caisse avant de passer sur le site.
+function verifEnvoi(nom){const L=CAT.filter(a=>a.envoi===nom),i=infoEnvoi(nom),fait=REG["envoiPlace:"+nom]&&!L.some(a=>a.aVerif);
+ const ph=a=>(a.fs&&a.fs.length?a.fs:[a.f]).filter(Boolean);
+ const dims=a=>[a.L,a.l,a.h].filter(x=>x!=null&&x!=="").join(" × ");
+ modal(`<h3 style="margin-top:0">${L.length} fiche${L.length>1?"s":""}${i.par?" de "+esc(i.par):""} <span class="muted" style="font-weight:400">· ${esc(i.date)}</span></h3>
+  ${L.map(a=>`<div style="border-top:1px solid var(--ligne,#ddd);padding:12px 0">
+   <div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:8px">${ph(a).map(u=>`<a href="${esc(u)}" target="_blank"><img src="${esc(u)}" alt="" style="height:110px;border-radius:8px;display:block"></a>`).join("")||'<span class="muted">Pas de photo</span>'}</div>
+   <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap"><div style="flex:1;min-width:220px">
+    <b>${esc(a.n||"")}</b> ${a.majAnnonce?'<span class="muted">(remplace l\'annonce existante)</span> ':""}<span class="muted">${esc(a.r)} · ${esc(catLabel(a.c)||a.c||"")}</span><br>
+    ${a.p?eur(a.p)+" / "+esc(a.u||"pièce"):'<b style="color:#b00020">Sans prix : n\'ira pas sur le site</b>'} · ${(q=>esc(String(q).replace(".",","))+" "+esc((a.u||"pièce")+((a.u||"pièce")==="pièce"&&q>1?"s":"")))(reste(a)??a.s??0)}
+    ${dims(a)?" · "+esc(dims(a))+" cm":""}${a.et?" · "+esc(a.et):""}${a.m?" · "+esc(a.m):""}
+    ${a.refApp?`<div style="margin-top:4px;color:#a15c00"><b>Nouvelle référence ${esc(a.r)}</b> : l'app avait donné ${esc(a.refApp)}, déjà pris par un autre article. Corrigez l'étiquette sur l'objet.</div>`:""}
+    ${(P=>{const nf=neufFiche(a,P);return `<div style="margin-top:6px;white-space:pre-line">${esc(a.dc||P.desc||a.d||"")}</div>
+     <div class="muted" style="margin-top:4px">${nf?`Neuf : ${nf[0]} à ${nf[1]} €`:"Prix du neuf : pas d'estimation"}${P.co2?` · CO₂ évité ≈ ${P.co2.kg} kg`:""}${P.famille?` · ${esc(P.famille)}`:""}</div>`})(Auto.proposer(a))}</div>
+    <button class="btn clair petit" data-modif="${esc(a.r)}">Modifier</button></div></div>`).join("")}
+  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px"><button class="btn clair" data-ferme>Fermer</button>
+   ${fait?'<span class="muted" style="align-self:center">Déjà vérifié</span>':`<button class="btn" data-verifie>Vérifié : mettre en ligne</button>`}</div>`);
+ $$("#modal [data-modif]").forEach(b=>b.onclick=()=>{fermerModal();ouvrirPanneau(b.dataset.modif)});
+ const v=$("#modal [data-verifie]");if(v)v.onclick=()=>{fermerModal();marquerVerifie(nom)}}
+// Étiquettes 76 × 50 mm pour l'imprimante thermique (MUNBYN) : une par page, QR à gauche (lien vers la fiche du site,
+// que la douchette relit en caisse), référence, nom, prix et emplacement à droite.
+const SITE_FICHE="https://www.comptoir-materiaux.be/fiche.html?r=";
+// QR à côté de la photo dans l'onglet Caisse (articles sans étiquette, ex. vis) : gardé en mémoire, la liste se redessine à chaque frappe.
+const QRC={},qrCache=r=>QRC[r]||(QRC[r]=qrRef(r));
+function qrRef(r){qrcode.stringToBytes=qrcode.stringToBytesFuncs["UTF-8"];const q=qrcode(0,"M");q.addData(SITE_FICHE+encodeURIComponent(r),"Byte");q.make();return q.createSvgTag({cellSize:4,margin:0,scalable:true})}
+function etiquettes(L,w){L=L.filter(a=>a&&a.r);if(!L.length){if(w)w.close();return}w=w||window.open("","_blank");
+ if(!w){toast("Autorisez les fenêtres pour imprimer les étiquettes",true);return}
+ const unite=u=>({"pièce":"pc","pièces":"pc"})[u||"pièce"]||u,prix=a=>a.p>0?eur(a.p).replace(/\s€$/," €")+" / "+esc(unite(a.u)):"";
+ // nom complet : nom de l'annonce + dimensions L1 × L2 × L3 (si elles ne sont pas déjà dans le nom)
+ const dims=a=>[a.L,a.l,a.h].map(num).filter(x=>x>0).sort((x,y)=>y-x),nomComplet=a=>{const d=dims(a),t=a.n||"";
+  return d.length&&!/\d+\s*[x×]\s*\d+/.test(t)?t+" – "+d.map(x=>String(x).replace(".",",")).join(" × ")+" cm":t};
+ w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Étiquettes</title><style>
+  @page{size:76mm 50mm;margin:0}*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#000}
+  .e{width:76mm;height:50mm;padding:3mm;display:flex;gap:3mm;align-items:center;page-break-after:always;overflow:hidden}
+  .q{flex:0 0 36mm;height:36mm}.q svg{width:36mm;height:36mm;display:block}
+  .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1.2mm}
+  .r{font-size:17pt;font-weight:700;letter-spacing:.3pt}.n{font-size:8.5pt;line-height:1.15;max-height:4.6em;overflow:hidden}
+  .p{font-size:12pt;font-weight:700}.l{font-size:8pt}.c{font-size:6.5pt;margin-top:auto}
+  @media screen{body{background:#ddd}.e{background:#fff;margin:8px auto;box-shadow:0 1px 4px #0004}}</style></head><body>
+  ${L.map(a=>`<div class="e"><div class="q">${qrRef(a.r)}</div><div class="t"><div class="r">${esc(a.r)}</div><div class="n">${esc(nomComplet(a))}</div>
+   ${prix(a)?`<div class="p">${prix(a)}</div>`:""}${a.e?`<div class="l">Emplacement ${esc(a.e)}</div>`:""}<div class="c">Comptoir des Matériaux</div></div></div>`).join("")}
+  <script>onload=()=>setTimeout(()=>print(),300)<\/script></body></html>`);w.document.close()}
+async function marquerVerifie(nom){const L=CAT.filter(a=>a.aVerif===nom).map(a=>({...a})),w=L.length?window.open("","_blank"):null;await putSet("envoiPlace:"+nom,new Date().toISOString());
+ // vérifié : les fiches de cet envoi peuvent passer sur le site
+ for(const a of CAT.filter(a=>a.aVerif===nom)){a.aVerif="";const x={...(ARTS[a.r]||{r:a.r}),aVerif:"",modifie:Date.now()};ARTS[a.r]=x;await put("articles",x)}
+ etiquettes(L,w);
+ if(typeof planifierSync==="function")planifierSync(2e3);render()}
 function brancherEnvois(){
- $$("[data-envoi]").forEach(b=>b.onclick=async()=>{const w=window.open("","_blank");b.disabled=true;const t=b.textContent;b.textContent="Ouverture…";
-  try{const o=await dechiffrer(await gh(b.dataset.envoi,{},true)),u=URL.createObjectURL(new Blob([o.html],{type:"text/html"}));
+ if($("#envGh"))$("#envGh").onclick=reprendreGithub;
+ $$("[data-envoi]").forEach(b=>b.onclick=async()=>{const nom=b.dataset.envoi.split("/").pop();if(CAT.some(a=>a.envoi===nom))return verifEnvoi(nom);const w=window.open("","_blank");b.disabled=true;const t=b.textContent;b.textContent="Ouverture…";
+  try{const o=await dechiffrer(await ficLire(b.dataset.envoi)),u=URL.createObjectURL(new Blob([o.html],{type:"text/html"}));
    if(w)w.location.href=u;else{const x=document.createElement("a");x.href=u;x.download=o.fichier||"comptoir.html";x.click()}}
-  catch(e){if(w)w.close();toast(e.status?"GitHub répond "+e.status:"Impossible d'ouvrir : vérifiez la phrase secrète",true)}
+  catch(e){if(w)w.close();toast(e.status?"Le site répond "+e.status:"Impossible d'ouvrir : ancien envoi chiffré, entrez l'ancienne phrase secrète (Réglages)",true)}
   b.disabled=false;b.textContent=t});
- $$("[data-place]").forEach(b=>b.onclick=async()=>{await putSet("envoiPlace:"+b.dataset.place,new Date().toISOString());render()})}
+ $$("[data-place]").forEach(b=>b.onclick=()=>marquerVerifie(b.dataset.place))}
 
 function ecranStock(){const L=stockListe(),T=stockTotaux(),PAR=100,pages=Math.ceil(L.length/PAR);if(stPage>=pages)stPage=0;
  const filtres={"":"Tous les statuts",ok:"En stock",vendu:"Vendus",rupture:"Plus en stock",hors:"Hors ligne",nouveau:"Nouvelles fiches",sansprix:"Sans prix",sanspoids:"Sans poids",sansempl:"Sans emplacement"};
@@ -449,7 +587,7 @@ function ecranStock(){const L=stockListe(),T=stockTotaux(),PAR=100,pages=Math.ce
  <div class="tab-wrap"><table class="t"><thead><tr><th></th>${th("r","Référence")}${th("n","Nom")}<th>Catégorie</th>${th("e","Emplacement")}${th("s","Stock","r")}<th>Unité</th>${th("p","Prix TTC","r")}<th class="r">Poids</th><th>Matière</th><th>Statut</th></tr></thead><tbody>
  ${L.slice(stPage*PAR,(stPage+1)*PAR).map(a=>{const r=reste(a),st=statut(a);
   return `<tr class="cl" data-art="${esc(a.r)}"><td><span class="vig">${a.f?`<img src="${esc(a.f)}" alt="" loading="lazy" onerror="this.remove()">`:esc(a.c||"")}</span></td>
-  <td><b>${esc(refAff(a))||'<span class="muted">sans réf.</span>'}</b></td><td>${esc(a.n)}${a.src?' <span class="pill violet">nouvelle fiche</span>':""}</td><td>${esc(catLabel(a.c)||a.c||"")}</td><td>${esc(a.e||"")}</td>
+  <td><b>${esc(refAff(a))||'<span class="muted">sans réf.</span>'}</b></td><td>${esc(a.n)}${a.src?' <span class="pill violet">nouvelle fiche</span>':""}${a.aVerif?' <span class="pill jaune">à vérifier : pas encore sur le site</span>':""}</td><td>${esc(catLabel(a.c)||a.c||"")}</td><td>${esc(a.e||"")}</td>
   <td class="r"><b>${r==null?"?":virg(r)}</b>${a.pm&&r>0?`<br><small class="muted">${m2Txt(a,r).trim()}</small>`:""}</td><td>${esc(a.u||"pièce")}</td><td class="r">${a.p?eur(a.p):'<span class="pill jaune">?</span>'}</td>
   <td class="r">${a.kg!=null?virg(a.kg)+" kg":""}</td><td>${esc(a.m||"")}</td><td><span class="pill ${STATUTS[st][1]}">${STATUTS[st][0]}</span></td></tr>`}).join("")||'<tr><td colspan="11" class="vide">Aucun article.</td></tr>'}
  </tbody></table></div>
@@ -497,17 +635,24 @@ function ouvrirPanneau(r,refresh,nouveau){
    <label class="f">L2 (cm)<input class="champ" id="aL2" inputmode="decimal" value="${virg(a.l)}"></label>
    <label class="f">L3 (cm)<input class="champ" id="aL3" inputmode="decimal" value="${virg(a.h)}"></label>
   </div>
+  ${a.src?(P=>`<div class="carte" style="padding:10px;margin:0"><h3 style="margin:0 0 6px">Pour le site</h3>
+   <label class="f">Description<textarea class="champ" id="aDc" rows="4" data-propose="${esc(P.desc||"")}">${esc(a.dc||P.desc||"")}</textarea></label>
+   <div class="grille-f"><label class="f">Prix du neuf min (€)<input class="champ" id="aNm" inputmode="decimal" value="${virg(a.nMin!=null&&a.nMin!==""?a.nMin:P.neuf?P.neuf[0]:"")}" data-propose="${P.neuf?virg(P.neuf[0]):""}"></label>
+   <label class="f">Prix du neuf max (€)<input class="champ" id="aNx" inputmode="decimal" value="${virg(a.nMax!=null&&a.nMax!==""?a.nMax:P.neuf?P.neuf[1]:"")}" data-propose="${P.neuf?virg(P.neuf[1]):""}"></label></div>
+   <p style="margin:4px 0"><a class="btn clair petit" target="_blank" rel="noopener" href="https://www.google.com/search?tbm=shop&q=${encodeURIComponent((a.n||"")+" neuf")}">Voir des équivalents neufs ↗</a>${a.f?` <a class="btn clair petit" target="_blank" rel="noopener" href="https://lens.google.com/uploadbyurl?url=${encodeURIComponent(new URL(a.f,location.href).href)}">Chercher la photo avec Google Lens ↗</a>`:""}</p>
+   <p class="muted" style="margin:4px 0 0">Description et prix du neuf proposés d'après les articles semblables du catalogue : à corriger si besoin. Tant qu'ils ne sont pas changés, ils suivent les propositions.${P.co2?` CO₂ évité ≈ ${P.co2.kg} kg (${esc(P.co2.calcul)}).`:""}</p></div>`)(Auto.proposer(a)):""}
   <label class="f" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="aH" ${a.horsLigne?"checked":""} style="width:20px;height:20px"> Hors ligne (retiré du site, même s'il reste du stock)</label>
   <p class="muted" style="margin:0">${a.kgEst?"Poids estimé d'après la matière et les mesures. ":""}Dans Impulsion, rien ne change : reportez les modifications avec le fichier « Stock à jour » (Rapports).</p>
   ${nouveau?"":`<div><h3>Historique</h3><div class="hist">${hist.map(e=>`<div><span>${dateBe(jour(new Date(e.ts)))}</span><span>${lib[e.type]}${e.motif?" · "+esc(MOTIFS[e.motif]||e.motif):""}${e.note?" · "+esc(e.note):""}${e.vid?" · ticket "+esc(e.vid.slice(11)):""}</span><b>${e.type==="correction"?"= ":e.type==="entree"?"+":"−"}${virg(e.q)}</b></div>`).join("")||'<div><span></span><span class="muted">Aucun mouvement depuis l\'export du 14/10.</span><b></b></div>'}
    <div><span></span><span>Stock de départ (export Impulsion ou fiche)</span><b>${a.s==null?"?":virg(a.s)}</b></div></div></div>`}
  </div>
- <div class="pied">${nouveau?"":`<button class="btn clair" id="aVendre">Ajouter au ticket</button>`}<span style="flex:1"></span><button class="btn clair" data-fermep>Fermer</button><button class="btn" id="aSave">Enregistrer</button></div></aside>`;
+ <div class="pied">${nouveau?"":`<button class="btn clair" id="aEtiq">Étiquette</button><button class="btn clair" id="aVendre">Ajouter au ticket</button>`}<span style="flex:1"></span><button class="btn clair" data-fermep>Fermer</button><button class="btn" id="aSave">Enregistrer</button></div></aside>`;
  $("#panneau").hidden=false;
  $$("[data-fermep]").forEach(b=>b.onclick=fermerPanneau);
  if(nouveau)$("#aC").onchange=e=>{$("#aR").placeholder=prochaineRef(e.target.value)},$("#aR").placeholder=prochaineRef(a.c);
  $$("[data-mv]").forEach(b=>b.onclick=()=>formMouvement(a,b.dataset.mv));
  const v=$("#aVendre");if(v)v.onclick=()=>{fermerPanneau();screen="caisse";ajouterAuPanier(a)};
+ const et=$("#aEtiq");if(et)et.onclick=()=>etiquettes([parRef(a.r)||a]);
  $("#aSave").onclick=()=>enregistrerArticle(a,nouveau);
  if(!refresh&&!nouveau){const n=$("#aN");n&&n.blur()}}
 function fermerPanneau(){panneauRef=null;const p=$("#panneau");p.hidden=true;p.innerHTML=""}
@@ -524,7 +669,8 @@ function formMouvement(a,type){const t={entree:"Entrée en stock",sortie:"Sortie
   await put("mouvements",m);MVT.push(m);calcStock();toast(t+" enregistrée");render()}}
 async function enregistrerArticle(a,nouveau){
  const o={r:nouveau?norm($("#aR").value)||prochaineRef($("#aC").value):a.r,n:$("#aN").value.trim(),c:$("#aC").value,p:num($("#aP").value),u:$("#aU").value,e:$("#aE").value.trim().toUpperCase(),
-  m:$("#aM").value,L:num($("#aL1").value),l:num($("#aL2").value),h:num($("#aL3").value),horsLigne:$("#aH").checked,modifie:Date.now()};
+  m:$("#aM").value,L:num($("#aL1").value),l:num($("#aL2").value),h:num($("#aL3").value),horsLigne:$("#aH").checked,modifie:Date.now(),
+  ...($("#aDc")?{dc:garde("#aDc",x=>x.trim()),nMin:num(garde("#aNm")),nMax:num(garde("#aNx"))}:{})};
  const kg=num($("#aK").value);o.kg=kg;o.kgEst=kg==null?false:(kg===a.kg?!!a.kgEst:false);
  if(kg==null){const r=Poids.estimer({nom:o.n,cat:o.c,matiere:o.m,unite:o.u,L:o.L,l:o.l,h:o.h});if(r){o.kg=r.kg;o.kgEst=true}}
  if(!o.n){toast("Donnez un nom à l'article",true);return}
@@ -769,7 +915,13 @@ function rImpulsion(){const vendus={};ventes.filter(v=>!v.annulee&&dansPeriode(v
  ${actions(["stock","Stock à jour, tous les articles (tableur)"],["retirer","Articles à retirer (tableur)"])}`}
 
 // Site : fichier de stock lu par le site du Comptoir (référence, stock, prix, statut, emplacement).
-function stockSite(){return {maj:new Date().toISOString(),articles:CAT.filter(a=>!a.x).map(a=>({r:a.r,s:reste(a),p:a.p||0,u:a.u||"pièce",e:a.e||"",st:statut(a),n:a.src?a.n:undefined}))}}
+// Les articles créés dans la caisse ou venus de l'app n'existent pas dans le catalogue du site : on publie aussi leur fiche.
+// Fiche publiée : ce que la caisse propose (Auto : description, prix du neuf, CO₂, idées) sauf ce qu'Audrey a saisi.
+const neufFiche=(a,P)=>a.nMax?[a.nMin||a.nMax,a.nMax]:P.neuf;
+const ficheSite=a=>{const ph=(a.fs||[a.f]).filter(p=>p&&/^https?:/.test(p)),P=Auto.proposer(a),nf=neufFiche(a,P);
+ return {n:a.n,c:a.c,d:[a.L,a.l,a.h].map(num).filter(x=>x>0).sort((x,y)=>y-x),f:ph,de:a.dc||P.desc||a.d||"",m:a.m||"",et:a.et||"",cree:a.cree||0,
+  ...(nf?{nf}:{}),...(P.co2?{co:P.co2}:{}),...(P.idees&&P.idees.length?{i:P.idees}:{})}};
+function stockSite(){return {maj:new Date().toISOString(),articles:CAT.filter(a=>!a.x).map(a=>({r:a.r,s:reste(a),p:a.p||0,u:a.u||"pièce",e:a.e||"",st:statut(a),...(a.src&&!a.aVerif?ficheSite(a):{})}))}}
 function rSite(){const S=stockSite(),n=k=>S.articles.filter(a=>a.st===k).length;
  return `<div class="titre"><h2>Site du Comptoir</h2></div>
  <p>Le site affiche le stock à partir du fichier <b>stock.json</b> produit ici : articles vendus retirés, quantités et prix à jour, nouvelles fiches ajoutées.</p>
@@ -835,7 +987,6 @@ function ecranReglages(){return `<div class="titre"><h2>Réglages</h2></div><div
   <label class="f">BIC (facultatif)<input class="champ" id="rBic" value="${esc(REG.bic||"")}" placeholder="ex. GEBABEBB"></label><p class="muted" id="rIbanOk">${REG.iban?(ibanOk(REG.iban)?"IBAN valide.":"IBAN incorrect : vérifiez-le."):""}</p></div>
  ${carteSauvAuto()}
  ${carteSync()}
- <div class="carte">${formSite()}</div>
  <div class="carte"><h3>Factures</h3><label class="f">Dernier n° de facture utilisé<input class="champ" id="dFact" value="${esc(REG.derniereFacture||"")}" placeholder="ex. F49-26"></label></div>
  <div class="carte"><h3>À propos</h3><p class="muted">Caisse & stock ${VERSION} · ${CAT.length} articles (export Impulsion du 14/10/2026, annonces du site, fiches) · ${ventes.length} tickets · ${MVT.length} mouvements.</p></div></div>`}
 function brancherReglages(){
@@ -849,7 +1000,7 @@ function brancherReglages(){
   location.reload()};
  const t=$("#testScan");t.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();const r=lireCode(t.value);$("#testRes").innerHTML=r?`Reconnu : <b>${esc(r)}</b> · ${esc(parRef(r).n)}`:`Non reconnu : « ${esc(t.value)} »`;t.value=""}};
  brancherSauvAuto();
- $("#dFact").onchange=e=>putSet("derniereFacture",e.target.value.trim().toUpperCase());brancherSync();brancherSite();
+ $("#dFact").onchange=e=>putSet("derniereFacture",e.target.value.trim().toUpperCase());brancherSync();
  $("#rIban").onchange=async e=>{const v=ibanNet(e.target.value);await putSet("iban",v);$("#rIbanOk").textContent=v?(ibanOk(v)?"IBAN valide.":"IBAN incorrect : vérifiez-le."):""};
  $("#rBenef").onchange=e=>putSet("beneficiaire",e.target.value.trim()||"La Pile asbl");$("#rBic").onchange=e=>putSet("bic",e.target.value.trim())}
 
@@ -860,7 +1011,7 @@ function bandeau(){const el=$("#bandeau");if(!el)return;let t,mal=false;
  if(!stockageKo&&sauvAuto==="pause"){el.textContent="Sauvegarde automatique en pause depuis le redémarrage du navigateur : cliquez ici pour la réactiver.";el.classList.add("mal");el.style.cursor="pointer";return}
  el.style.cursor="";
  if(stockageKo){t="Stockage indisponible dans ce navigateur (fenêtre privée ?) : les ventes ne sont pas gardées. Notez-les dans le carnet papier.";mal=true}
- else if(syncPret())t=Sync.etat==="err"?"Liaison en erreur : les ventes sont gardées sur cet appareil, mais pas encore copiées. Voir Réglages.":"Version d'essai : les ventes sont gardées sur cet appareil et copiées dans le dépôt du Comptoir. Le carnet papier fait toujours foi.";
+ else if(syncPret())t=Sync.etat==="err"?"Liaison en erreur : les ventes sont gardées sur cet appareil, mais pas encore copiées. Voir Réglages.":"Version d'essai : les ventes sont gardées sur cet appareil et copiées sur le serveur du site. Le carnet papier fait toujours foi.";
  else if(j==null||j>=7){t=`Version d'essai : les ventes ne sont gardées que dans ce navigateur. ${j==null?"Aucune sauvegarde faite":"Dernière sauvegarde il y a "+j+" jours"} : Réglages › Télécharger une sauvegarde.`;mal=ventes.length>0}
  else t="Version d'essai : les ventes sont gardées dans ce navigateur, dernière sauvegarde "+(j?"il y a "+j+" jour"+(j>1?"s":""):"aujourd'hui")+". Le carnet papier fait toujours foi.";
  el.textContent=t;el.classList.toggle("mal",mal)}
@@ -889,7 +1040,7 @@ function brancherSauvAuto(){const d=$("#sauvDos");if(d)d.onclick=async()=>{let h
 document.addEventListener("click",e=>{if(e.target.closest("#bandeau")&&sauvAuto==="pause")sauvegardeAuto(true)});
 
 // Le jeton GitHub et la phrase secrète ne sortent jamais de cet appareil.
-const sansSecrets=r=>{const o={...r};delete o.ghJeton;delete o.ghPhrase;delete o.dossierSauv;delete o.ticketEnCours;Object.keys(o).forEach(k=>{if(k.startsWith("sha:")||k.startsWith("empreinte"))delete o[k]});return o};
+const sansSecrets=r=>{const o={...r};delete o.ghJeton;delete o.ghPhrase;delete o.siteCle;delete o.dossierSauv;delete o.ticketEnCours;Object.keys(o).forEach(k=>{if(k.startsWith("sha:")||k.startsWith("empreinte"))delete o[k]});return o};
 
 // ---------- Démarrage ----------
 (async()=>{
@@ -897,9 +1048,10 @@ const sansSecrets=r=>{const o={...r};delete o.ghJeton;delete o.ghPhrase;delete o
   (await all("inventaire")).forEach(i=>INV[i.k]=i);(await all("articles")).forEach(a=>ARTS[a.r]=a);
   const te=REG.ticketEnCours;if(te&&te.panier&&te.panier.length){panier=te.panier;if(te.pay)pay={...pay,...te.pay};if(te.remise)remise=te.remise}}
  catch(e){idb=null;stockageKo=true}
- try{(await (await fetch("catalogue.json")).json()).forEach(ajouterArticle)}catch(e){}
+ try{(await (await fetch("catalogue.json")).json()).forEach(a=>{BASE[a.r]={...a};ajouterArticle(a)})}catch(e){}
  try{HIST=await (await fetch("historique.json")).json()}catch(e){HIST=[]}
- appliquerArticles();
+ await Auto.charger();
+ appliquerArticles();await separerCollisions();
  nbFiches=ajouterFiches(await lireFiches("comptoir"),"app")+ajouterFiches(await lireFiches("comptoir-essai"),"essai");
  CAT.forEach(a=>{aLaPiece(a);indexer(a);if(!a.m)a.m=Poids.matiere({nom:a.t||a.n,titre:a.n,cat:a.c});
   if(a.kg==null){const r=Poids.estimer({nom:a.t||a.n,titre:a.n,cat:a.c,matiere:a.m,unite:a.u,L:a.L,l:a.l,h:a.h});a.kg=r?r.kg:null;a.kgEst=!!r;

@@ -4,21 +4,23 @@
 <meta name="robots" content="noindex"><!-- maquette : à retirer à la mise en ligne réelle -->
 <meta property="og:title" content="Outilthèque – Comptoir des Matériaux"><meta property="og:description" content="Louez plutôt qu&#x27;acheter : perceuses, ponceuses, scies, échelles… à petit prix, pour les membres de La Pile à Malmedy.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=p5"><script src="panier.js?v=p5" defer></script><script src="compte.js?v=p5"></script>
-</head><body>
+<link rel="stylesheet" href="style.css?v=p8"><script src="panier.js?v=p8" defer></script><script src="compte.js?v=p8"></script>
+<!--ico--><link rel="icon" href="favicon.ico" sizes="any"><link rel="icon" type="image/png" href="favicon-32.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><!--/ico--></head><body>
 <div class="maquette">Maquette : textes, prix et photos à valider par l'équipe.</div>
 <header class="haut"><div class="haut-in">
 <a class="logo" href="index.html"><img src="img/logo-comptoir.png" alt="Comptoir des Matériaux" width="168" height="63"></a>
 <nav><a href="index.html">Accueil</a><a href="catalogue.html">Matériaux</a><a href="outils.html">Outilthèque</a><a href="reserver.html">Camionnette &amp; atelier</a><a href="faire-avec.html">Faire avec</a><a href="comprendre.html">Comprendre</a><a href="compte.html" class="lien-compte">Mon compte</a><a href="panier.html" class="lien-panier">Mes listes <span class="nb-panier" hidden>0</span></a></nav>
 </div></header>
 
-<main class="contenu"><h1>Outilthèque</h1>
+<main class="contenu"><div class="tete-outils"><div><h1>Outilthèque</h1>
 <p class="intro">Une perceuse sert en moyenne quelques minutes dans sa vie. Plutôt que de l'acheter, louez-la : c'est moins cher, ça prend moins de place, et chaque outil partagé est un outil de moins à fabriquer.</p>
-<div class="etapes"><div><b>1</b>Choisissez un outil et une période : du mercredi au samedi, ou du samedi au mercredi</div><div><b>2</b>Envoyez la demande depuis votre compte membre</div><div><b>3</b>On vous confirme par e-mail</div><div><b>4</b>Retrait et retour au Comptoir, paiement sur place</div></div>
+<div class="etapes"><div><b>1</b>Choisissez un outil et une période : du mercredi au samedi, ou du samedi au mercredi</div><div><b>2</b>Envoyez la demande depuis votre compte membre</div><div><b>3</b>On vous confirme par e-mail</div><div><b>4</b>Retrait et retour au Comptoir, paiement sur place</div></div></div>
+<img class="photo-outils" src="img/outiltheque.jpg" alt="L'outilthèque du Comptoir, sous la mezzanine" width="800" height="1000"></div>
 <p class="note-tarif"><b>Tarif conscient.</b> Notre outilthèque se veut solidaire : vous choisissez votre tarif, solidaire, normal ou soutien, sans justificatif. Les outils sont classés en 2 catégories selon leur valeur ; le prix affiché est le tarif normal.</p>
 <form class="filtres" id="filtres" onsubmit="return false">
 <input id="q" type="search" placeholder="Rechercher un outil (ponceuse, échelle…)" aria-label="Rechercher">
-<select id="cat" aria-label="Famille"><option value="">Toutes les familles</option></select></form>
+<select id="cat" aria-label="Famille" hidden><option value="">Toutes les familles</option></select></form>
+<div class="rayons" id="familles" aria-label="Familles d'outils"></div>
 <p id="nb" class="nb"></p><div class="grille" id="liste"></div>
 <div class="encart-don"><h2>Vous avez un outil qui dort ?</h2><p>Donnez-le à l'outilthèque : vous recevez un bon de location équivalent à sa valeur estimée.</p><a class="bouton jaune" href="index.html#infos">Nous contacter</a></div>
 </main>
@@ -29,13 +31,20 @@ function prixCourt(o){return o.prix_periode!=null?`${eurs(o.prix_periode)} / pé
 function maj(){const mots=sans($('q').value).split(/\s+/).filter(Boolean),c=$('cat').value;
  const r=O.filter(o=>(!c||o.cat===c)&&mots.every(w=>sans([o.nom,o.cat,o.descr,o.ref].join(' ')).includes(w)));
  $('nb').textContent=r.length+' outil'+(r.length>1?'s':'');
- $('liste').innerHTML=r.map(o=>`<a class="carte" href="outil.html?r=${encodeURIComponent(o.ref)}"><div class="img">${o.photos[0]?`<img loading="lazy" src="${escH(o.photos[0])}" alt="${escH(o.nom)}">`:'<div class="sans-photo">🔧</div>'}</div><div class="txt"><h3>${escH(o.nom)}</h3><p class="prix">${prixCourt(o)}</p><p class="petit">${escH(o.cat||'')}${o.tarif?` · catégorie ${o.tarif}`:''}</p></div></a>`).join('')}
-Compte.outils().then(l=>{O=l.filter(o=>(o.type||'outil')==='outil');
+ // rangés par famille, une rubrique par famille
+ const fam=[...new Set(r.map(o=>o.cat||'Autres'))].sort((a,b)=>a.localeCompare(b,'fr'));
+ $('liste').className='';$('liste').innerHTML=fam.map(f=>`<h2 class="famille">${escH(f)}</h2><div class="grille">${r.filter(o=>(o.cat||'Autres')===f).map(carteOutil).join('')}</div>`).join('');
+ $('familles').innerHTML=[['','Tout'],...[...new Set(O.map(o=>o.cat).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fr')).map(x=>[x,x])].map(([v,l])=>`<button type="button" data-f="${escH(v)}" class="${v===c?'sel':''}">${escH(l)}</button>`).join('')}
+const carteOutil=o=>`<a class="carte" href="outil.html?r=${encodeURIComponent(o.ref)}"><div class="img">${o.photos[0]?`<img loading="lazy" src="${escH(o.photos[0])}" alt="${escH(o.nom)}">`:'<div class="sans-photo">🔧</div>'}</div><div class="txt"><h3>${escH(o.nom)}</h3><p class="prix">${prixCourt(o)}</p><p class="petit">${escH(o.cat||'')}${o.tarif?` · catégorie ${o.tarif}`:''}</p></div></a>`;
+$('familles').onclick=e=>{const b=e.target.closest('[data-f]');if(!b)return;$('cat').value=b.dataset.f;maj()};
+// Familles regroupées (aussi pour les outils déjà enregistrés sur le serveur avec l'ancienne famille).
+const REGROUPE={"Petit outillage": "Petit outillage et accessoires", "Accessoires": "Petit outillage et accessoires", "Ponçage": "Menuiserie", "Sciage et découpe": "Menuiserie"};
+Compte.outils().then(l=>{O=l.filter(o=>(o.type||'outil')==='outil').map(o=>({...o,cat:REGROUPE[o.cat]||o.cat}));
  [...new Set(O.map(o=>o.cat).filter(Boolean))].sort().forEach(c=>$('cat').add(new Option(c,c)));
  const P=new URLSearchParams(location.search);if(P.get('q'))$('q').value=P.get('q');maj()});
 document.querySelectorAll('#filtres input,#filtres select').forEach(e=>e.addEventListener('input',maj));</script>
 <footer class="pied"><div class="pied-in">
 <img src="img/logo-comptoir.png" alt="Comptoir des Matériaux" class="pied-logo">
-<div><b>Comptoir des Matériaux</b><br>Rue Frédéric Lang 3, 4960 Malmedy<br>Magasin : mercredi et samedi, 9 h – 16 h<br>Tél. <a href="tel:+32455100921">+32 (0)455 10 09 21</a> · <a href="https://wa.me/32455100921">WhatsApp</a><br><a href="mailto:info@la-pile.be">info@la-pile.be</a></div>
+<div><b>Comptoir des Matériaux</b><br>Rue Frédéric Lang 3, 4960 Malmedy<br>Magasin : mercredi et samedi, 9 h – 16 h<br>Tél. <a href="tel:+32455100921">+32 (0)455 10 09 21</a> · <a href="https://wa.me/32455100921">WhatsApp</a><br><a href="mailto:info@comptoir-materiaux.be">info@comptoir-materiaux.be</a></div>
 <div><a href="depot.html">Donner des matériaux</a><br><a href="comprendre.html">Pourquoi le réemploi ?</a><br><a href="https://www.facebook.com/p/Comptoir-des-mat%C3%A9riaux-PILE-61557432835398/">Facebook</a><br><span class="petit-pied">Un projet de <a href="https://www.la-pile.be">La Pile asbl</a></span></div>
 </div></footer></body></html>

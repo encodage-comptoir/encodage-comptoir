@@ -3,10 +3,10 @@
 <title>Catalogue – Comptoir des Matériaux</title><meta name="description" content="Tous les matériaux de réemploi disponibles au Comptoir des Matériaux à Malmedy, avec recherche par dimensions.">
 <meta name="robots" content="noindex"><!-- maquette : à retirer à la mise en ligne réelle -->
 <meta property="og:title" content="Catalogue – Comptoir des Matériaux"><meta property="og:description" content="Tous les matériaux de réemploi disponibles au Comptoir des Matériaux à Malmedy, avec recherche par dimensions.">
-<link rel="canonical" href="https://encodage-comptoir.github.io/encodage-comptoir/comptoir/catalogue.html">
+<link rel="canonical" href="https://www.comptoir-materiaux.be/catalogue.html">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=p5"><script src="panier.js?v=p5" defer></script>
-</head><body>
+<link rel="stylesheet" href="style.css?v=p8"><script src="panier.js?v=p8" defer></script>
+<!--ico--><link rel="icon" href="favicon.ico" sizes="any"><link rel="icon" type="image/png" href="favicon-32.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><!--/ico--></head><body>
 <div class="maquette">Maquette : catalogue de test, prix et textes à valider par l'équipe.</div>
 <header class="haut"><div class="haut-in">
 <a class="logo" href="index.html"><img src="img/logo-comptoir.png" alt="Comptoir des Matériaux" width="168" height="63"></a>
@@ -38,27 +38,46 @@ const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&g
 let D=[];const $=id=>document.getElementById(id);
 const P=new URLSearchParams(location.search),H=new URLSearchParams(location.hash.slice(1));
 if(P.get('q'))$('q').value=P.get('q');if(H.get('cat'))$('cat').value=H.get('cat');
+const dbl=s=>s.replace(/(.)\1+/g,'$1');
+function lev(a,b){if(Math.abs(a.length-b.length)>2)return 9;let p=[...Array(b.length+1).keys()];for(let i=1;i<=a.length;i++){const c=[i];for(let j=1;j<=b.length;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c}return p[b.length]}
+// Un mot cherché trouve l'article s'il y figure, ou s'il en est proche (lettre doublée, oubliée, en trop ou changée).
+function proche(a,w){if(!a._k){a._k=sans(a.k);a._w=a._k.split(/[^a-z0-9]+/).filter(Boolean).map(dbl)}
+ if(a._k.includes(w))return true;if(/\d/.test(w))return false;const d=dbl(w);if(d.length>=3&&a._w.some(t=>t.includes(d)))return true;if(d.length<4)return false;
+ const tol=d.length>=7?2:1;return a._w.some(t=>lev(d,t)<=tol||(t.length>d.length&&lev(d,t.slice(0,d.length))<=tol))}
 function num(id){const v=parseFloat($(id).value.replace(',','.'));return isNaN(v)?null:v}
 function dans(v,a,b){return (a===null||v>=a)&&(b===null||(v>0&&v<=b))&&(a===null||v>0)}
 function maj(){
  const mots=sans($('q').value).split(/\s+/).filter(Boolean),c=CATS[$('cat').value],m=$('mat').value,pm=num('pmax');
  let r=D.filter(a=>(!c||a.c===c)&&(!m||a.m===m)&&(pm===null||(a.p>0&&a.p<=pm))
   &&dans(a.d1,num('d1min'),num('d1max'))&&dans(a.d2,num('d2min'),num('d2max'))&&dans(a.d3,num('d3min'),num('d3max'))
-  &&mots.every(w=>sans(a.k).includes(w)));
+  &&mots.every(w=>proche(a,w)));
  if($('tri').value==='p')r.sort((a,b)=>(a.p||1e9)-(b.p||1e9));if($('tri').value==='e')r.sort((a,b)=>b.e-a.e);
  $('nb').textContent=r.length+' article'+(r.length>1?'s':'');
- $('liste').innerHTML=r.slice(0,240).map(a=>`<div class="carte-w"><a class="carte" href="article/${a.r}.html"><div class="img"><img loading="lazy" src="${a.v}" alt="${esc(a.t)}">${a.e>=20?`<span class="eco">−${a.e} % vs neuf</span>`:''}</div><div class="txt"><h3>${esc(a.t)}</h3><p class="prix">${esc(a.pt)}${a.pm?`<small class="prix-m2">${esc(a.pm)}</small>`:''}</p>${a.n?`<p class="neuf">Neuf : ${esc(a.n)}</p>`:''}${a.c2?`<p class="co2-mini">−${esc(a.c2)} évités vs neuf</p>`:''}${a.sc?`<p class="dispo"><span class="stock-pastille">${esc(a.sc)}</span></p>`:''}${a.sf?`<p class="surf">${esc(a.sf)}</p>`:''}</div></a><button class="ajout-mini" data-ajout="${esc(JSON.stringify({r:a.r,t:a.t,p:a.p,pt:a.pt,v:a.v,s:a.s,st:a.st,o:a.o}))}">+ Ma liste</button></div>`).join('');
+ $('liste').innerHTML=r.slice(0,240).map(a=>`<div class="carte-w"><a class="carte" href="${a.nv?'fiche.html?r='+encodeURIComponent(a.r):'article/'+a.r+'.html'}"><div class="img"><img loading="lazy" src="${a.v}" alt="${esc(a.t)}">${a.e>=20?`<span class="eco">−${a.e} % vs neuf</span>`:''}</div><div class="txt"><h3>${esc(a.t)}</h3><p class="prix">${esc(a.pt)}${a.pm?`<small class="prix-m2">${esc(a.pm)}</small>`:''}</p>${a.n?`<p class="neuf">Neuf : ${esc(a.n)}</p>`:''}${a.c2?`<p class="co2-mini">−${esc(a.c2)} évités vs neuf</p>`:''}${a.sc?`<p class="dispo"><span class="stock-pastille">${esc(a.sc)}</span></p>`:''}${a.sf?`<p class="surf">${esc(a.sf)}</p>`:''}</div></a><button class="ajout-mini" data-ajout="${esc(JSON.stringify({r:a.r,t:a.t,p:a.p,pt:a.pt,v:a.v,s:a.s,st:a.st,o:a.o}))}">+ Ma liste</button></div>`).join('');
  history.replaceState(null,'',$('cat').value?'#cat='+$('cat').value:location.pathname+location.search);
 }
 document.querySelectorAll('#filtres input,#filtres select').forEach(e=>e.addEventListener('input',maj));
 // Stock vivant publié par la caisse : articles partis retirés, quantités et emplacements à jour.
+const RAYON={SA:'Sanitaire',PA:'Sanitaire',CH:'Châssis et fenêtres',PO:'Portes',CAR:'Carrelage',GRO:'Gros œuvre',RA:'Chauffage',ELEC:'Électricité et éclairage',LUM:'Électricité et éclairage',
+ BOI:'Bois et panneaux',PAR:'Parquet, bardage et terrasse',LAM:'Lambris et plafonds',TOI:'Toiture',ISO:'Isolation',Q:'Quincaillerie',OUT:'Outillage',ELECTRO:'Électroménager',DIV:'Divers'};
+const prixTxt=(p,u)=>p.toFixed(2).replace('.',',')+' € / '+(u||'pièce');
+const dimsTxt=d=>d.length?d.map(x=>String(x).replace('.',',')).join(' × ')+' cm':'';
+const stockTxt=x=>x.s>0?(x.u&&x.u!=='pièce'?String(x.s).replace('.',',')+' '+x.u:x.s+' pièce'+(x.s>1?'s':'')):'';
+// Article du stock publié par la caisse, au format des cartes du catalogue (seulement avec un prix et en stock).
+const carteNouvelle=x=>{const d=x.d||[],c=RAYON[x.c]||'Divers',st=stockTxt(x);
+ return {r:x.r,t:x.n+(d.length&&!/\d/.test(x.n)?' – '+dimsTxt(d):''),c,p:x.p,pt:prixTxt(x.p,x.u),v:(x.f||[])[0]||'',d1:d[0]||0,d2:d[1]||0,d3:d[2]||0,m:x.m||'',e:ecoNeuf(x),n:neufTxt(x),c2:x.co&&x.co.par==='pièce'?String(x.co.kg).replace('.',',')+' kg CO₂':'',s:x.s,st,sc:st?st+' en stock':'',o:x.e||'',
+  k:[x.n,x.r,c,x.m,x.de].join(' ').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase(),nv:1}};
+// Prix du neuf et CO₂ calculés par la caisse (caisse/auto.js) pour les fiches de l'app.
+const neufTxt=x=>x.nf?(x.nf[0]===x.nf[1]?x.nf[0]:x.nf[0]+' à '+x.nf[1])+' € / '+(x.u||'pièce'):'';
+const ecoNeuf=x=>x.nf&&x.p>0&&x.nf[0]>x.p?Math.round(100*(1-x.p/x.nf[0])/5)*5:0;
+const nouvelle=x=>x.n&&x.p>0&&x.st==='ok'&&x.s>0;
 const vivant=(d,j)=>{if(!j)return d;const m={};(j.articles||[]).forEach(x=>m[x.r]=x);
- return d.filter(a=>!['vendu','rupture','hors'].includes((m[a.r]||{}).st)).map(a=>{const x=m[a.r];if(!x)return a;
-  if(x.s>0){a.s=x.s;a.st=x.u&&x.u!=='pièce'?`${String(x.s).replace('.',',')} ${x.u}`:`${x.s} pièce${x.s>1?'s':''}`;if(a.sc)a.sc=a.st+' en stock'}if(x.e)a.o=x.e;return a})};
+ return (j.articles||[]).filter(x=>nouvelle(x)&&!d.some(a=>a.r===x.r)).sort((x,y)=>String(y.cree||'').localeCompare(String(x.cree||''))).map(carteNouvelle).concat(d.filter(a=>!['vendu','rupture','hors'].includes((m[a.r]||{}).st)).map(a=>{const x=m[a.r];if(!x)return a;
+  if(x.s>0){a.s=x.s;a.st=x.u&&x.u!=='pièce'?`${String(x.s).replace('.',',')} ${x.u}`:`${x.s} pièce${x.s>1?'s':''}`;if(a.sc)a.sc=a.st+' en stock'}if(x.e)a.o=x.e;if(nouvelle(x)){const z=carteNouvelle(x);a.t=z.t;if(z.v)a.v=z.v;a.k+=' '+z.k;a.nv=1}return a}))};
 Promise.all([fetch('donnees.json').then(r=>r.json()),fetch('stock.json',{cache:'no-cache'}).then(r=>r.ok?r.json():null).catch(()=>null)]).then(([d,j])=>{D=vivant(d,j);maj()});
 </script>
 <footer class="pied"><div class="pied-in">
 <img src="img/logo-comptoir.png" alt="Comptoir des Matériaux" class="pied-logo">
-<div><b>Comptoir des Matériaux</b><br>Rue Frédéric Lang 3, 4960 Malmedy<br>Magasin : mercredi et samedi, 9 h – 16 h<br>Tél. <a href="tel:+32455100921">+32 (0)455 10 09 21</a> · <a href="https://wa.me/32455100921">WhatsApp</a><br><a href="mailto:info@la-pile.be">info@la-pile.be</a></div>
+<div><b>Comptoir des Matériaux</b><br>Rue Frédéric Lang 3, 4960 Malmedy<br>Magasin : mercredi et samedi, 9 h – 16 h<br>Tél. <a href="tel:+32455100921">+32 (0)455 10 09 21</a> · <a href="https://wa.me/32455100921">WhatsApp</a><br><a href="mailto:info@comptoir-materiaux.be">info@comptoir-materiaux.be</a></div>
 <div><a href="depot.html">Donner des matériaux</a><br><a href="comprendre.html">Pourquoi le réemploi ?</a><br><a href="https://www.facebook.com/p/Comptoir-des-mat%C3%A9riaux-PILE-61557432835398/">Facebook</a><br><span class="petit-pied">Un projet de <a href="https://www.la-pile.be">La Pile asbl</a></span></div>
 </div></footer></body></html>

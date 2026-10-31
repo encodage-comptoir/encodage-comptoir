@@ -23,7 +23,8 @@ const Compte = {
   // Outils, camionnette et atelier : l'API en direct, sinon le fichier publié par la caisse.
   async outils() {
     if (this.demo === null) await this.sonder();
-    if (!this.demo) try { return await this.api('outils'); } catch {}
+    // Tant que la caisse n'a pas repris les outils (base vide), on montre le fichier publié.
+    if (!this.demo) try { const l = await this.api('outils'); if (l.length) return l; } catch {}
     const r = await fetch(new URL('outils.json', RACINE), { cache: 'no-cache' });
     return r.ok ? (await r.json()).filter(o => o.en_ligne !== 0) : [];
   },
@@ -74,7 +75,7 @@ const dateFr = s => new Date(s.replace(' ', 'T')).toLocaleString('fr-BE', { week
 const STATUT_FR = { demandee: ['Demandée', 'jaune'], confirmee: ['Confirmée', 'ok'], refusee: ['Refusée', 'bad'], annulee: ['Annulée', 'gris'], en_cours: ['En cours', 'ok'], rendue: ['Terminée', 'gris'] };
 
 // Calendrier des 6 prochaines semaines : jours libres, partiellement pris, pris.
-function calendrierHtml(pris, choisi) {
+function calendrierHtml(pris, choisi, fermes = []) {
   const auj = new Date(); auj.setHours(0, 0, 0, 0);
   const lundi = new Date(auj); lundi.setDate(auj.getDate() - ((auj.getDay() + 6) % 7));
   let h = '<div class="cal"><div class="cal-tete">' + ['lu', 'ma', 'me', 'je', 've', 'sa', 'di'].map(j => `<span>${j}</span>`).join('') + '</div><div class="cal-jours">';
@@ -82,11 +83,11 @@ function calendrierHtml(pris, choisi) {
     const j = new Date(lundi); j.setDate(lundi.getDate() + i);
     const d0 = j.getTime(), d1 = d0 + 864e5;
     let occ = 0; pris.forEach(p => { const a = Math.max(d0, Date.parse(p.debut.replace(' ', 'T'))), b = Math.min(d1, Date.parse(p.fin.replace(' ', 'T'))); if (b > a) occ += b - a; });
-    const etat = j < auj ? 'passe' : occ >= 864e5 * .5 ? 'pris' : occ > 0 ? 'partiel' : 'libre';
+    const etat = j < auj ? 'passe' : fermes.includes(j.getDay()) ? 'ferme' : occ >= 864e5 * .5 ? 'pris' : occ > 0 ? 'partiel' : 'libre';
     const iso = `${j.getFullYear()}-${String(j.getMonth() + 1).padStart(2, '0')}-${String(j.getDate()).padStart(2, '0')}`;
-    h += `<button type="button" class="cal-j ${etat}${iso === choisi ? ' sel' : ''}" data-jour="${iso}" ${etat === 'passe' ? 'disabled' : ''}>${j.getDate()}${j.getDate() === 1 ? `<small>${j.toLocaleString('fr-BE', { month: 'short' })}</small>` : ''}</button>`;
+    h += `<button type="button" class="cal-j ${etat}${iso === choisi ? ' sel' : ''}" data-jour="${iso}" ${etat === 'passe' || etat === 'ferme' ? 'disabled' : ''}>${j.getDate()}${j.getDate() === 1 ? `<small>${j.toLocaleString('fr-BE', { month: 'short' })}</small>` : ''}</button>`;
   }
-  return h + '</div><p class="cal-legende"><span class="libre">libre</span><span class="partiel">en partie pris</span><span class="pris">pris</span></p></div>';
+  return h + '</div><p class="cal-legende"><span class="libre">libre</span><span class="partiel">en partie pris</span><span class="pris">pris</span>' + (fermes.length ? '<span class="ferme">indisponible</span>' : '') + '</p></div>';
 }
 
 // Bloc « connectez-vous » réutilisé par les pages de réservation.

@@ -4,8 +4,8 @@
 <meta name="robots" content="noindex"><!-- maquette : à retirer à la mise en ligne réelle -->
 <meta property="og:title" content="Inspirations – Faire avec – Comptoir des Matériaux"><meta property="og:description" content="Réalisations en réemploi : idées et photos pour faire avec les matériaux du Comptoir.">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="style.css?v=p5"><script src="panier.js?v=p5" defer></script><script src="compte.js?v=p5"></script>
-</head><body>
+<link rel="stylesheet" href="style.css?v=p8"><script src="panier.js?v=p8" defer></script><script src="compte.js?v=p8"></script>
+<!--ico--><link rel="icon" href="favicon.ico" sizes="any"><link rel="icon" type="image/png" href="favicon-32.png"><link rel="apple-touch-icon" href="apple-touch-icon.png"><!--/ico--></head><body>
 <div class="maquette">Maquette : textes, prix et photos à valider par l'équipe.</div>
 <header class="haut"><div class="haut-in">
 <a class="logo" href="index.html"><img src="img/logo-comptoir.png" alt="Comptoir des Matériaux" width="168" height="63"></a>
@@ -17,7 +17,7 @@
 <div class="filtres-tags" id="tags"></div>
 <div class="blog" id="liste"></div>
 <article class="billet-plein" id="billet" hidden></article>
-<p class="centre"><a class="bouton jaune" href="mailto:info@la-pile.be?subject=Ma%20r%C3%A9alisation%20en%20r%C3%A9emploi">Proposer ma réalisation</a></p>
+<p class="centre"><a class="bouton jaune" href="mailto:info@comptoir-materiaux.be?subject=Ma%20r%C3%A9alisation%20en%20r%C3%A9emploi">Proposer ma réalisation</a></p>
 </main>
 <script>
 const $=id=>document.getElementById(id);let B=[],tag='';
@@ -37,6 +37,6 @@ addEventListener('hashchange',route);
 fetch('inspiration.json',{cache:'no-cache'}).then(r=>r.json()).then(j=>{B=j;route()});</script>
 <footer class="pied"><div class="pied-in">
 <img src="img/logo-comptoir.png" alt="Comptoir des Matériaux" class="pied-logo">
-<div><b>Comptoir des Matériaux</b><br>Rue Frédéric Lang 3, 4960 Malmedy<br>Magasin : mercredi et samedi, 9 h – 16 h<br>Tél. <a href="tel:+32455100921">+32 (0)455 10 09 21</a> · <a href="https://wa.me/32455100921">WhatsApp</a><br><a href="mailto:info@la-pile.be">info@la-pile.be</a></div>
+<div><b>Comptoir des Matériaux</b><br>Rue Frédéric Lang 3, 4960 Malmedy<br>Magasin : mercredi et samedi, 9 h – 16 h<br>Tél. <a href="tel:+32455100921">+32 (0)455 10 09 21</a> · <a href="https://wa.me/32455100921">WhatsApp</a><br><a href="mailto:info@comptoir-materiaux.be">info@comptoir-materiaux.be</a></div>
 <div><a href="depot.html">Donner des matériaux</a><br><a href="comprendre.html">Pourquoi le réemploi ?</a><br><a href="https://www.facebook.com/p/Comptoir-des-mat%C3%A9riaux-PILE-61557432835398/">Facebook</a><br><span class="petit-pied">Un projet de <a href="https://www.la-pile.be">La Pile asbl</a></span></div>
 </div></footer></body></html>

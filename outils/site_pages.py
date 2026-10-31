@@ -2,16 +2,17 @@
 # compte membre, « Comprendre » (économie circulaire, réemploi) et le blog d'inspiration de « Faire avec ».
 # Remet aussi le même menu sur toutes les pages déjà générées.
 # Usage : python3 outils/site_pages.py comptoir/
+from site_co2 import NOTE as CO2_NOTE
 import sys, os, re, glob, html
 
 out = sys.argv[1]
 PILE = 'https://www.la-pile.be'
-VER = 'p5'
+VER = 'p8'
 esc = lambda s: html.escape(str(s or ''), quote=True)
 # Coordonnées du Comptoir (pas celles de La Pile). INSTAGRAM : à remplir quand le compte du Comptoir est connu.
 TEL, TEL_LIEN = '+32 (0)455 10 09 21', '+32455100921'
 WHATSAPP = 'https://wa.me/32455100921'
-MAIL = 'info@la-pile.be'
+MAIL = 'info@comptoir-materiaux.be'
 FACEBOOK = 'https://www.facebook.com/p/Comptoir-des-mat%C3%A9riaux-PILE-61557432835398/'
 INSTAGRAM = ''
 
@@ -54,13 +55,15 @@ def page(nom, titre, desc, corps, script='', compte=True):
 
 # ——— Outilthèque : catalogue ———
 page('outils.html', 'Outilthèque – Comptoir des Matériaux', "Louez plutôt qu'acheter : perceuses, ponceuses, scies, échelles… à petit prix, pour les membres de La Pile à Malmedy.", '''
-<main class="contenu"><h1>Outilthèque</h1>
+<main class="contenu"><div class="tete-outils"><div><h1>Outilthèque</h1>
 <p class="intro">Une perceuse sert en moyenne quelques minutes dans sa vie. Plutôt que de l'acheter, louez-la : c'est moins cher, ça prend moins de place, et chaque outil partagé est un outil de moins à fabriquer.</p>
-<div class="etapes"><div><b>1</b>Choisissez un outil et une période : du mercredi au samedi, ou du samedi au mercredi</div><div><b>2</b>Envoyez la demande depuis votre compte membre</div><div><b>3</b>On vous confirme par e-mail</div><div><b>4</b>Retrait et retour au Comptoir, paiement sur place</div></div>
+<div class="etapes"><div><b>1</b>Choisissez un outil et une période : du mercredi au samedi, ou du samedi au mercredi</div><div><b>2</b>Envoyez la demande depuis votre compte membre</div><div><b>3</b>On vous confirme par e-mail</div><div><b>4</b>Retrait et retour au Comptoir, paiement sur place</div></div></div>
+<img class="photo-outils" src="img/outiltheque.jpg" alt="L'outilthèque du Comptoir, sous la mezzanine" width="800" height="1000"></div>
 <p class="note-tarif"><b>Tarif conscient.</b> Notre outilthèque se veut solidaire : vous choisissez votre tarif, solidaire, normal ou soutien, sans justificatif. Les outils sont classés en 2 catégories selon leur valeur ; le prix affiché est le tarif normal.</p>
 <form class="filtres" id="filtres" onsubmit="return false">
 <input id="q" type="search" placeholder="Rechercher un outil (ponceuse, échelle…)" aria-label="Rechercher">
-<select id="cat" aria-label="Famille"><option value="">Toutes les familles</option></select></form>
+<select id="cat" aria-label="Famille" hidden><option value="">Toutes les familles</option></select></form>
+<div class="rayons" id="familles" aria-label="Familles d'outils"></div>
 <p id="nb" class="nb"></p><div class="grille" id="liste"></div>
 <div class="encart-don"><h2>Vous avez un outil qui dort ?</h2><p>Donnez-le à l'outilthèque : vous recevez un bon de location équivalent à sa valeur estimée.</p><a class="bouton jaune" href="index.html#infos">Nous contacter</a></div>
 </main>''', r'''
@@ -70,15 +73,27 @@ function prixCourt(o){return o.prix_periode!=null?`${eurs(o.prix_periode)} / pé
 function maj(){const mots=sans($('q').value).split(/\s+/).filter(Boolean),c=$('cat').value;
  const r=O.filter(o=>(!c||o.cat===c)&&mots.every(w=>sans([o.nom,o.cat,o.descr,o.ref].join(' ')).includes(w)));
  $('nb').textContent=r.length+' outil'+(r.length>1?'s':'');
- $('liste').innerHTML=r.map(o=>`<a class="carte" href="outil.html?r=${encodeURIComponent(o.ref)}"><div class="img">${o.photos[0]?`<img loading="lazy" src="${escH(o.photos[0])}" alt="${escH(o.nom)}">`:'<div class="sans-photo">🔧</div>'}</div><div class="txt"><h3>${escH(o.nom)}</h3><p class="prix">${prixCourt(o)}</p><p class="petit">${escH(o.cat||'')}${o.tarif?` · catégorie ${o.tarif}`:''}</p></div></a>`).join('')}
-Compte.outils().then(l=>{O=l.filter(o=>(o.type||'outil')==='outil');
+ // rangés par famille, une rubrique par famille
+ const fam=[...new Set(r.map(o=>o.cat||'Autres'))].sort((a,b)=>a.localeCompare(b,'fr'));
+ $('liste').className='';$('liste').innerHTML=fam.map(f=>`<h2 class="famille">${escH(f)}</h2><div class="grille">${r.filter(o=>(o.cat||'Autres')===f).map(carteOutil).join('')}</div>`).join('');
+ $('familles').innerHTML=[['','Tout'],...[...new Set(O.map(o=>o.cat).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fr')).map(x=>[x,x])].map(([v,l])=>`<button type="button" data-f="${escH(v)}" class="${v===c?'sel':''}">${escH(l)}</button>`).join('')}
+const carteOutil=o=>`<a class="carte" href="outil.html?r=${encodeURIComponent(o.ref)}"><div class="img">${o.photos[0]?`<img loading="lazy" src="${escH(o.photos[0])}" alt="${escH(o.nom)}">`:'<div class="sans-photo">🔧</div>'}</div><div class="txt"><h3>${escH(o.nom)}</h3><p class="prix">${prixCourt(o)}</p><p class="petit">${escH(o.cat||'')}${o.tarif?` · catégorie ${o.tarif}`:''}</p></div></a>`;
+$('familles').onclick=e=>{const b=e.target.closest('[data-f]');if(!b)return;$('cat').value=b.dataset.f;maj()};
+// Familles regroupées (aussi pour les outils déjà enregistrés sur le serveur avec l'ancienne famille).
+const REGROUPE={"Petit outillage": "Petit outillage et accessoires", "Accessoires": "Petit outillage et accessoires", "Ponçage": "Menuiserie", "Sciage et découpe": "Menuiserie"};
+Compte.outils().then(l=>{O=l.filter(o=>(o.type||'outil')==='outil').map(o=>({...o,cat:REGROUPE[o.cat]||o.cat}));
  [...new Set(O.map(o=>o.cat).filter(Boolean))].sort().forEach(c=>$('cat').add(new Option(c,c)));
  const P=new URLSearchParams(location.search);if(P.get('q'))$('q').value=P.get('q');maj()});
 document.querySelectorAll('#filtres input,#filtres select').forEach(e=>e.addEventListener('input',maj));''')
 
 # ——— Fiche d'un outil, de la camionnette ou de l'atelier (même modèle que les matériaux) ———
 FICHE_JS = r'''
+// Tarifs de la camionnette et de l'atelier (Jérôme, 30/10/2026). Camionnette : pas le jeudi ni le vendredi.
+const TARIFS={camionnette:{court:'2,50 €/heure + 0,60 €/km',lignes:[['Location','2,50 € / heure'],['Kilomètres','0,60 € / km, carburant compris'],['Adhésion','30 € / an']],note:'Réservée aux membres : compte en ligne avec pièce d\'identité et permis de conduire. Pas de location le jeudi ni le vendredi.',ferme:[4,5]},
+ atelier:{court:'25 € les 3 h · 50 € la journée',lignes:[['3 heures','25 €'],['Journée','50 €']],note:'Demi-tarif pour les associations. Consommables non compris.',ferme:[]}};
 const $=id=>document.getElementById(id);const P=new URLSearchParams(location.search);let O=null,choix=null,PRIS=[];
+const FERME=()=>(TARIFS[O.type]||{}).ferme||[];
+function jourFerme(b){const f=FERME();if(!f.length)return false;const d=new Date(b.debut.slice(0,10)+'T00:00'),e=new Date(b.fin.replace(' ','T'));for(;d<e;d.setDate(d.getDate()+1))if(f.includes(d.getDay()))return true;return false}
 function heures(){let h='';for(let i=7;i<=20;i++)h+=`<option>${String(i).padStart(2,'0')}:00</option>`;return h}
 const occupe=(d,f)=>PRIS.filter(p=>['confirmee','en_cours'].includes(p.statut)&&p.debut<f&&p.fin>d).length>=(O.qte||1);
 const demande=(d,f)=>PRIS.some(p=>p.statut==='demandee'&&p.debut<f&&p.fin>d);
@@ -101,28 +116,33 @@ function formRess(m){if(!m)return '<h2>Réserver</h2>'+blocConnexion();
 function bornes(){if(O.type==='outil'){const r=document.querySelector('[name=per]:checked');if(!r)return null;const p=periodes()[+r.value];return {debut:p.debut,fin:p.fin}}
  const d1=$('d1').value,d2=$('d2').value||d1;return d1?{debut:d1+' '+$('h1').value,fin:d2+' '+$('h2').value}:null}
 function estimer(){const b=bornes();if(!b||!$('estim'))return;const h=(Date.parse(b.fin.replace(' ','T'))-Date.parse(b.debut.replace(' ','T')))/36e5;
+ if(h>0&&jourFerme(b)){$('estim').textContent='La camionnette n\'est pas disponible le jeudi ni le vendredi.';return}
+ if(h>0&&O.type==='camionnette'){$('estim').textContent=`${h} h : ${eurs(h*2.5)} + 0,60 €/km, à régler au Comptoir`;return}
+ if(h>0&&O.type==='atelier'){const j=Math.ceil(h/24),p=h<=3?25:h<=24?50:j*50;$('estim').textContent=`${h<=3?'3 heures':j+' jour'+(j>1?'s':'')} : ${eurs(p)} (demi-tarif pour les associations), consommables en plus, à régler au Comptoir`;return}
  const t=h<=0?'':h<=5&&O.prix_we!=null?`Demi-journée : ${eurs(O.prix_we)}`:O.prix_jour!=null?`${Math.ceil(h/24)} jour${h>24?'s':''} : ≈ ${eurs(Math.ceil(h/24)*O.prix_jour)}`:'';
  $('estim').textContent=t?t+(O.caution?` + caution ${eurs(O.caution)}`:'')+', à régler au Comptoir':''}
 async function dessiner(){const [m,dispo]=await Promise.all([Compte.moi(),Compte.dispo(O.ref).catch(()=>({pris:[]}))]);PRIS=dispo.pris||[];
- $('cal').innerHTML=O.type==='outil'?'':calendrierHtml(PRIS,choix);$('form').innerHTML=bandeauDemo()+(O.type==='outil'?formOutil(m):formRess(m));
+ $('cal').innerHTML=O.type==='outil'?'':calendrierHtml(PRIS,choix,FERME());$('form').innerHTML=bandeauDemo()+(O.type==='outil'?formOutil(m):formRess(m));
  $('cal').querySelectorAll('[data-jour]').forEach(b=>b.onclick=()=>{choix=b.dataset.jour;if($('d1')){if(!$('d1').value||$('d2').value){$('d1').value=choix;$('d2').value=''}else if(choix>=$('d1').value)$('d2').value=choix;else $('d1').value=choix;estimer()}
   $('cal').querySelectorAll('.sel').forEach(x=>x.classList.remove('sel'));b.classList.add('sel')});
  const f=$('dem');if(!f||!m)return;['d1','d2','h1','h2'].forEach(i=>$(i)&&$(i).addEventListener('change',estimer));
  if($('h1')){$('h1').value='09:00';$('h2').value='17:00'}
  f.onsubmit=async e=>{e.preventDefault();const b=bornes();$('retour').className='retour';
   if(!b){$('retour').className='retour bad';$('retour').textContent=O.type==='outil'?'Choisissez une période.':'Choisissez une date.';return}
+  if(jourFerme(b)){$('retour').className='retour bad';$('retour').textContent='La camionnette n\'est pas disponible le jeudi ni le vendredi : choisissez d\'autres jours.';return}
   try{await Compte.api('reserver',{ref:O.ref,nom:O.nom,...b,message:$('msg').value});$('retour').innerHTML='✓ Demande envoyée. Nous vous confirmons par e-mail. <a href="compte.html">Voir mes réservations</a>';f.querySelector('button').disabled=true;setTimeout(dessiner,2500)}
   catch(x){$('retour').className='retour bad';$('retour').textContent=x.message}}}
 function tarifsHtml(){if(O.type==='outil')return O.prix_periode!=null?`<p class="prix-gros">${eurs(O.prix_periode)} <small>la période</small></p><p class="petit">Tarif normal${O.tarif?` (catégorie ${O.tarif})`:''}. Tarif conscient : solidaire, normal ou soutien, vous choisissez sans justificatif.</p>`:'<p class="prix-gros">Prix sur demande</p>';
+ const T=TARIFS[O.type];if(T)return `<table class="tarifs">${T.lignes.map(x=>`<tr><th>${x[0]}</th><td>${x[1]}</td></tr>`).join('')}</table><p class="petit">${T.note}</p>`;
  const l=[['Demi-journée',O.prix_we],['Journée',O.prix_jour],['Caution',O.caution]].filter(x=>x[1]!=null);
  return l.length?`<table class="tarifs">${l.map(x=>`<tr><th>${x[0]}</th><td>${eurs(x[1])}</td></tr>`).join('')}</table>`:'<p class="prix-gros">Tarifs à venir</p>'}
 function afficher(){document.title=O.nom+' – Comptoir des Matériaux';const ic=O.type==='camionnette'?'🚐':O.type==='atelier'?'🪚':'🔧';
  $('fiche').innerHTML=`<p class="fil"><a href="${O.type==='outil'?'outils.html':'reserver.html'}">${O.type==='outil'?'Outilthèque':'Camionnette & atelier'}</a>${O.cat&&O.type==='outil'?' › '+escH(O.cat):''}</p>
- <div class="art-grille"><div class="galerie">${O.photos.length?O.photos.map(p=>`<img src="${escH(p)}" alt="${escH(O.nom)}">`).join(''):`<div class="sans-photo grand">${ic}<small>Photo à venir</small></div>`}</div>
+ <div class="art-grille"><div><div class="galerie">${O.photos.length?O.photos.map(p=>`<img src="${escH(p)}" alt="${escH(O.nom)}">`).join(''):`<div class="sans-photo grand">${ic}<small>Photo à venir</small></div>`}</div>${O.type==='camionnette'?PLAN_CAMION:''}</div>
  <div><h1>${escH(O.nom)}</h1>${tarifsHtml()}${O.caution&&O.type==='outil'?`<p>Caution : ${eurs(O.caution)}</p>`:''}
  ${O.etat?`<p><b>État :</b> ${escH(O.etat)}</p>`:''}${O.descr?`<div class="descr">${escH(O.descr).replace(/\n/g,'<br>')}</div>`:''}
  <p class="petit">Réf. ${escH(O.ref)}${O.qte>1?` · ${O.qte} exemplaires`:''}</p>
- ${O.type==='outil'?'':'<h2>Disponibilités</h2>'}<div id="cal"></div><div id="form"></div></div></div>${O.type==='camionnette'?PLAN_CAMION:''}`;dessiner()}
+ ${O.type==='outil'?'':'<h2>Disponibilités</h2>'}<div id="cal"></div><div id="form"></div></div></div>`;dessiner()}
 // Plan de chargement de la camionnette (Fiat Ducato L2H2, cotes du constructeur).
 const PLAN_CAMION=`<section class="plan-camion"><h2>Dimensions de chargement</h2>
  <img src="img/camionnette-plan.svg" alt="Plan de la camionnette avec les cotes de chargement" width="900" height="470">
@@ -134,21 +154,24 @@ page('outil.html', 'Outil – Comptoir des Matériaux', "Fiche d'un outil de l'o
      '<main class="article" id="fiche"><p>Chargement…</p></main>', FICHE_JS)
 
 # ——— Camionnette et atelier partagé ———
-page('reserver.html', 'Camionnette et atelier partagé – Comptoir des Matériaux', "Réservez en ligne la camionnette partagée (clé en boîte à clé, 7j/7) ou l'atelier partagé de La Pile, à Malmedy.", '''
+page('reserver.html', 'Camionnette et atelier partagé – Comptoir des Matériaux', "Réservez en ligne la camionnette partagée (2,50 €/h + 0,60 €/km) ou l'atelier partagé (25 € les 3 h), à Malmedy.", '''
 <main class="contenu"><h1>Camionnette &amp; atelier partagé</h1>
 <p class="intro">Deux outils en commun pour les membres de La Pile : une camionnette pour transporter vos matériaux, et un atelier équipé pour les travailler.</p>
 <div class="deux-grand" id="ress"><p>Chargement…</p></div>
 <h2 style="margin-top:40px">Comment ça marche ?</h2>
 <div class="infos-prat">
-<div><h3>1. Devenir membre</h3><p>Créez votre compte en ligne. L'adhésion à La Pile se règle au Comptoir : l'équipe active alors votre compte.</p></div>
+<div><h3>1. Devenir membre</h3><p>Créez votre compte en ligne : l'adhésion est de 30 €/an. Pour la camionnette, il faut aussi votre pièce d'identité et votre permis de conduire. L'équipe active ensuite votre compte.</p></div>
 <div><h3>2. Réserver</h3><p>Choisissez vos dates sur le calendrier et envoyez la demande. Vous recevez la confirmation par e-mail.</p></div>
-<div><h3>3. Camionnette : 7j/7</h3><p>La clé vous attend dans la boîte à clé à l'entrée du Comptoir, même quand il est fermé. Le code vous est envoyé avec la confirmation.</p></div>
-<div><h3>4. Au retour</h3><p>Plein fait, clé remise dans la boîte. Le paiement se fait au Comptoir (espèces, QR code ou virement).</p></div></div>
+<div><h3>3. Camionnette : sauf jeudi et vendredi</h3><p>Elle s'ouvre avec l'appli Wibee, même quand le Comptoir est fermé. Le jeudi et le vendredi, elle sert à La Pile et au Comptoir.</p></div>
+<div><h3>4. Au retour</h3><p>Notez les kilomètres : le carburant est compris dans le prix au km. Le paiement se fait au Comptoir (espèces, QR code ou virement).</p></div></div>
 </main>''', r'''
 const $=id=>document.getElementById(id);
+// Tarifs de la camionnette et de l'atelier (Jérôme, 30/10/2026). Camionnette : pas le jeudi ni le vendredi.
+const TARIFS={camionnette:{court:'2,50 €/heure + 0,60 €/km',lignes:[['Location','2,50 € / heure'],['Kilomètres','0,60 € / km, carburant compris'],['Adhésion','30 € / an']],note:'Réservée aux membres : compte en ligne avec pièce d\'identité et permis de conduire. Pas de location le jeudi ni le vendredi.',ferme:[4,5]},
+ atelier:{court:'25 € les 3 h · 50 € la journée',lignes:[['3 heures','25 €'],['Journée','50 €']],note:'Demi-tarif pour les associations. Consommables non compris.',ferme:[]}};
 Compte.outils().then(l=>{const R=l.filter(o=>o.type==='camionnette'||o.type==='atelier');
  $('ress').innerHTML=R.length?R.map(o=>`<a class="carte ress" href="outil.html?r=${encodeURIComponent(o.ref)}"><div class="img">${o.photos[0]?`<img src="${escH(o.photos[0])}" alt="">`:`<div class="sans-photo">${o.type==='camionnette'?'🚐':'🪚'}</div>`}</div>
- <div class="txt"><h2>${escH(o.nom)}</h2><p>${escH((o.descr||'').split('\n')[0])}</p><p class="prix">${o.prix_jour!=null?eurs(o.prix_jour)+' / jour':'Tarifs à venir'}${o.prix_we!=null?` · ${eurs(o.prix_we)} la demi-journée`:''}</p><span class="bouton">Voir les disponibilités</span></div></a>`).join(''):'<p>Bientôt disponible.</p>'});''')
+ <div class="txt"><h2>${escH(o.nom)}</h2><p>${escH((o.descr||'').split('\n')[0])}</p><p class="prix">${(TARIFS[o.type]||{}).court||(o.prix_jour!=null?eurs(o.prix_jour)+' / jour':'Tarifs à venir')}</p><span class="bouton">Voir les disponibilités</span></div></a>`).join(''):'<p>Bientôt disponible.</p>'});''')
 
 # ——— Compte membre ———
 page('compte.html', 'Mon compte – Comptoir des Matériaux', "Connexion, inscription et réservations des membres de La Pile.", '''
@@ -157,7 +180,7 @@ const $=id=>document.getElementById(id);const retour=new URLSearchParams(locatio
 function connexion(){ $('zone').innerHTML=bandeauDemo()+`<h1>Mon compte</h1><div class="deux-grand">
  <form id="fc" class="form-res"><h2>J'ai un compte</h2><label>E-mail <input type="email" id="ce" required autocomplete="email"></label><label>Mot de passe <input type="password" id="cm" required autocomplete="current-password"></label><button class="bouton">Me connecter</button><p class="retour" id="rc"></p><p class="petit">Mot de passe oublié ? Appelez le Comptoir, l'équipe vous aide.</p></form>
  <form id="fi" class="form-res"><h2>Devenir membre</h2><label>Nom et prénom <input id="in" required autocomplete="name"></label><label>E-mail <input type="email" id="ie" required autocomplete="email"></label><label>Téléphone <input type="tel" id="it" autocomplete="tel"></label><label>Adresse <input id="ia" autocomplete="street-address"></label><label>Mot de passe (8 caractères au moins) <input type="password" id="im" minlength="8" required autocomplete="new-password"></label>
- <p class="petit">L'adhésion à La Pile se règle au Comptoir ; l'équipe active alors votre compte. En attendant, vous pouvez déjà envoyer des demandes.</p><button class="bouton jaune">Créer mon compte</button><p class="retour" id="ri"></p></form></div>`;
+ <p class="petit">L'adhésion (30 €/an) se règle au Comptoir ; l'équipe active alors votre compte. En attendant, vous pouvez déjà envoyer des demandes.</p><button class="bouton jaune">Créer mon compte</button><p class="retour" id="ri"></p></form></div>`;
  $('fc').onsubmit=e=>envoi(e,'connexion',{email:$('ce').value,mdp:$('cm').value},'rc');
  $('fi').onsubmit=e=>envoi(e,'inscription',{nom:$('in').value,email:$('ie').value,tel:$('it').value,adresse:$('ia').value,mdp:$('im').value},'ri')}
 async function envoi(e,a,c,r){e.preventDefault();try{const j=await Compte.api(a,c);Compte.membre=j.membre;if(retour&&/^https?:/.test(retour)&&new URL(retour).origin===location.origin)location.href=retour;else espace()}catch(x){$(r).className='retour bad';$(r).textContent=x.message}}
@@ -205,7 +228,7 @@ page('comprendre.html', 'Comprendre le réemploi – Comptoir des Matériaux', "
 
 <h2>Le Comptoir, concrètement</h2>
 <div class="quatre">
-<a href="index.html#infos"><span>📦</span><b>Le dépôt</b>Vous rénovez ? Proposez-nous vos matériaux en bon état (photos par WhatsApp d'abord).</a>
+<a href="index.html#infos"><span>📦</span><b>Le dépôt</b>Des matériaux en trop (chantier, fin de stock, rénovation) ? Proposez-les-nous (photos d'abord).</a>
 <a href="catalogue.html"><span>🏷️</span><b>Le magasin</b>Sanitaires, portes, châssis, carrelage, bois… à prix doux, mercredi et samedi.</a>
 <a href="outils.html"><span>🔧</span><b>L'outilthèque</b>Louez l'outil plutôt que de l'acheter.</a>
 <a href="reserver.html"><span>🪚</span><b>L'atelier et la camionnette</b>Un espace équipé et un véhicule, en commun pour les membres.</a></div>
@@ -228,7 +251,7 @@ page('inspiration.html', 'Inspirations – Faire avec – Comptoir des Matériau
 <div class="filtres-tags" id="tags"></div>
 <div class="blog" id="liste"></div>
 <article class="billet-plein" id="billet" hidden></article>
-<p class="centre"><a class="bouton jaune" href="mailto:info@la-pile.be?subject=Ma%20r%C3%A9alisation%20en%20r%C3%A9emploi">Proposer ma réalisation</a></p>
+<p class="centre"><a class="bouton jaune" href="mailto:info@comptoir-materiaux.be?subject=Ma%20r%C3%A9alisation%20en%20r%C3%A9emploi">Proposer ma réalisation</a></p>
 </main>''', r'''
 const $=id=>document.getElementById(id);let B=[],tag='';
 const carte=b=>`<a class="billet" href="#${encodeURIComponent(b.id)}"><div class="img">${b.photos&&b.photos[0]?`<img loading="lazy" src="${escH(b.photos[0])}" alt="">`:`<div class="sans-photo">${b.icone||'🌱'}</div>`}</div><div class="txt"><p class="petit">${escH((b.tags||[]).join(' · '))}</p><h3>${escH(b.titre)}</h3><p>${escH(b.chapo)}</p></div></a>`;
@@ -248,9 +271,9 @@ fetch('inspiration.json',{cache:'no-cache'}).then(r=>r.json()).then(j=>{B=j;rout
 
 
 # ——— Dépôt : proposer ses matériaux ———
-page('depot.html', 'Donner des matériaux – Comptoir des Matériaux', "Vous rénovez ? Proposez vos matériaux de construction en bon état au Comptoir des Matériaux de Malmedy : envoyez quelques photos, on vous répond.", f"""
+page('depot.html', 'Donner des matériaux – Comptoir des Matériaux', "Fin de chantier, fin de stock, rénovation, garage à vider : proposez vos matériaux de construction en bon état au Comptoir des Matériaux de Malmedy. Envoyez quelques photos, on vous répond.", f"""
 <main class="contenu etroit"><h1>Donner des matériaux</h1>
-<p class="intro">Vous rénovez, vous videz un garage, il vous reste des carrelages ? Ce qui est encore en bon état peut resservir ici, au lieu de partir au conteneur.</p>
+<p class="intro">Particulier ou professionnel : fin de chantier, fin de stock, surplus de commande, rénovation, garage ou grenier à vider… Ce qui est encore en bon état peut resservir ici, au lieu de partir au conteneur.</p>
 <div class="etapes"><div><b>1</b>Envoyez-nous quelques photos et une description, ici ou par WhatsApp</div><div><b>2</b>On vous répond : oui, non, ou une question</div><div><b>3</b>Vous apportez les matériaux un jour d'ouverture, ou on organise un enlèvement</div></div>
 <p class="note-tarif"><b>Merci de ne pas venir déposer sans nous avoir contactés :</b> la place est comptée et certains matériaux ne se revendent pas.</p>
 <div class="deux-grand">
@@ -288,6 +311,11 @@ for f in glob.glob(os.path.join(out, '*.html')) + glob.glob(os.path.join(out, '*
     n = re.sub(r'<a class="logo".*?</a>', lambda m: logo(prof), n, count=1, flags=re.S)
     n = re.sub(r'<footer class="pied">.*?</footer>', lambda m: pied(prof), n, count=1, flags=re.S)
     n = re.sub(r'(style\.css|panier\.js)\?v=[\w]+', rf'\1?v={VER}', n)
+    # Adresse définitive du site (liens de partage, sitemap, balises og).
+    n = n.replace('https://encodage-comptoir.github.io/encodage-comptoir/comptoir/', 'https://www.comptoir-materiaux.be/')
+    # Favicon du Comptoir (les flèches jaunes du logo sur fond turquoise).
+    ico = f'<!--ico--><link rel="icon" href="{prof}favicon.ico" sizes="any"><link rel="icon" type="image/png" href="{prof}favicon-32.png"><link rel="apple-touch-icon" href="{prof}apple-touch-icon.png"><!--/ico-->'
+    n = re.sub(r'<!--ico-->.*?<!--/ico-->', '', n).replace('</head>', ico + '</head>', 1)
     if n != t:
         open(f, 'w').write(n)
 
@@ -301,15 +329,15 @@ def inserer(nom, apres, bloc, marque):
 
 # Accueil : la recherche, puis directement les services (photos dans img/services/, sinon une photo de repli).
 SERVICES = [
-    ('catalogue.html', 'materiaux', 'Catalogue matériaux', 'Sanitaires, portes, châssis, carrelage, bois… de réemploi, à prix doux.', '🏷️', f'{PILE}/sites/lapile/gallery_images/thumbs/6958f28b6442e.jpg'),
-    ('outils.html', 'outillage', 'Location d’outillage', 'Perceuses, scies, échelles… louées à la période, au tarif conscient.', '🔧', 'https://lapilebucket.s3.eu-west-3.amazonaws.com/production/item/scv-6a1942ef45853.webp'),
-    ('reserver.html', 'camionnette', 'Camionnette & atelier', 'La camionnette 7j/7 et l’atelier partagé, à réserver en ligne.', '🚐', ''),
-    ('inspiration.html', 'inspirer', 'S’inspirer', 'Des réalisations en réemploi, en photos.', '🌱', ''),
+    ('catalogue.html', 'materiaux', 'Catalogue matériaux', 'Sanitaires, portes, châssis, carrelage, bois… de réemploi, à prix doux.', 'Explorer ›', '🏷️', f'{PILE}/sites/lapile/gallery_images/thumbs/6958f28b6442e.jpg'),
+    ('outils.html', 'outillage', 'Location d’outillage', 'Perceuses, scies, échelles… louées à la période, au tarif conscient.', 'Réserver', '🔧', 'https://lapilebucket.s3.eu-west-3.amazonaws.com/production/item/scv-6a1942ef45853.webp'),
+    ('reserver.html', 'camionnette-atelier', 'Camionnette & atelier', 'La camionnette et l’atelier partagé, à réserver en ligne.', 'Réserver', '🚐', ''),
+    ('inspiration.html', 'inspirer', 'S’inspirer', 'Des réalisations en réemploi, en photos.', 'Découvrir ›', '🌱', ''),
 ]
 def accueil():
     f = os.path.join(out, 'index.html'); t = open(f).read()
-    tuiles = ''.join(f"""<a class="service" href="{h}"><div class="img"><img src="img/services/{n}.jpg" alt="" loading="lazy" data-repli="{esc(r)}" onerror="if(this.dataset.repli){{this.src=this.dataset.repli;this.dataset.repli=''}}else{{this.remove()}}"><span class="ic">{ic}</span></div><div class="txt"><h3>{esc(ti)}</h3><p>{esc(d)}</p></div></a>""" for h, n, ti, d, ic, r in SERVICES)
-    don = '<a class="bandeau-don" href="depot.html"><span aria-hidden="true">📦</span><span><b>Vous rénovez ?</b> Donnez-nous vos matériaux encore bons : quelques photos suffisent.</span><span class="bouton jaune">Proposer un don</span></a>'
+    tuiles = ''.join(f"""<a class="service" href="{h}"><div class="img"><img src="img/services/{n}.jpg" alt="" loading="lazy" data-repli="{esc(r)}" onerror="if(this.dataset.repli){{this.src=this.dataset.repli;this.dataset.repli=''}}else{{this.remove()}}"><span class="ic">{ic}</span></div><div class="txt"><h3>{esc(ti)}</h3><p>{esc(d)}</p><span class="cta">{esc(cta)}</span></div></a>""" for h, n, ti, d, cta, ic, r in SERVICES)
+    don = '<a class="bandeau-don" href="depot.html"><span aria-hidden="true">📦</span><span><b>Des matériaux en trop ?</b> Fin de chantier, fin de stock, rénovation, garage à vider… Donnez-nous ce qui est encore bon : quelques photos suffisent.</span><span class="bouton jaune">Proposer un don</span></a>'
     bloc = f'<section class="contenu"><h2 class="sr">Nos services</h2><div class="services">{tuiles}</div>{don}</section>\n'
     t = re.sub(r'(<section class="hero"><div class="hero-in">)<h1>.*?</h1>', r'\1<h1 class="hero-logo"><img src="img/logo-comptoir.png" alt="Comptoir des Matériaux" width="735" height="275"></h1>', t, flags=re.S)
     t = re.sub(r'<form action="catalogue.html" class="cherche">.*?</form>', '', t, flags=re.S)  # plus de recherche sur l'accueil
@@ -317,10 +345,97 @@ def accueil():
     b = t.index('<section class="contenu" id="infos">')
     t = t[:a] + '\n' + bloc + t[b:]
     t = t.replace('<p>Matériaux de construction de réemploi à Malmedy : sanitaires, portes, châssis, carrelage, bois… jusqu’à 90 % moins chers que le neuf.</p>', '<p>Matériaux de construction de réemploi, outils et camionnette à louer, atelier partagé : à Malmedy, on fait avec ce qui existe déjà.</p>')
-    t = t.replace('<div><h3>Quand ?</h3><p>Horaires à compléter par l’équipe.</p></div>', '<div><h3>Quand ?</h3><p>Magasin ouvert le mercredi et le samedi, de 9 h à 16 h. En dehors, sur rendez-vous.</p></div>')
-    t = t.replace('<div><h3>Donner ?</h3><p>Vous avez des matériaux en bon état ? Contactez-nous avant de les apporter.</p></div>', '<div><h3>Donner ?</h3><p>Vous avez des matériaux en bon état ? <a href="depot.html">Proposez-les ici</a> avant de les apporter.</p></div>')
+    # Infos pratiques : horaires et contact en premier, bien visibles (Comment ? et Donner ? retirés, le don a son bandeau).
+    infos = f"""<!--infos--><h2 style="margin-top:32px">Infos pratiques</h2><div class="infos-top">
+<div class="horaires"><span class="ic" aria-hidden="true">🕘</span><div><h3>Horaires du magasin</h3><p class="gros">Mercredi et samedi<br><b>9 h – 16 h</b></p><p class="petit">En dehors de ces heures, sur rendez-vous.</p></div></div>
+<div class="contact"><span class="ic" aria-hidden="true">📞</span><div><h3>Nous contacter</h3><p class="gros"><a href="tel:{TEL_LIEN}">{TEL}</a></p><p><a href="{WHATSAPP}">WhatsApp</a> · <a href="mailto:{MAIL}">{MAIL}</a></p></div></div></div><!--/infos-->"""
+    # anciennes versions du bloc (en tête de section, ou l'ancienne grille Quand ?/Comment ?/Donner ?)
+    t = re.sub(r'<!--infos-->.*?<!--/infos-->', '', t, flags=re.S)
+    t = re.sub(r'<h2>Infos pratiques</h2><div class="infos-top">.*?</div></div></div>\n<h2 style="margin-top:32px">Où nous trouver</h2>', '<h2>Où nous trouver</h2>', t, flags=re.S)
+    t = re.sub(r'<h2 style="margin-top:32px">Infos pratiques</h2><div class="infos-prat">.*?</div></div></section>', '</section>', t, flags=re.S)
+    i = t.index('<section class="contenu" id="infos">'); j = t.index('</section>', i)
+    t = t[:j] + infos + t[j:]
+    # Accès : montage des photos du chemin (img/acces.jpg), s'il existe.
+    if os.path.exists(os.path.join(out, 'img', 'acces.jpg')):
+        t = re.sub(r'<div class="encart photo-lieu">.*?</div></div>', '<div class="encart photo-lieu"><a href="img/acces.jpg"><img src="img/acces.jpg" alt="Le chemin vers le Comptoir, en photos" loading="lazy"></a><p><b>Le chemin en 4 photos</b> : depuis le panneau 3b, longez Malmedy Expo, le Comptoir est derrière. <a href="img/acces.jpg">Agrandir</a></p></div></div>', t, count=1, flags=re.S)
     open(f, 'w').write(t)
 accueil()
+
+# Catalogue : recherche tolérante aux fautes (« carelage », « lavabot », « porte » / « portes »…).
+def recherche_souple():
+    f = os.path.join(out, 'catalogue.html'); t = open(f).read()
+    if 'proche(' in t: return
+    js = """const dbl=s=>s.replace(/(.)\\1+/g,'$1');
+function lev(a,b){if(Math.abs(a.length-b.length)>2)return 9;let p=[...Array(b.length+1).keys()];for(let i=1;i<=a.length;i++){const c=[i];for(let j=1;j<=b.length;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c}return p[b.length]}
+// Un mot cherché trouve l'article s'il y figure, ou s'il en est proche (lettre doublée, oubliée, en trop ou changée).
+function proche(a,w){if(!a._k){a._k=sans(a.k);a._w=a._k.split(/[^a-z0-9]+/).filter(Boolean).map(dbl)}
+ if(a._k.includes(w))return true;if(/\\d/.test(w))return false;const d=dbl(w);if(d.length>=3&&a._w.some(t=>t.includes(d)))return true;if(d.length<4)return false;
+ const tol=d.length>=7?2:1;return a._w.some(t=>lev(d,t)<=tol||(t.length>d.length&&lev(d,t.slice(0,d.length))<=tol))}
+"""
+    t = t.replace("function num(id)", js + "function num(id)", 1)
+    t = t.replace("&&mots.every(w=>sans(a.k).includes(w)));", "&&mots.every(w=>proche(a,w)));", 1)
+    open(f, 'w').write(t)
+recherche_souple()
+
+# ——— Articles ajoutés depuis la caisse ou l'app d'encodage (pas encore dans le catalogue généré) ———
+# La caisse publie leur fiche dans stock.json ; le catalogue les ajoute, et fiche.html?r=REF les affiche.
+CODES_JS = r"""const RAYON={SA:'Sanitaire',PA:'Sanitaire',CH:'Châssis et fenêtres',PO:'Portes',CAR:'Carrelage',GRO:'Gros œuvre',RA:'Chauffage',ELEC:'Électricité et éclairage',LUM:'Électricité et éclairage',
+ BOI:'Bois et panneaux',PAR:'Parquet, bardage et terrasse',LAM:'Lambris et plafonds',TOI:'Toiture',ISO:'Isolation',Q:'Quincaillerie',OUT:'Outillage',ELECTRO:'Électroménager',DIV:'Divers'};
+const prixTxt=(p,u)=>p.toFixed(2).replace('.',',')+' € / '+(u||'pièce');
+const dimsTxt=d=>d.length?d.map(x=>String(x).replace('.',',')).join(' × ')+' cm':'';
+const stockTxt=x=>x.s>0?(x.u&&x.u!=='pièce'?String(x.s).replace('.',',')+' '+x.u:x.s+' pièce'+(x.s>1?'s':'')):'';
+// Article du stock publié par la caisse, au format des cartes du catalogue (seulement avec un prix et en stock).
+const carteNouvelle=x=>{const d=x.d||[],c=RAYON[x.c]||'Divers',st=stockTxt(x);
+ return {r:x.r,t:x.n+(d.length&&!/\d/.test(x.n)?' – '+dimsTxt(d):''),c,p:x.p,pt:prixTxt(x.p,x.u),v:(x.f||[])[0]||'',d1:d[0]||0,d2:d[1]||0,d3:d[2]||0,m:x.m||'',e:ecoNeuf(x),n:neufTxt(x),c2:x.co&&x.co.par==='pièce'?String(x.co.kg).replace('.',',')+' kg CO₂':'',s:x.s,st,sc:st?st+' en stock':'',o:x.e||'',
+  k:[x.n,x.r,c,x.m,x.de].join(' ').normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase(),nv:1}};
+// Prix du neuf et CO₂ calculés par la caisse (caisse/auto.js) pour les fiches de l'app.
+const neufTxt=x=>x.nf?(x.nf[0]===x.nf[1]?x.nf[0]:x.nf[0]+' à '+x.nf[1])+' € / '+(x.u||'pièce'):'';
+const ecoNeuf=x=>x.nf&&x.p>0&&x.nf[0]>x.p?Math.round(100*(1-x.p/x.nf[0])/5)*5:0;
+const nouvelle=x=>x.n&&x.p>0&&x.st==='ok'&&x.s>0;"""
+
+def nouvelles_fiches():
+    f = os.path.join(out, 'catalogue.html'); t = open(f).read()
+    # codes communs toujours remis à jour
+    t = re.sub(r"const RAYON=\{.*?const nouvelle=x=>x\.n&&x\.p>0&&x\.st==='ok'&&x\.s>0;", lambda m: CODES_JS, t, count=1, flags=re.S)
+    if 'carteNouvelle' in t:
+        # version précédente : nouvelles fiches en fin de liste → les remettre en tête
+        t = t.replace(".concat((j.articles||[]).filter(x=>nouvelle(x)&&!d.some(a=>a.r===x.r)).sort((x,y)=>(y.cree||0)-(x.cree||0)).map(carteNouvelle))};", "};")
+        if '.map(carteNouvelle)' in t and 'a.nv=1}return a}))};' in t:
+            open(f, 'w').write(t); return
+        t = t.replace(CODES_JS + '\n', '')
+    t = t.replace("const vivant=(d,j)=>{", CODES_JS + "\nconst vivant=(d,j)=>{", 1)
+    # les nouvelles fiches s'ajoutent en tête du catalogue
+    NV = "(j.articles||[]).filter(x=>nouvelle(x)&&!d.some(a=>a.r===x.r)).sort((x,y)=>String(y.cree||'').localeCompare(String(x.cree||''))).map(carteNouvelle)"
+    t = t.replace(" return d.filter(a=>!['vendu'", " return " + NV + ".concat(d.filter(a=>!['vendu'", 1).replace("if(x.e)a.o=x.e;return a})};", "if(x.e)a.o=x.e;return a}))};", 1)
+    # annonce existante remplacée par une fiche de l'app (vérifiée dans la caisse) : titre, photo et lien vers fiche.html
+    if 'a.nv=1}return a}))};' not in t:
+        t = t.replace("if(x.e)a.o=x.e;return a}))};", "if(x.e)a.o=x.e;if(nouvelle(x)){const z=carteNouvelle(x);a.t=z.t;if(z.v)a.v=z.v;a.k+=' '+z.k;a.nv=1}return a}))};", 1)
+    t = t.replace('<a class="carte" href="article/${a.r}.html">', '<a class="carte" href="${a.nv?\'fiche.html?r=\'+encodeURIComponent(a.r):\'article/\'+a.r+\'.html\'}">', 1)
+    assert '.map(carteNouvelle)' in t and 'fiche.html?r=' in t
+    open(f, 'w').write(t)
+nouvelles_fiches()
+
+FICHE_NOUVELLE = r"""
+const $=id=>document.getElementById(id);const R=new URLSearchParams(location.search).get('r')||'';
+const slugC=c=>c.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+fetch('stock.json',{cache:'no-cache'}).then(r=>r.json()).then(j=>{const x=(j.articles||[]).find(a=>a.r===R);
+ if(!x||!nouvelle(x)){if(/^[A-Z]+\d+$/.test(R)){fetch('article/'+R+'.html',{method:'HEAD'}).then(r=>{if(r.ok)location.replace('article/'+R+'.html')})}$('fiche').innerHTML='<p class="fil"><a href="catalogue.html">← Catalogue</a></p><h1>Article plus disponible</h1><p>Cet article a été vendu ou retiré. <a href="catalogue.html">Voir le catalogue</a></p>';return}
+ const a=carteNouvelle(x),d=x.d||[];document.title=a.t+' – Comptoir des Matériaux';
+ const ajout=JSON.stringify({r:a.r,t:a.t,p:a.p,pt:a.pt,v:a.v,s:a.s,st:a.st,o:a.o});
+ const q='Bonjour, je suis intéressé·e par l\'article '+a.r+' ('+a.t+'). Est-il toujours disponible ?';
+ $('fiche').innerHTML=`<p class="fil"><a href="catalogue.html">Catalogue</a> › <a href="catalogue.html#cat=${slugC(a.c)}">${escH(a.c)}</a></p>
+ <div class="art-grille"><div class="galerie">${(x.f||[]).map((p,i)=>`<img src="${escH(p)}" alt="${escH(a.t)} – photo ${i+1}">`).join('')||'<div class="sans-photo grand">📦<small>Photo à venir</small></div>'}</div>
+ <div class="infos"><h1>${escH(a.t)}</h1><p class="prix-gros">${escH(a.pt)}</p>
+ ${a.n?`<p class="neuf-gros">Prix du neuf équivalent : <b>${escH(a.n)}</b> <small>(indicatif, d'après des articles semblables)</small></p>`:''}${a.e>=20?`<p class="eco-grand">Environ ${a.e} % moins cher que le neuf</p>`:''}
+ ${x.co?`<div class="co2"><b>≈ ${String(x.co.kg).replace('.',',')} kg CO₂e évités${x.co.par==='m²'?' par m²':''} par rapport au neuf</b><small>Calcul : ${escH(x.co.calcul)}.</small><details><summary>Source et méthode</summary><small>${CO2_NOTE} Jeu de données : <a href="${escH(x.co.lien)}">${escH(x.co.jeu)}</a>.</small></details></div>`:''}
+ <div class="actions"><button class="bouton" data-ajout="${escH(ajout)}">+ Ajouter à ma liste</button>
+ <a class="bouton clair" href="mailto:__MAIL__?subject=${encodeURIComponent('Article '+a.r)}&body=${encodeURIComponent(q)}">Poser une question</a></div>
+ ${x.de?`<p class="descr">${escH(x.de).replace(/\n/g,'<br>')}</p>`:''}
+ <table class="carac">${[['Dimensions (L1 × L2 × L3)',dimsTxt(d)],['Matière',x.m],['État',x.et],['Vendu par',x.u||'pièce'],['Disponible',a.st],['Référence',a.r]].filter(r=>r[1]).map(r=>`<tr><th>${r[0]}</th><td>${escH(r[1])}</td></tr>`).join('')}</table></div></div>`;
+ if(x.i&&x.i.length)$('fiche').insertAdjacentHTML('beforeend',`<section class="idees"><h2>Idées pour l’utiliser</h2><ul>${x.i.map(i=>`<li>${escH(i)}</li>`).join('')}</ul></section>`);
+ document.dispatchEvent(new Event('DOMContentLoaded'))}).catch(()=>{$('fiche').innerHTML='<p>Impossible de charger l\'article.</p>'});"""
+page('fiche.html', 'Article – Comptoir des Matériaux', "Un matériau de réemploi disponible au Comptoir des Matériaux, à Malmedy.",
+     '\n<main class="article contenu" id="fiche"><p>Chargement…</p></main>', CODES_JS + FICHE_NOUVELLE.replace('__MAIL__', MAIL).replace('${CO2_NOTE}', CO2_NOTE.replace('`', "'")))
 
 # Catalogue : les rayons en boutons de couleur, au-dessus de la recherche.
 inserer('catalogue.html', '<main class="contenu"><h1>Catalogue</h1>', """
