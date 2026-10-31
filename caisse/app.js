@@ -1,6 +1,6 @@
 "use strict";
 // Caisse & stock du Comptoir des Matériaux. Tout est gardé sur l'appareil (IndexedDB) ; rien n'est écrit dans Impulsion.
-const VERSION="4.5 (essai)";
+const VERSION="4.6 (essai)";
 const CATS=[["SA","Sanitaire"],["PA","Parois de douche"],["CH","Châssis"],["PO","Portes"],["CAR","Carrelage"],["GRO","Gros œuvre"],["RA","Chauffage"],
  ["ELEC","Électricité"],["LUM","Luminaires"],["BOI","Bois"],["PAR","Parquet & bardage"],["LAM","Lambris"],["TOI","Toiture"],["ISO","Isolant"],
  ["Q","Quincaillerie"],["OUT","Outillage"],["ELECTRO","Électroménager"],["DIV","Divers"]];
@@ -145,15 +145,18 @@ document.addEventListener("click",e=>{const b=e.target.closest("[data-go]");if(b
 const AZ_QW={a:"q",q:"a",z:"w",w:"z",m:";",";":"m",A:"Q",Q:"A",Z:"W",W:"Z",M:":",":":"M","&":"1","é":"2",'"':"3","'":"4","(":"5","-":"6","è":"7","_":"8","ç":"9","à":"0","!":"/","§":"!",",":"m",")":"-"};
 const QW_AZ={q:"a",a:"q",w:"z",z:"w",";":"m",m:",",Q:"A",A:"Q",W:"Z",Z:"W","1":"&","2":"é","3":'"',"4":"'","5":"(","6":"-","7":"è","8":"_","9":"ç","0":"à"};
 // Clavier belge (AZERTY BE) : les chiffres sans Maj donnent & é " ' ( § è ! ç à.
-const BE_QW={a:"q",q:"a",z:"w",w:"z",",":"m",A:"Q",Q:"A",Z:"W",W:"Z","&":"1","é":"2",'"':"3","'":"4","(":"5","§":"6","è":"7","!":"8","ç":"9","à":"0"};
+const BE_QW={")":"-","?":"M",a:"q",q:"a",z:"w",w:"z",",":"m",A:"Q",Q:"A",Z:"W",W:"Z","&":"1","é":"2",'"':"3","'":"4","(":"5","§":"6","è":"7","!":"8","ç":"9","à":"0"};
 const tr=(s,map)=>[...s].map(c=>map[c]??c).join("");
 function lireCode(brut){const essais=[brut,tr(brut,AZ_QW),tr(brut,BE_QW),tr(brut,QW_AZ)];
  for(const s of essais){
   // Lien : la référence est le dernier morceau du chemin, ou le paramètre r= / ref=.
-  let m=s.match(/[?&](?:r|ref)=([A-Za-z]+[\s-]?\d+)/)||s.match(/\/(?:a|article)\/([A-Za-z]+[\s-]?\d+)(?:\.html?)?\/?$/i)||s.match(/^\s*([A-Za-z]{1,8})[\s-]?(\d{1,5})\s*$/);
+  let m=s.match(/[?&](?:r|ref)=([A-Za-z]+[\s-]?\d+)(?=$|[&#])/)||s.match(/\/(?:a|article)\/([A-Za-z]+[\s-]?\d+)(?:\.html?)?\/?$/i)||s.match(/^\s*([A-Za-z]{1,8})[\s-]?(\d{1,5})\s*$/);
   if(m){const r=norm(m[2]?m[1]+m[2]:m[1]).replace("-","");if(parRef(r))return r}
   // Lien déformé (douchette en QWERTY) : « ?r= » devient « +r- » ou autre ; on prend la référence en fin de lien.
   m=s.match(/r[^A-Za-z0-9]{1,2}([A-Za-z]{1,8})[\s-]?(\d{1,5})\s*$/);if(m){const r=norm(m[1]+m[2]);if(parRef(r))return r}
+  // Toute autre référence (BOI, EXPORT-4, CH46-47-48, PO1G…) : ce qui suit « r= » dans le lien, même déformé.
+  for(const sep of ["?r=","+r-","§r=","!r=","r=","r-"]){const i=s.lastIndexOf(sep);if(i<0)continue;let v=s.slice(i+sep.length);try{v=decodeURIComponent(v)}catch(e){}
+   const r=norm(v);if(r&&parRef(r))return r}
   const r=norm(s);if(parRef(r))return r}
  return null}
 let rafale="",rafaleT=0,rafaleDebut=0;
@@ -540,7 +543,7 @@ function verifEnvoi(nom){const L=CAT.filter(a=>a.envoi===nom),i=infoEnvoi(nom),f
 const SITE_FICHE="https://www.comptoir-materiaux.be/fiche.html?r=";
 // QR à côté de la photo dans l'onglet Caisse (articles sans étiquette, ex. vis) : gardé en mémoire, la liste se redessine à chaque frappe.
 const QRC={},qrCache=r=>QRC[r]||(QRC[r]=qrRef(r));
-function qrRef(r){qrcode.stringToBytes=qrcode.stringToBytesFuncs["UTF-8"];const q=qrcode(0,"M");q.addData(SITE_FICHE+r,"Byte");q.make();return q.createSvgTag({cellSize:4,margin:0,scalable:true})}
+function qrRef(r){qrcode.stringToBytes=qrcode.stringToBytesFuncs["UTF-8"];const q=qrcode(0,"M");q.addData(SITE_FICHE+encodeURIComponent(r),"Byte");q.make();return q.createSvgTag({cellSize:4,margin:0,scalable:true})}
 function etiquettes(L,w){L=L.filter(a=>a&&a.r);if(!L.length){if(w)w.close();return}w=w||window.open("","_blank");
  if(!w){toast("Autorisez les fenêtres pour imprimer les étiquettes",true);return}
  const unite=u=>({"pièce":"pc","pièces":"pc"})[u||"pièce"]||u,prix=a=>a.p>0?eur(a.p).replace(/\s€$/," €")+" / "+esc(unite(a.u)):"";
