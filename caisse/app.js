@@ -1,6 +1,6 @@
 "use strict";
 // Caisse & stock du Comptoir des Matériaux. Tout est gardé sur l'appareil (IndexedDB) ; rien n'est écrit dans Impulsion.
-const VERSION="4.3 (essai)";
+const VERSION="4.4 (essai)";
 const CATS=[["SA","Sanitaire"],["PA","Parois de douche"],["CH","Châssis"],["PO","Portes"],["CAR","Carrelage"],["GRO","Gros œuvre"],["RA","Chauffage"],
  ["ELEC","Électricité"],["LUM","Luminaires"],["BOI","Bois"],["PAR","Parquet & bardage"],["LAM","Lambris"],["TOI","Toiture"],["ISO","Isolant"],
  ["Q","Quincaillerie"],["OUT","Outillage"],["ELECTRO","Électroménager"],["DIV","Divers"]];
@@ -541,16 +541,19 @@ const SITE_FICHE="https://www.comptoir-materiaux.be/fiche.html?r=";
 function qrRef(r){qrcode.stringToBytes=qrcode.stringToBytesFuncs["UTF-8"];const q=qrcode(0,"M");q.addData(SITE_FICHE+r,"Byte");q.make();return q.createSvgTag({cellSize:4,margin:0,scalable:true})}
 function etiquettes(L,w){L=L.filter(a=>a&&a.r);if(!L.length){if(w)w.close();return}w=w||window.open("","_blank");
  if(!w){toast("Autorisez les fenêtres pour imprimer les étiquettes",true);return}
- const prix=a=>a.p>0?eur(a.p)+(a.u&&a.u!=="pièce"?" / "+esc(a.u):""):"";
+ const unite=u=>({"pièce":"pc","pièces":"pc"})[u||"pièce"]||u,prix=a=>a.p>0?eur(a.p).replace(/\s€$/," €")+" / "+esc(unite(a.u)):"";
+ // nom complet : nom de l'annonce + dimensions L1 × L2 × L3 (si elles ne sont pas déjà dans le nom)
+ const dims=a=>[a.L,a.l,a.h].map(num).filter(x=>x>0).sort((x,y)=>y-x),nomComplet=a=>{const d=dims(a),t=a.n||"";
+  return d.length&&!/\d+\s*[x×]\s*\d+/.test(t)?t+" – "+d.map(x=>String(x).replace(".",",")).join(" × ")+" cm":t};
  w.document.write(`<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Étiquettes</title><style>
   @page{size:76mm 50mm;margin:0}*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;color:#000}
   .e{width:76mm;height:50mm;padding:3mm;display:flex;gap:3mm;align-items:center;page-break-after:always;overflow:hidden}
   .q{flex:0 0 36mm;height:36mm}.q svg{width:36mm;height:36mm;display:block}
   .t{flex:1;min-width:0;display:flex;flex-direction:column;gap:1.2mm}
-  .r{font-size:17pt;font-weight:700;letter-spacing:.3pt}.n{font-size:8.5pt;line-height:1.15;max-height:3.5em;overflow:hidden}
+  .r{font-size:17pt;font-weight:700;letter-spacing:.3pt}.n{font-size:8.5pt;line-height:1.15;max-height:4.6em;overflow:hidden}
   .p{font-size:12pt;font-weight:700}.l{font-size:8pt}.c{font-size:6.5pt;margin-top:auto}
   @media screen{body{background:#ddd}.e{background:#fff;margin:8px auto;box-shadow:0 1px 4px #0004}}</style></head><body>
-  ${L.map(a=>`<div class="e"><div class="q">${qrRef(a.r)}</div><div class="t"><div class="r">${esc(a.r)}</div><div class="n">${esc(a.n||"")}</div>
+  ${L.map(a=>`<div class="e"><div class="q">${qrRef(a.r)}</div><div class="t"><div class="r">${esc(a.r)}</div><div class="n">${esc(nomComplet(a))}</div>
    ${prix(a)?`<div class="p">${prix(a)}</div>`:""}${a.e?`<div class="l">Emplacement ${esc(a.e)}</div>`:""}<div class="c">Comptoir des Matériaux</div></div></div>`).join("")}
   <script>onload=()=>setTimeout(()=>print(),300)<\/script></body></html>`);w.document.close()}
 async function marquerVerifie(nom){const L=CAT.filter(a=>a.aVerif===nom).map(a=>({...a})),w=L.length?window.open("","_blank"):null;await putSet("envoiPlace:"+nom,new Date().toISOString());
