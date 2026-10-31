@@ -1,6 +1,6 @@
 "use strict";
 // Caisse & stock du Comptoir des Matériaux. Tout est gardé sur l'appareil (IndexedDB) ; rien n'est écrit dans Impulsion.
-const VERSION="4.1 (essai)";
+const VERSION="4.2 (essai)";
 const CATS=[["SA","Sanitaire"],["PA","Parois de douche"],["CH","Châssis"],["PO","Portes"],["CAR","Carrelage"],["GRO","Gros œuvre"],["RA","Chauffage"],
  ["ELEC","Électricité"],["LUM","Luminaires"],["BOI","Bois"],["PAR","Parquet & bardage"],["LAM","Lambris"],["TOI","Toiture"],["ISO","Isolant"],
  ["Q","Quincaillerie"],["OUT","Outillage"],["ELECTRO","Électroménager"],["DIV","Divers"]];
@@ -631,7 +631,7 @@ function ouvrirPanneau(r,refresh,nouveau){
    <label class="f">Description<textarea class="champ" id="aDc" rows="4" data-propose="${esc(P.desc||"")}">${esc(a.dc||P.desc||"")}</textarea></label>
    <div class="grille-f"><label class="f">Prix du neuf min (€)<input class="champ" id="aNm" inputmode="decimal" value="${virg(a.nMin!=null&&a.nMin!==""?a.nMin:P.neuf?P.neuf[0]:"")}" data-propose="${P.neuf?virg(P.neuf[0]):""}"></label>
    <label class="f">Prix du neuf max (€)<input class="champ" id="aNx" inputmode="decimal" value="${virg(a.nMax!=null&&a.nMax!==""?a.nMax:P.neuf?P.neuf[1]:"")}" data-propose="${P.neuf?virg(P.neuf[1]):""}"></label></div>
-   <p style="margin:4px 0"><a class="btn clair petit" target="_blank" rel="noopener" href="https://www.google.com/search?tbm=shop&q=${encodeURIComponent((a.n||"")+" neuf")}">Voir des équivalents neufs ↗</a></p>
+   <p style="margin:4px 0"><a class="btn clair petit" target="_blank" rel="noopener" href="https://www.google.com/search?tbm=shop&q=${encodeURIComponent((a.n||"")+" neuf")}">Voir des équivalents neufs ↗</a>${a.f?` <a class="btn clair petit" target="_blank" rel="noopener" href="https://lens.google.com/uploadbyurl?url=${encodeURIComponent(new URL(a.f,location.href).href)}">Chercher la photo avec Google Lens ↗</a>`:""}</p>
    <p class="muted" style="margin:4px 0 0">Description et prix du neuf proposés d'après les articles semblables du catalogue : à corriger si besoin. Tant qu'ils ne sont pas changés, ils suivent les propositions.${P.co2?` CO₂ évité ≈ ${P.co2.kg} kg (${esc(P.co2.calcul)}).`:""}</p></div>`)(Auto.proposer(a)):""}
   <label class="f" style="flex-direction:row;align-items:center;gap:8px"><input type="checkbox" id="aH" ${a.horsLigne?"checked":""} style="width:20px;height:20px"> Hors ligne (retiré du site, même s'il reste du stock)</label>
   <p class="muted" style="margin:0">${a.kgEst?"Poids estimé d'après la matière et les mesures. ":""}Dans Impulsion, rien ne change : reportez les modifications avec le fichier « Stock à jour » (Rapports).</p>
