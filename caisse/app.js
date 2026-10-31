@@ -1,6 +1,6 @@
 "use strict";
 // Caisse & stock du Comptoir des Matériaux. Tout est gardé sur l'appareil (IndexedDB) ; rien n'est écrit dans Impulsion.
-const VERSION="4.4 (essai)";
+const VERSION="4.5 (essai)";
 const CATS=[["SA","Sanitaire"],["PA","Parois de douche"],["CH","Châssis"],["PO","Portes"],["CAR","Carrelage"],["GRO","Gros œuvre"],["RA","Chauffage"],
  ["ELEC","Électricité"],["LUM","Luminaires"],["BOI","Bois"],["PAR","Parquet & bardage"],["LAM","Lambris"],["TOI","Toiture"],["ISO","Isolant"],
  ["Q","Quincaillerie"],["OUT","Outillage"],["ELECTRO","Électroménager"],["DIV","Divers"]];
@@ -215,7 +215,7 @@ const vignette=a=>a.f?`<img src="${esc(a.f)}" alt="" loading="lazy" onerror="thi
 function ecranCaisse(){const res=resultats(),t=totalPanier();
  const cats=CATS.filter(c=>CAT.some(a=>a.c===c[0]));
  const cartes=res.slice(0,48).map(a=>{const r=reste(a),st=statut(a);
-  return `<button class="art" data-add="${esc(a.r)}"><span class="ph">${esc(a.c||"")}${vignette(a)}${st!=="ok"?`<span class="st pill ${STATUTS[st][1]}">${STATUTS[st][0]}</span>`:""}</span>
+  return `<button class="art" data-add="${esc(a.r)}"><span class="ph">${esc(a.c||"")}${vignette(a)}${st!=="ok"?`<span class="st pill ${STATUTS[st][1]}">${STATUTS[st][0]}</span>`:""}${a.r?`<span class="qr-art" title="QR de l'étiquette">${qrCache(a.r)}</span>`:""}</span>
    <span class="tx"><span class="nm">${esc(a.n)}</span><span class="rf">${esc(refAff(a))||"sans réf."}${a.e?" · "+esc(a.e):""}${r!=null&&r>0?" · stock "+virg(r)+m2Txt(a,r):""}</span>
    <span class="px">${a.p?eur(a.p):'<span class="pill jaune">prix ?</span>'}${a.u&&a.u!=="pièce"?` <small class="muted">/ ${esc(a.u)}</small>`:""}</span></span></button>`}).join("");
  const lignes=panier.map((l,i)=>`<div class="tl">
@@ -538,6 +538,8 @@ function verifEnvoi(nom){const L=CAT.filter(a=>a.envoi===nom),i=infoEnvoi(nom),f
 // Étiquettes 76 × 50 mm pour l'imprimante thermique (MUNBYN) : une par page, QR à gauche (lien vers la fiche du site,
 // que la douchette relit en caisse), référence, nom, prix et emplacement à droite.
 const SITE_FICHE="https://www.comptoir-materiaux.be/fiche.html?r=";
+// QR à côté de la photo dans l'onglet Caisse (articles sans étiquette, ex. vis) : gardé en mémoire, la liste se redessine à chaque frappe.
+const QRC={},qrCache=r=>QRC[r]||(QRC[r]=qrRef(r));
 function qrRef(r){qrcode.stringToBytes=qrcode.stringToBytesFuncs["UTF-8"];const q=qrcode(0,"M");q.addData(SITE_FICHE+r,"Byte");q.make();return q.createSvgTag({cellSize:4,margin:0,scalable:true})}
 function etiquettes(L,w){L=L.filter(a=>a&&a.r);if(!L.length){if(w)w.close();return}w=w||window.open("","_blank");
  if(!w){toast("Autorisez les fenêtres pour imprimer les étiquettes",true);return}
@@ -610,7 +612,6 @@ function ouvrirPanneau(r,refresh,nouveau){
  <div class="ph-h"><h2>${nouveau?"Nouvel article":esc(refAff(a)||"sans réf.")+" · "+esc(a.n)}</h2><button class="x" data-fermep aria-label="Fermer">×</button></div>
  <div class="corps">
   ${nouveau?"":`<div style="display:flex;gap:14px;align-items:center">${a.f?`<img src="${esc(a.f)}" alt="" style="width:110px;height:82px;object-fit:cover;border-radius:10px">`:""}
-   <div class="qr-fiche" title="QR de l'étiquette : à scanner pour les articles sans étiquette" style="flex:0 0 96px;width:96px;height:96px">${qrRef(a.r)}</div>
    <div><div class="stockbig">${rs==null?"?":virg(rs)} <small class="muted">${esc(a.u||"pièce")} en stock${m2Txt(a,rs)}</small></div>
    <span class="pill ${STATUTS[statut(a)][1]}">${STATUTS[statut(a)][0]}</span> ${S.compte?`<span class="muted">compté le ${dateBe(jour(new Date(S.compte)))}</span>`:""}</div></div>
   <div class="mv"><button class="btn clair petit" data-mv="entree">+ Entrée</button><button class="btn clair petit" data-mv="sortie">− Sortie (casse, don…)</button><button class="btn clair petit" data-mv="correction">Comptage sur place</button></div>
