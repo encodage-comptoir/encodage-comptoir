@@ -29,7 +29,7 @@ const nouvelle=x=>x.n&&x.p>0&&x.st==='ok'&&x.s>0;
 const $=id=>document.getElementById(id);const R=new URLSearchParams(location.search).get('r')||'';
 const slugC=c=>c.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
 fetch('stock.json',{cache:'no-cache'}).then(r=>r.json()).then(j=>{const x=(j.articles||[]).find(a=>a.r===R);
- if(!x||!nouvelle(x)){$('fiche').innerHTML='<p class="fil"><a href="catalogue.html">← Catalogue</a></p><h1>Article plus disponible</h1><p>Cet article a été vendu ou retiré. <a href="catalogue.html">Voir le catalogue</a></p>';return}
+ if(!x||!nouvelle(x)){if(/^[A-Z]+\d+$/.test(R)){fetch('article/'+R+'.html',{method:'HEAD'}).then(r=>{if(r.ok)location.replace('article/'+R+'.html')})}$('fiche').innerHTML='<p class="fil"><a href="catalogue.html">← Catalogue</a></p><h1>Article plus disponible</h1><p>Cet article a été vendu ou retiré. <a href="catalogue.html">Voir le catalogue</a></p>';return}
  const a=carteNouvelle(x),d=x.d||[];document.title=a.t+' – Comptoir des Matériaux';
  const ajout=JSON.stringify({r:a.r,t:a.t,p:a.p,pt:a.pt,v:a.v,s:a.s,st:a.st,o:a.o});
  const q='Bonjour, je suis intéressé·e par l\'article '+a.r+' ('+a.t+'). Est-il toujours disponible ?';

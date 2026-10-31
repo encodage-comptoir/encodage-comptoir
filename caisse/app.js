@@ -1,6 +1,6 @@
 "use strict";
 // Caisse & stock du Comptoir des Matériaux. Tout est gardé sur l'appareil (IndexedDB) ; rien n'est écrit dans Impulsion.
-const VERSION="4.2 (essai)";
+const VERSION="4.3 (essai)";
 const CATS=[["SA","Sanitaire"],["PA","Parois de douche"],["CH","Châssis"],["PO","Portes"],["CAR","Carrelage"],["GRO","Gros œuvre"],["RA","Chauffage"],
  ["ELEC","Électricité"],["LUM","Luminaires"],["BOI","Bois"],["PAR","Parquet & bardage"],["LAM","Lambris"],["TOI","Toiture"],["ISO","Isolant"],
  ["Q","Quincaillerie"],["OUT","Outillage"],["ELECTRO","Électroménager"],["DIV","Divers"]];
@@ -607,6 +607,7 @@ function ouvrirPanneau(r,refresh,nouveau){
  <div class="ph-h"><h2>${nouveau?"Nouvel article":esc(refAff(a)||"sans réf.")+" · "+esc(a.n)}</h2><button class="x" data-fermep aria-label="Fermer">×</button></div>
  <div class="corps">
   ${nouveau?"":`<div style="display:flex;gap:14px;align-items:center">${a.f?`<img src="${esc(a.f)}" alt="" style="width:110px;height:82px;object-fit:cover;border-radius:10px">`:""}
+   <div class="qr-fiche" title="QR de l'étiquette : à scanner pour les articles sans étiquette" style="flex:0 0 96px;width:96px;height:96px">${qrRef(a.r)}</div>
    <div><div class="stockbig">${rs==null?"?":virg(rs)} <small class="muted">${esc(a.u||"pièce")} en stock${m2Txt(a,rs)}</small></div>
    <span class="pill ${STATUTS[statut(a)][1]}">${STATUTS[statut(a)][0]}</span> ${S.compte?`<span class="muted">compté le ${dateBe(jour(new Date(S.compte)))}</span>`:""}</div></div>
   <div class="mv"><button class="btn clair petit" data-mv="entree">+ Entrée</button><button class="btn clair petit" data-mv="sortie">− Sortie (casse, don…)</button><button class="btn clair petit" data-mv="correction">Comptage sur place</button></div>
